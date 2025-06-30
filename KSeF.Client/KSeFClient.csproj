@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	  <IsPackable>true</IsPackable>
+	  <PackageId>KSeF2.0</PackageId>
+	  <PackageVersion>1.0.0</PackageVersion>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.4" />
+	  <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.4" />
+	  <PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.5" />
+
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,8 @@
+# Ignoruj katalogi generowane przez Visual Studio i proces kompilacji .NET
+.vs/
+bin/
+obj/
+appsettings.Development.json
+*.csproj.user
+/KSeF.DemoWebApp/public-key-dev-new.pem
+/KSeF.DemoWebApp/faktura.xml

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Faktura xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:etd="http://crd.gov.pl/xml/schematy/2020/10/08/eDokumenty" xmlns="http://crd.gov.pl/wzor/2023/06/29/12648/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA (2)" wersjaSchemy="1-0E">FA</KodFormularza>
+		<WariantFormularza>2</WariantFormularza>
+		<DataWytworzeniaFa>2025-05-20T00:02:31.7293142Z</DataWytworzeniaFa>
+		<SystemInfo>Generator danych</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>#nip#</NIP>
+			<Nazwa>Twardowski, Januszewski and Żyła</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>al. Bochenek 4828</AdresL1>
+			<AdresL2>01-179 Zagórz</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>Ksawera.Kubacki@example.com</Email>
+			<Telefon>17-683-41-36</Telefon>
+		</DaneKontaktowe>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<NIP>6888785549</NIP>
+			<Nazwa>Adamus and Sons</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>al. Jędrzejczak 95518</AdresL1>
+			<AdresL2>76-424 Lubawa</AdresL2>
+		</Adres>
+		<DaneKontaktowe>
+			<Email>Sergiusz.Piasecki@yahoo.com</Email>
+			<Telefon>41-825-77-29</Telefon>
+		</DaneKontaktowe>
+		<NrKlienta>KL-7922</NrKlienta>
+	</Podmiot2>
+	<Fa>
+		<KodWaluty>PLN</KodWaluty>
+		<P_1>2025-06-15</P_1>
+		<P_1M>Polanica-Zdrój</P_1M>
+		<P_2>FA/GRQMB-#invoice_number#/05/2025</P_2>
+		<P_6>2025-05-18</P_6>
+		<P_13_1>28457.88</P_13_1>
+		<P_14_1>6545.31</P_14_1>
+		<P_15>35003.19</P_15>
+		<Adnotacje>
+			<P_16>2</P_16>
+			<P_17>2</P_17>
+			<P_18>2</P_18>
+			<P_18A>2</P_18A>
+			<Zwolnienie>
+				<P_19N>1</P_19N>
+			</Zwolnienie>
+			<NoweSrodkiTransportu>
+				<P_22N>1</P_22N>
+			</NoweSrodkiTransportu>
+			<P_23>2</P_23>
+			<PMarzy>
+				<P_PMarzyN>1</P_PMarzyN>
+			</PMarzy>
+		</Adnotacje>
+		<RodzajFaktury>VAT</RodzajFaktury>
+		<FaWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<UU_ID>50114615-1a94-06fd-4b58-7e6cd042abcd</UU_ID>
+			<P_7>Gorgeous Metal Shirt</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>3</P_8B>
+			<P_9A>59.38</P_9A>
+			<P_11>178.14</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>2</NrWierszaFa>
+			<UU_ID>a4ce7b32-da15-da19-f357-984e2946d1e7</UU_ID>
+			<P_7>Handmade Concrete Chicken</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>6</P_8B>
+			<P_9A>437.30</P_9A>
+			<P_11>2623.80</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>3</NrWierszaFa>
+			<UU_ID>6276dee1-8420-1603-c4fa-76fa661a7101</UU_ID>
+			<P_7>Awesome Plastic Soap</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>4</P_8B>
+			<P_9A>509.70</P_9A>
+			<P_11>2038.80</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>4</NrWierszaFa>
+			<UU_ID>b8735d0f-a255-bf76-cd64-921a28807e17</UU_ID>
+			<P_7>Handcrafted Plastic Chicken</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>4</P_8B>
+			<P_9A>824.13</P_9A>
+			<P_11>3296.52</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>5</NrWierszaFa>
+			<UU_ID>b60d756e-7a97-a51f-f3e4-fc51bb756c6d</UU_ID>
+			<P_7>Intelligent Granite Ball</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>10</P_8B>
+			<P_9A>146.72</P_9A>
+			<P_11>1467.20</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>6</NrWierszaFa>
+			<UU_ID>f7b537dc-c749-bc97-61dc-f44f7ba19b54</UU_ID>
+			<P_7>Unbranded Plastic Bacon</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>6</P_8B>
+			<P_9A>944.35</P_9A>
+			<P_11>5666.10</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>7</NrWierszaFa>
+			<UU_ID>ae9e8505-323f-9e1f-b300-691f537ab332</UU_ID>
+			<P_7>Handmade Metal Chicken</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>3</P_8B>
+			<P_9A>130.78</P_9A>
+			<P_11>392.34</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>8</NrWierszaFa>
+			<UU_ID>4bbc175d-c8de-75b5-88a5-a7c273403730</UU_ID>
+			<P_7>Refined Granite Mouse</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>10</P_8B>
+			<P_9A>622.27</P_9A>
+			<P_11>6222.70</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>9</NrWierszaFa>
+			<UU_ID>a09eac2f-e8c1-3c7a-bcd9-62a5cb4f1068</UU_ID>
+			<P_7>Handcrafted Granite Hat</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>8</P_8B>
+			<P_9A>173.12</P_9A>
+			<P_11>1384.96</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>10</NrWierszaFa>
+			<UU_ID>1324529f-e29c-b009-126c-ebf2c091c2da</UU_ID>
+			<P_7>Incredible Metal Mouse</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>9</P_8B>
+			<P_9A>419.46</P_9A>
+			<P_11>3775.14</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>11</NrWierszaFa>
+			<UU_ID>b9f53150-e024-2c98-dc7c-7cea995a3d92</UU_ID>
+			<P_7>Rustic Metal Table</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>6</P_8B>
+			<P_9A>109.27</P_9A>
+			<P_11>655.62</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<FaWiersz>
+			<NrWierszaFa>12</NrWierszaFa>
+			<UU_ID>fa465ac5-bc71-30b4-c7ee-368d37a4ab53</UU_ID>
+			<P_7>Unbranded Wooden Gloves</P_7>
+			<P_8A>szt.</P_8A>
+			<P_8B>4</P_8B>
+			<P_9A>189.14</P_9A>
+			<P_11>756.56</P_11>
+			<P_12>23</P_12>
+		</FaWiersz>
+		<Platnosc>
+			<Zaplacono>1</Zaplacono>
+			<DataZaplaty>2025-06-02</DataZaplaty>
+			<FormaPlatnosci>7</FormaPlatnosci>
+		</Platnosc>
+	</Fa>
+</Faktura>
