@@ -21,7 +21,7 @@ namespace KSeF.Client.Api.Services
         {
             var date = issueDate.ToString("dd-MM-yyyy");
             var bytes = Convert.FromBase64String(invoiceHash);
-            var urlEncoded = Base64Url.EncodeToString(bytes);
+            var urlEncoded = Base64Url_EncodeToString(bytes);
             return $"{BaseUrl}/invoice/{nip}/{date}/{urlEncoded}";
         }
 
@@ -36,7 +36,7 @@ namespace KSeF.Client.Api.Services
         )
         {            
             var bytes = Convert.FromBase64String(invoiceHash);
-            var invoiceHashUrlEncoded = Base64Url.EncodeToString(bytes);
+            var invoiceHashUrlEncoded = Base64Url_EncodeToString(bytes);
 
             var pathToSign = $"{BaseUrl}/certificate/{contextIdentifierType}/{contextIdentifierValue}/{sellerNip}/{certificateSerial}/{invoiceHashUrlEncoded}".Replace("https://", "");
             var signedHash = ComputeUrlEncodedSignedHash(pathToSign, signingCertificate, privateKey);
@@ -105,7 +105,16 @@ namespace KSeF.Client.Api.Services
             }
 
             // 3. Base64 + URL-encode            
-            return Base64Url.EncodeToString(signature);            
+            return Base64Url_EncodeToString(signature);            
         }
-    }
+
+		private static string Base64Url_EncodeToString(byte[] blob)
+		{
+#if NET8_0
+			return Convert.ToBase64String(blob).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+#else
+			return Base64Url.EncodeToString(blob);
+#endif
+		}
+	}
 }
