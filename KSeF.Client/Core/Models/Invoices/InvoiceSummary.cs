@@ -48,17 +48,17 @@ public class InvoiceSummary
     /// <summary>
     /// Łączna kwota netto.
     /// </summary>
-    public double NetAmount { get; set; }
+    public decimal NetAmount { get; set; }
 
     /// <summary>
     /// Łączna kwota brutto.
     /// </summary>
-    public double GrossAmount { get; set; }
+    public decimal GrossAmount { get; set; }
 
     /// <summary>
     /// Łączna kwota VAT.
     /// </summary>
-    public double VatAmount { get; set; }
+    public decimal VatAmount { get; set; }
 
     /// <summary>
     /// Kod waluty.
