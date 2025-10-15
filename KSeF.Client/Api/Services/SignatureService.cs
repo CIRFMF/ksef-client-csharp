@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -146,6 +147,8 @@ public class SignatureService : ISignatureService
         return document.ChildNodes;
     }
 
+    [RequiresUnreferencedCode("SignedXml uses algorithm implementations referenced in the XML payload. Ensure required algorithms are preserved.")]
+    [RequiresDynamicCode("SignedXml uses XmlDsigXsltTransform which requires dynamic code.")]
     class SignedXmlFixed(XmlDocument document) : SignedXml(document)
     {
         private readonly List<DataObject> _dataObjects = [];

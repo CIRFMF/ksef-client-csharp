@@ -5,22 +5,13 @@ namespace KSeF.Client.Http;
 
 public static class JsonUtil
 {
-    private static readonly JsonSerializerOptions _settings = new()
-    {
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-        AllowOutOfOrderMetadataProperties = true,
-        WriteIndented = false,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() }
-    };
+    // Usuwamy generyczne JsonSerializerOptions na rzecz source-generated JsonTypeInfo<T>
 
-    public static string Serialize<T>(T obj)
+    public static string Serialize<T>(T obj, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
     {
         try
         {
-            return JsonSerializer.Serialize(obj, _settings);
+            return JsonSerializer.Serialize(obj, typeInfo);
         }
         catch (Exception ex)
         {
@@ -28,11 +19,11 @@ public static class JsonUtil
         }
     }
 
-    public static T Deserialize<T>(string json)
+    public static T Deserialize<T>(string json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
     {
         try
         {
-            return JsonSerializer.Deserialize<T>(json, _settings)
+            return JsonSerializer.Deserialize(json, typeInfo)
                    ?? throw new InvalidOperationException($"[Deserialize] Zdeserializowana wartość jest pusta (null) dla typu {typeof(T).Name}. JSON: {Shorten(json)}");
         }
         catch (Exception ex)
@@ -42,11 +33,11 @@ public static class JsonUtil
         }
     }
 
-    public static async Task SerializeAsync<T>(T obj, Stream output)
+    public static async Task SerializeAsync<T>(T obj, Stream output, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
     {
         try
         {
-            await JsonSerializer.SerializeAsync(output, obj, _settings);
+            await JsonSerializer.SerializeAsync(output, obj, typeInfo);
         }
         catch (Exception ex)
         {
@@ -54,11 +45,11 @@ public static class JsonUtil
         }
     }
 
-    public static async Task<T> DeserializeAsync<T>(Stream input)
+    public static async Task<T> DeserializeAsync<T>(Stream input, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo)
     {
         try
         {
-            var result = await JsonSerializer.DeserializeAsync<T>(input, _settings);
+            var result = await JsonSerializer.DeserializeAsync(input, typeInfo);
             if (result == null)
             {
                 throw new InvalidOperationException($"[DeserializeAsync] Zdeserializowana wartość jest pusta (null) dla typu {typeof(T).Name}.");

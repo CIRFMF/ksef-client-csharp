@@ -1,29 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<IsPackable>true</IsPackable>
-		<PackageId>KSeF2.0</PackageId>
-		<PackageVersion>1.0.0</PackageVersion>
+    <PropertyGroup>
+        <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <IsPackable>true</IsPackable>
+        <PackageId>KSeF2.0</PackageId>
+        <PackageVersion>1.0.0</PackageVersion>
 
-		<!-- Native AOT publish settings -->
-		<PublishAot>true</PublishAot>
-		<SelfContained>true</SelfContained>
-		<GeneratePackageOnBuild Condition="'$(PublishAot)' != 'true'">true</GeneratePackageOnBuild>
-		<InvariantGlobalization>true</InvariantGlobalization>
+        <!-- Native AOT publish settings -->
+        <IsAotCompatible>true</IsAotCompatible>
+        <SelfContained>true</SelfContained>
+        <InvariantGlobalization>true</InvariantGlobalization>
 
-		<!-- Support Windows, Linux, macOS native builds -->
-		<RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
+        <!-- Support Windows, Linux, macOS native builds -->
+        <RuntimeIdentifiers>win-x64;linux-x64;osx-arm64</RuntimeIdentifiers>
 
-		<!-- JSON Source Generation for AOT compatibility -->
-		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-		<CompilerGeneratedFilesOutputPath>obj\Generated</CompilerGeneratedFilesOutputPath>
-		<UserSecretsId>7931c1d1-5bfa-4559-8b2e-e9a0a03d4a82</UserSecretsId>
-		<!-- Strong naming the assembly -->
-		<SignAssembly>True</SignAssembly>
-		<AssemblyOriginatorKeyFile>KSeF.Client.snk</AssemblyOriginatorKeyFile>
-	</PropertyGroup>
+        <!-- JSON Source Generation for AOT compatibility -->
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
 
 	<!-- Dependencies -->
 	<ItemGroup>		
@@ -45,25 +40,14 @@
 		<PackageReference Include="System.Memory.Data" Version="9.0.7" />
 		<PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.7" />
 	</ItemGroup>
-
-	<!-- Include generated JSON contexts -->
-	<ItemGroup>
-		<Compile Include="obj\Generated\**\*.cs" />
-	</ItemGroup>
-	
-	<ItemGroup>
-	  <AdditionalFiles Include="Resources/**/*.resx" />
-	</ItemGroup>
-	
 	<ItemGroup>
 	  <ProjectReference Include="..\KSeF.Client.Core\KSeF.Client.Core.csproj" />
 	</ItemGroup>
-	
-	<!-- Ensure correct JSON context files are available -->
-	<Target Name="RestoreSourceGenAssets" BeforeTargets="Compile">
-		<ItemGroup>
-			<AdditionalFiles Include="$(NuGetPackageRoot)system.text.json\9.0.7\**\*.json" />
-		</ItemGroup>
-	</Target>
+
+    <Target Name="CleanGeneratedJsonSourceAfterBuild" BeforeTargets="Build">
+        <Message Text="🧹 Cleaning generated JSON sources after successful build..." Importance="high" />
+        <RemoveDir Directories="$(CompilerGeneratedFilesOutputPath)" Condition="'$(MSBuildLastTaskResult)' == 'true' and Exists('$(CompilerGeneratedFilesOutputPath)')" />
+    </Target>
+
 
 </Project>

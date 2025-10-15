@@ -1,8 +1,9 @@
+using KSeF.Client.Core.Interfaces.Services;
 using KSeF.Client.Core.Models.Token;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
-using KSeF.Client.Core.Interfaces.Services;
+using System.Text.Json.Serialization.Metadata;
 
 namespace KSeF.Client.Api.Services;
 
@@ -28,16 +29,16 @@ public class PersonTokenService : IPersonTokenService
                   .Distinct(StringComparer.OrdinalIgnoreCase)
                   .ToArray();
 
-        DateTimeOffset? exp = jwtToken.Payload.Exp is { } e
+        DateTimeOffset? exp = jwtToken.Payload.Expiration is { } e
             ? DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(e))
             : null;
 
-        DateTimeOffset? iat = jwtToken.Payload.Iat is { } i
+        DateTimeOffset? iat = jwtToken.Payload.IssuedAt is { } i
             ? DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(i))
             : null;
 
-        TokenSubjectDetails subjectDetails = TryParseJson<TokenSubjectDetails>(Get("sud"));
-        TokenIppPolicy ipPolicy = TryParseJson<TokenIppPolicy>(Get("ipp"));
+        TokenSubjectDetails subjectDetails = TryParseJson<TokenSubjectDetails>(Get("sud"), KseFJsonContext.Default.TokenSubjectDetails);
+        TokenIppPolicy ipPolicy = TryParseJson<TokenIppPolicy>(Get("ipp"), KseFJsonContext.Default.TokenIppPolicy);
 
         string[] per = ParseJsonStringArray(Get("per"));
         string[] pec = ParseJsonStringArray(Get("pec"));
@@ -80,13 +81,13 @@ public class PersonTokenService : IPersonTokenService
         };
     }
 
-    private static T TryParseJson<T>(string maybeJson)
+    private static T TryParseJson<T>(string maybeJson, JsonTypeInfo<T> typeInfo)
     {
         if (string.IsNullOrWhiteSpace(maybeJson)) return default;
         try
         {
             var s = UnwrapIfQuotedJson(maybeJson);
-            return JsonSerializer.Deserialize<T>(s, _jsonSerializerOptions);
+            return JsonSerializer.Deserialize<T>(s, typeInfo);
         }
         catch
         {
@@ -100,7 +101,7 @@ public class PersonTokenService : IPersonTokenService
         try
         {
             string s = UnwrapIfQuotedJson(maybeJsonArray);
-            using JsonDocument? doc = JsonDocument.Parse(s);
+            using JsonDocument doc = JsonDocument.Parse(s);
             if (doc.RootElement.ValueKind == JsonValueKind.Array)
             {
                 return doc.RootElement
@@ -130,7 +131,7 @@ public class PersonTokenService : IPersonTokenService
         {
             try
             {
-                return JsonSerializer.Deserialize<string>(s) ?? s;
+                return JsonSerializer.Deserialize(s, KseFJsonContext.Default.String) ?? s;
             }
             catch
             {

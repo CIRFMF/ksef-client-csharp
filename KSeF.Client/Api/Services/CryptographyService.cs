@@ -19,7 +19,6 @@ public class CryptographyService : ICryptographyService
     private CertificateMaterials _materials;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private Timer _refreshTimer;
-    private bool isInitialized;
 
     public CryptographyService(
         Func<CancellationToken, Task<ICollection<PemCertificateInfo>>> fetcher)
@@ -362,11 +361,9 @@ public class CryptographyService : ICryptographyService
 
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
-        if (isInitialized) return;
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (isInitialized) return;
             var list = await _fetcher(cancellationToken);
             var m = BuildMaterials(list);
 
@@ -419,8 +416,8 @@ public class CryptographyService : ICryptographyService
             .FirstOrDefault(c => c.Usage.Contains(PublicKeyCertificateUsage.KsefTokenEncryption))
             ?? throw new InvalidOperationException("Brak certyfikatu KsefTokenEncryption.");
 
-        var sym = new X509Certificate2(Convert.FromBase64String(symmetricDto.Certificate));
-        var tok = new X509Certificate2(Convert.FromBase64String(tokenDto.Certificate));
+        var sym = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(symmetricDto.Certificate));
+        var tok = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(tokenDto.Certificate));
 
         var minNotAfterUtc = new[] { sym.NotAfter.ToUniversalTime(), tok.NotAfter.ToUniversalTime() }.Min();
         var expiresAt = new DateTimeOffset(minNotAfterUtc, TimeSpan.Zero);
