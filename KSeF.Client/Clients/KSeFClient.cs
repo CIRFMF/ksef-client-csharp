@@ -1101,7 +1101,7 @@ public partial class KSeFClient : IKSeFClient
         ICollection<TInfo> batchPartSendingInfos,
         Func<TInfo, HttpContent> contentFactory,
         CancellationToken cancellationToken)
-        where TInfo : class
+        where TInfo : class, IBatchOriginalNumber
     {
         if (parts == null)
             throw new InvalidOperationException("Brak informacji o partach do wysłania.");
@@ -1112,7 +1112,7 @@ public partial class KSeFClient : IKSeFClient
         foreach (var part in parts)
         {
             var fileInfo = batchPartSendingInfos.FirstOrDefault(x =>
-                (int)x.GetType().GetProperty("OrdinalNumber")!.GetValue(x)! == part.OrdinalNumber);
+                x.OrdinalNumber == part.OrdinalNumber);
 
             if (fileInfo == null)
             {

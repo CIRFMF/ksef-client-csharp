@@ -1,6 +1,6 @@
 namespace KSeF.Client.Core.Models.Sessions.BatchSession
 {
-    public class BatchPartSendingInfo
+    public class BatchPartSendingInfo : IBatchOriginalNumber
     {
         public byte[] Data { get; set; }
         public FileMetadata Metadata { get; set; }

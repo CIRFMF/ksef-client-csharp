@@ -31,7 +31,7 @@ public class Ecdsa256SignatureDescription : SignatureDescription
 
 public class ECDsaSignatureFormatter : AsymmetricSignatureFormatter
 {
-    private ECDsa? _ecdsaKey;
+    private ECDsa _ecdsaKey;
 
     public ECDsaSignatureFormatter(ECDsa key) => _ecdsaKey = key;
 
@@ -49,7 +49,7 @@ public class ECDsaSignatureFormatter : AsymmetricSignatureFormatter
 
 public class ECDsaSignatureDeformatter : AsymmetricSignatureDeformatter
 {
-    private ECDsa? _ecdsaKey;
+    private ECDsa _ecdsaKey;
 
     public ECDsaSignatureDeformatter(ECDsa key) => _ecdsaKey = key;
 
