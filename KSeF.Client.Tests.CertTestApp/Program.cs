@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using KSeF.Client.Api.Builders.Auth;
 using KSeF.Client.Api.Services;
 using KSeF.Client.Clients;
@@ -10,6 +11,9 @@ using KSeF.Client.Tests.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+
+// register custom signing algorithm
+CryptoConfig.AddAlgorithm(typeof(Ecdsa256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256");
 
 // Tryb wyjścia: screen (domyślnie) lub file
 string outputMode = ParseOutputMode(args);
@@ -79,7 +83,7 @@ try
 
     // 5) Samopodpisany certyfikat do podpisu XAdES
     Console.WriteLine("[5] Generowanie samopodpisanego certyfikatu testowego (Utils)...");
-    X509Certificate2 certificate = CertificateUtils.GetPersonalCertificate("A", "R", "TINPL", nip, "A R");
+    X509Certificate2 certificate = CertificateUtils.GetPersonalCertificate("A", "R", "TINPL", nip, "A R", EncryptionMethodEnum.ECDsa);
     Console.WriteLine($"    Certyfikat: {certificate.Subject}");
 
     // (5a) Zapis certyfikatu gdy tryb file
