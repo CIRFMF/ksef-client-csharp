@@ -84,7 +84,7 @@ try
 
     // 5) Samopodpisany certyfikat do podpisu XAdES
     Console.WriteLine("[5] Generowanie samopodpisanego certyfikatu testowego (Utils)...");
-    X509Certificate2 certificate = CertificateUtils.GetPersonalCertificate("A", "R", "TINPL", nip, "A R", EncryptionMethodEnum.ECDsa);
+    X509Certificate2 certificate = CertificateUtils.GetPersonalCertificate("A", "R", "TINPL", nip, "A R");
     Console.WriteLine($"    Certyfikat: {certificate.Subject}");
 
     // (5a) Zapis certyfikatu gdy tryb file
