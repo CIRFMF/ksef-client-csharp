@@ -100,7 +100,7 @@ internal class SelfSignedCertificateForSignatureBuilderImpl
         CertificateRequest request;
         if (_encryptionType == EncryptionMethodEnum.ECDsa)
         {
-            using ECDsa ecdsa = ECDsa.Create(); // P-256
+            using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256); // P-256
             request = new CertificateRequest(subjectName, ecdsa, HashAlgorithmName.SHA256);
             return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.Now.AddYears(2));
         }

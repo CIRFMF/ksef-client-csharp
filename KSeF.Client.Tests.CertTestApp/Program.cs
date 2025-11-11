@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using KSeF.Client.Api.Builders.Auth;
 using KSeF.Client.Api.Services;
 using KSeF.Client.Clients;
@@ -10,6 +11,10 @@ using KSeF.Client.Tests.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using KSeF.Client.Extensions;
+
+// Zarejestruj rozszerzenia EDCSA
+CryptoConfig.AddAlgorithm(typeof(Ecdsa256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256");
 
 // Tryb wyjścia: screen (domyślnie) lub file
 string outputMode = ParseOutputMode(args);
