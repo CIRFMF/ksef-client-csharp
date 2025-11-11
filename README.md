@@ -138,6 +138,9 @@ builder.Services.AddCryptographyClient(
         KSeF.Client.Core.Interfaces.Services.ICryptographyClient cryptographyClient = serviceProvider.GetRequiredService<ICryptographyClient>();
         return await cryptographyClient.GetPublicCertificatesAsync(cancellationToken);
     });
+
+// rejestracja rozszerzeń ECDSA dla podpisów XML-DSIG/XAdES
+CryptoConfig.AddAlgorithm(typeof(Ecdsa256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256");
 ```
 
 **Uwaga:** `AddCryptographyClient` jest wymagany jeśli planujesz używać operacji wymagających szyfrowania (np. sesje wsadowe, eksport faktur).

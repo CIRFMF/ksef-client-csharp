@@ -11,8 +11,9 @@ using KSeF.Client.Tests.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using KSeF.Client.Extensions;
 
-// register custom signing algorithm
+// Zarejestruj rozszerzenia EDCSA
 CryptoConfig.AddAlgorithm(typeof(Ecdsa256SignatureDescription), "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256");
 
 // Tryb wyjścia: screen (domyślnie) lub file
