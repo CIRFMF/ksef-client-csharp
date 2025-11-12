@@ -1,6 +1,7 @@
 using KSeF.Client.Api.Builders.IndirectEntityPermissions;
 using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Core.Models.Permissions.IndirectEntity;
@@ -16,7 +17,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.IndirectPermissions;
 [Collection("IndirectPermissionScenario")]
 public class IndirectPermissionE2ETests : TestBase
 {
-    private const int OperationSuccessfulStatusCode = 200;
     private static readonly TimeSpan PollDelay = TimeSpan.FromMilliseconds(SleepTime);
 
     private string ownerAccessToken { get; set; }
@@ -51,24 +51,24 @@ public class IndirectPermissionE2ETests : TestBase
     public async Task IndirectPermission_E2E_GrantSearchRevokeSearch()
     {
         // Arrange: Uwierzytelnienie właściciela 
-        ownerAccessToken = (await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip)).AccessToken.Token;
+        ownerAccessToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip)).AccessToken.Token;
 
         // Act: 1) Nadanie uprawnień CredentialsManage dla pośrednika
         PermissionsOperationStatusResponse personGrantStatus = await GrantCredentialsManageToDelegateAsync();
 
         // Assert
         Assert.NotNull(personGrantStatus);
-        Assert.Equal(OperationSuccessfulStatusCode, personGrantStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, personGrantStatus.Status.Code);
 
         // Arrange: Uwierzytelnienie pośrednika (Arrange)
-        delegateAccessToken = (await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, delegateNip)).AccessToken.Token;
+        delegateAccessToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, delegateNip)).AccessToken.Token;
 
         // Act: 2) Nadanie uprawnień pośrednich przez pośrednika
         PermissionsOperationStatusResponse indirectGrantStatus = await GrantIndirectPermissionsAsync();
 
         // Assert
         Assert.NotNull(indirectGrantStatus);
-        Assert.Equal(OperationSuccessfulStatusCode, indirectGrantStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, indirectGrantStatus.Status.Code);
 
         // Act: 3) Wyszukanie nadanych uprawnień (w bieżącym kontekście, nieaktywne)
         PagedPermissionsResponse<PersonPermission> permissionsAfterGrant =
@@ -103,7 +103,7 @@ public class IndirectPermissionE2ETests : TestBase
         Assert.NotEmpty(revokeResult);
         Assert.Equal(permissionsAfterGrant.Permissions.Count, revokeResult.Count);
         Assert.All(revokeResult, r =>
-            Assert.True(r.Status.Code == OperationSuccessfulStatusCode,
+            Assert.True(r.Status.Code == OperationStatusCodeResponse.Success,
                 $"Operacja cofnięcia uprawnień nie powiodła się: {r.Status.Description}, szczegóły: [{string.Join(",", r.Status.Details ?? Array.Empty<string>())}]")
         );
 
@@ -258,7 +258,7 @@ public class IndirectPermissionE2ETests : TestBase
         string accessToken)
         => AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(operationReferenceNumber, accessToken),
-            condition: r => r.Status.Code == OperationSuccessfulStatusCode,
+            condition: r => r.Status.Code == OperationStatusCodeResponse.Success,
             delay: PollDelay,
             maxAttempts: 60,
             cancellationToken: CancellationToken

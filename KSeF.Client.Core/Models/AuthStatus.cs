@@ -5,8 +5,11 @@ namespace KSeF.Client.Core.Models
 {
     public class AuthStatus
     {
-        public DateTime StartDate { get; set; }
+        public DateTimeOffset StartDate { get; set; }
         public AuthenticationMethodEnum AuthenticationMethod { get; set; }
         public StatusInfo Status { get; set; }
+        public bool? IsTokenRedeemed { get; set; }
+        public DateTimeOffset? LastTokenRefreshDate { get; set; }
+        public DateTimeOffset? RefreshTokenValidUntil {get; set;}
     }
 }

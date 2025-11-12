@@ -11,6 +11,7 @@ using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
+using KSeF.Client.Core.Models.ApiResponses;
 
 namespace KSeF.Client.Tests.Features;
 
@@ -24,7 +25,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
     public async Task GivenOwnerContextAndOwnerPermission_WhenAuthenticatingWithCertificate_ThenAccessTokenReturned()
     {
         string nip = MiscellaneousUtils.GetRandomNip();
-        string accessToken = (await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, nip)).AccessToken.Token;
+        string accessToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, nip)).AccessToken.Token;
 
         Assert.NotNull(accessToken);
 
@@ -54,7 +55,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         AuthenticationTokenContextIdentifierType contextIdentifierType = AuthenticationTokenContextIdentifierType.Nip)
     {
         string ownerNip = MiscellaneousUtils.GetRandomNip();
-        string ownerToken = (await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip)).AccessToken.Token;
+        string ownerToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip)).AccessToken.Token;
 
         string delegateNip = MiscellaneousUtils.GetRandomNip();
         string pesel = MiscellaneousUtils.GetRandomPesel();
@@ -70,7 +71,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         }
         await PermissionsUtils.GrantPersonPermissionsAsync(KsefClient, ownerToken, subjectIdentifier, permissions);
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient
             .GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
@@ -100,17 +101,17 @@ public class AuthenticateTests : KsefIntegrationTestBase
                 .Build();
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
-        SignatureResponse authOperationInfo = await KsefClient
+        SignatureResponse authOperationInfo = await AuthorizationClient
           .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
 
         AuthStatus status = await EnsureAuthenticationCompletedAsync(
-            KsefClient,
+            AuthorizationClient,
             authOperationInfo.ReferenceNumber,
             authOperationInfo.AuthenticationToken.Token);
 
         Assert.Equal(200, status.Status.Code);
 
-        AuthenticationOperationStatusResponse accessToken = await KsefClient.GetAccessTokenAsync(authOperationInfo.AuthenticationToken.Token);
+        AuthenticationOperationStatusResponse accessToken = await AuthorizationClient.GetAccessTokenAsync(authOperationInfo.AuthenticationToken.Token);
         Assert.NotNull(accessToken);
         HashSet<PersonPermissionType> actual = GetPerAsEnumSet<PersonPermissionType>(accessToken.AccessToken.Token);
         Assert.True(permissions.ToHashSet().IsSubsetOf(actual));
@@ -126,7 +127,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         AuthenticationTokenContextIdentifierType contextIdentifierType = AuthenticationTokenContextIdentifierType.Nip)
     {
         string ownerNip = MiscellaneousUtils.GetRandomNip();
-        string ownerToken = (await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip)).AccessToken.Token;
+        string ownerToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip)).AccessToken.Token;
 
         string delegateNip = MiscellaneousUtils.GetRandomNip();
 
@@ -142,7 +143,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
 
         await KsefClient.GrantsPermissionEntityAsync(request, ownerToken);
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient
             .GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
@@ -164,17 +165,17 @@ public class AuthenticateTests : KsefIntegrationTestBase
 
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
-        SignatureResponse authOperationInfo = await KsefClient
+        SignatureResponse authOperationInfo = await AuthorizationClient
           .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
 
         AuthStatus status = await EnsureAuthenticationCompletedAsync(
-            KsefClient,
+            AuthorizationClient,
             authOperationInfo.ReferenceNumber,
             authOperationInfo.AuthenticationToken.Token);
 
-        Assert.Equal(200, status.Status.Code);
+        Assert.Equal(AuthenticationStatusCodeResponse.AuthenticationSuccess, status.Status.Code);
 
-        AuthenticationOperationStatusResponse token = await KsefClient.GetAccessTokenAsync(authOperationInfo.AuthenticationToken.Token);
+        AuthenticationOperationStatusResponse token = await AuthorizationClient.GetAccessTokenAsync(authOperationInfo.AuthenticationToken.Token);
         Assert.NotNull(token);
         HashSet<EntityStandardPermissionType> entitySet = GetPerAsEnumSet<EntityStandardPermissionType>(token.AccessToken.Token);
         Assert.Contains(permission, entitySet);
@@ -185,12 +186,12 @@ public class AuthenticateTests : KsefIntegrationTestBase
     public async Task GivenOwnerContextAndWrongCertificate_WhenAuthenticateWithPESEL_ThenError()
     {
         string ownerNip = MiscellaneousUtils.GetRandomNip();
-        string ownerToken = (await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip)).AccessToken.Token;
+        string ownerToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip)).AccessToken.Token;
 
         string delegateNip = MiscellaneousUtils.GetRandomNip();
         string pesel = MiscellaneousUtils.GetRandomPesel();
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient
             .GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
@@ -216,7 +217,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
 
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
-            SignatureResponse authOperationInfo = await KsefClient
+            SignatureResponse authOperationInfo = await AuthorizationClient
           .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
         });
     }
@@ -241,7 +242,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
-            SignatureResponse authOperationInfo = await KsefClient
+            SignatureResponse authOperationInfo = await AuthorizationClient
           .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
         });
     }
@@ -252,7 +253,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
     {
         string ownerNip = MiscellaneousUtils.GetRandomNip();
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient
                         .GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
@@ -278,7 +279,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
 
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
-            SignatureResponse authOperationInfo = await KsefClient
+            SignatureResponse authOperationInfo = await AuthorizationClient
           .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
         });
     }
@@ -290,7 +291,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string ownerNip = MiscellaneousUtils.GetRandomNip();
         string nip = MiscellaneousUtils.GetRandomNip();
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient
                         .GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
@@ -315,7 +316,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
     }
 
     private static async Task<AuthStatus> EnsureAuthenticationCompletedAsync(
-        IKSeFClient client,
+        IAuthorizationClient client,
         string operationReferenceNumber,
         string authToken,
         TimeSpan? timeout = null,
@@ -336,7 +337,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
                     $"Description='{status.Status.Description}'");
                 return status;
             },
-            condition: status => status.Status.Code == 200,
+            condition: status => status.Status.Code == AuthenticationStatusCodeResponse.AuthenticationSuccess,
             delay: pollInterval,
             maxAttempts: maxAttempts,
             cancellationToken: cancellationToken);

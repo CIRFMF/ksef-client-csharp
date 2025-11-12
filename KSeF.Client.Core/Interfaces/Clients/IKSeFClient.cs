@@ -11,7 +11,6 @@ using KSeF.Client.Core.Models.Permissions.IndirectEntity;
 using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Core.Models.Permissions.SubUnit;
 using KSeF.Client.Core.Models.Sessions;
-using KSeF.Client.Core.Models.Sessions.ActiveSessions;
 using KSeF.Client.Core.Models.Sessions.BatchSession;
 using KSeF.Client.Core.Models.Sessions.OnlineSession;
 using KSeF.Client.Core.Models;
@@ -23,109 +22,9 @@ using System;
 
 namespace KSeF.Client.Core.Interfaces.Clients
 {
-    public interface IKSeFClient
+    public interface IKSeFClient : IActiveSessionsClient, IAuthorizationClient
     {
-
-        /// <summary>
-        /// Pobranie listy aktywnych sesji uwierzytelnienia.
-        /// </summary>
-        /// <param name="accessToken">Access token</param>
-        /// <param name="pageSize">Rozmiar strony wyników.</param>
-        /// <param name="continuationToken">Token kontynuacji, jeśli jest dostępny.</param>
-        /// <param name="cancellationToken">Cancellation token./param>
-        /// <returns><see cref="AuthenticationListResponse"/></returns>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-        /// <exception cref="ApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        Task<AuthenticationListResponse> GetActiveSessions(string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Unieważnia sesję powiązaną z tokenem użytym do wywołania tej operacji.
-        /// Unieważnienie sesji sprawia, że powiązany z nią refresh token przestaje działać i nie można już za jego pomocą uzyskać kolejnych access tokenów.
-        /// Aktywne access tokeny działają do czasu minięcia ich termin ważności.
-        /// </summary>
-        /// <param name="token">Access token lub Refresh token.</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-        /// <exception cref="ApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        Task RevokeCurrentSessionAsync(string token, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Unieważnia sesję o podanym numerze referencyjnym.
-        /// Unieważnienie sesji sprawia, że powiązany z nią refresh token przestaje działać i nie można już za jego pomocą uzyskać kolejnych access tokenów.
-        /// Aktywne access tokeny działają do czasu minięcia ich termin ważności.
-        /// </summary>
-        /// <param name="sessionReferenceNumber">Numer referencyjny sesji.</param>
-        /// <param name="accessToken">Access token lub Refresh token.</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-        /// <exception cref="ApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        Task RevokeSessionAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Inicjalizacja mechanizmu uwierzytelnienia i autoryzacji
-        /// </summary>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="AuthenticationChallengeResponse"/></returns>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 bad request)</exception>
-        Task<AuthenticationChallengeResponse> GetAuthChallengeAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Rozpoczyna operację uwierzytelniania za pomocą dokumentu XML podpisanego podpisem elektroniczny XAdES.
-        /// </summary>
-        /// <remarks>
-        /// Rozpoczyna proces uwierzytelnienia na podstawie podpisanego XML-a.
-        /// </remarks>
-        /// <param name="signedXML">Podpisany XML z żądaniem uwierzytelnienia.</param>
-        /// <param name="verifyCertificateChain">Flaga określająca, czy sprawdzić łańcuch certyfikatów. (Domyślnie false)</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="SignatureResponse"/></returns>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 bad request)</exception>
-        Task<SignatureResponse> SubmitXadesAuthRequestAsync(string signedXML, bool verifyCertificateChain = false, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Rozpoczyna operację uwierzytelniania z wykorzystaniem wcześniej wygenerowanego tokena KSeF.
-        /// </summary>
-        /// <param name="requestPayload"><see cref="AuthenticationKsefTokenRequest"/></param>
-        /// <returns><see cref="SignatureResponse"/></returns>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-        Task<SignatureResponse> SubmitKsefTokenAuthRequestAsync(AuthenticationKsefTokenRequest requestPayload, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Sprawdza bieżący status operacji uwierzytelniania dla podanego tokena.
-        /// </summary>
-        /// <param name="authOperationReferenceNumber">Numer referencyjny otrzymany w wyniku inicjalizacji uwierzytelnienia.</param>
-        /// <param name="authenticationToken">Tymczasowy token otrzymany w wyniku inicjalizacji uwierzytelnienia.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="StatusInfo"/></returns>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-        /// <exception cref="ApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Pobranie tokena dostępowego.
-        /// </summary>
-        /// <remarks>
-        /// Zwraca accessToken i refreshToken
-        /// </remarks>
-        /// <param name="authenticationToken">Tymczasowy token otrzymany w wyniku inicjalizacji uwierzytelnienia.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="AuthenticationOperationStatusResponse"/></returns>
-        /// <exception cref="ApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-        /// <exception cref="ApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        Task<AuthenticationOperationStatusResponse> GetAccessTokenAsync(string authenticationToken, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Odświeżanie tokenu dostępu
-        /// </summary>
-        /// <remarks>
-        /// Zwraca odświeżony access token
-        /// </remarks>
-        /// <param name="refreshToken">Refresh token.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="RefreshTokenResponse"/></returns>
-        /// <exception cref="ApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        /// <exception cref="ApiException">W przypadku podania accessToken zamiast refreshToken. (403 Forbidden)</exception>
-        Task<RefreshTokenResponse> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default);
+        
 
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <summary>

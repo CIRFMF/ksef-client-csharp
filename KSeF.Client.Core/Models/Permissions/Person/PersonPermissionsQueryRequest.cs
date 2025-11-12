@@ -10,7 +10,7 @@ namespace KSeF.Client.Core.Models.Permissions.Person
         public PersonPermissionsContextIdentifier ContextIdentifier { get; set; }
         public PersonPermissionsTargetIdentifier TargetIdentifier { get; set; }
         public List<PersonPermissionType> PermissionTypes { get; set; }
-        public PersonPermissionState PermissionState { get; set; }
+        public PersonPermissionState? PermissionState { get; set; }
         public PersonQueryType QueryType { get; set; }
     }
     public enum PersonQueryType

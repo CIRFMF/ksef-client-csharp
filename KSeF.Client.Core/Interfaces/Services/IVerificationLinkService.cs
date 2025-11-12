@@ -10,7 +10,7 @@ namespace KSeF.Client.Core.Interfaces.Services
         /// <summary>
         /// Buduje link do weryfikacji faktury w systemie KSeF.
         /// </summary>
-        string BuildInvoiceVerificationUrl(string nip, DateTime issueDate, string xmlContent);
+        string BuildInvoiceVerificationUrl(string nip, DateTime issueDate, string invoiceHash);
 
         /// <summary>
         /// Buduje link do weryfikacji certyfikatu Wystawcy (offline).

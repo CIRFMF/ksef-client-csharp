@@ -30,7 +30,7 @@ public partial class BatchSessionE2ETests : TestBase
         // Autoryzacja do testów – jednorazowa, dane zapisane w readonly properties
         string nip = MiscellaneousUtils.GetRandomNip();
         AuthenticationOperationStatusResponse authInfo = AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, nip)
+            .AuthenticateAsync(AuthorizationClient, SignatureService, nip)
             .GetAwaiter().GetResult();
 
         accessToken = authInfo.AccessToken.Token;

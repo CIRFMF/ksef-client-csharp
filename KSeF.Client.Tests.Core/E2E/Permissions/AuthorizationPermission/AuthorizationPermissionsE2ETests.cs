@@ -20,7 +20,7 @@ public class AuthorizationPermissionsE2ETests : TestBase
     {
         _fixture = fixture;
         AuthenticationOperationStatusResponse authOperationStatusResponse =
-            AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService).GetAwaiter().GetResult();
+            AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService).GetAwaiter().GetResult();
         accessToken = authOperationStatusResponse.AccessToken.Token;
         _fixture.SubjectIdentifier.Value = MiscellaneousUtils.GetRandomNip();
     }

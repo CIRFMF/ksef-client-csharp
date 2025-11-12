@@ -18,17 +18,17 @@ public class AuthController : ControllerBase
 {
 
     private readonly IAuthCoordinator _authCoordinator;
-    private readonly IKSeFClient _ksefClient;
+    private readonly IAuthorizationClient _authorizationClient;
     private readonly ISignatureService _signatureService;
 
 
     private readonly string _contextIdentifier;
     private readonly string? xMLDirectory;
 
-    public AuthController(IAuthCoordinator authCoordinator, IConfiguration configuration, IKSeFClient ksefClient, ISignatureService signatureService)
+    public AuthController(IAuthCoordinator authCoordinator, IConfiguration configuration, IAuthorizationClient authorizationClient, ISignatureService signatureService)
     {
         _authCoordinator = authCoordinator;
-        _ksefClient = ksefClient;
+        _authorizationClient = authorizationClient;
         _signatureService = signatureService;
         _contextIdentifier = configuration["Tools:contextIdentifier"]!;
         xMLDirectory = configuration["Tools:XMLDirectory"];
@@ -52,7 +52,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthenticationOperationStatusResponse>> AuthStepByStepAsync(string contextIdentifier, CancellationToken cancellationToken)
     {
 
-        return await _ksefClient
+        return await _authorizationClient
             .AuthSessionStepByStep(
             AuthenticationTokenSubjectIdentifierTypeEnum.CertificateSubject,
             !string.IsNullOrWhiteSpace(contextIdentifier) ? contextIdentifier : _contextIdentifier,
@@ -64,7 +64,7 @@ public class AuthController : ControllerBase
     [HttpGet("refresh-token")]
     public async Task<ActionResult<RefreshTokenResponse>> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken)
     {
-        return await _ksefClient.RefreshAccessTokenAsync(
+        return await _authorizationClient.RefreshAccessTokenAsync(
             refreshToken,
             cancellationToken);
     }
@@ -79,7 +79,7 @@ public class AuthController : ControllerBase
         using RSA rsa = RSA.Create();
         rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
 
-        AuthenticationChallengeResponse challengeResponse = await _ksefClient
+        AuthenticationChallengeResponse challengeResponse = await _authorizationClient
            .GetAuthChallengeAsync(cancellationToken);
 
         string challenge = challengeResponse.Challenge;
@@ -98,7 +98,7 @@ public class AuthController : ControllerBase
 
         string signedXml = signatureService.Sign(unsignedXml, x509.CopyWithPrivateKey(rsa));
 
-        SignatureResponse authSubmission = await _ksefClient
+        SignatureResponse authSubmission = await _authorizationClient
            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken);
 
         AuthStatus authStatus;
@@ -107,7 +107,7 @@ public class AuthController : ControllerBase
 
         do
         {
-            authStatus = await _ksefClient.GetAuthStatusAsync(authSubmission.ReferenceNumber, authSubmission.AuthenticationToken.Token, cancellationToken);
+            authStatus = await _authorizationClient.GetAuthStatusAsync(authSubmission.ReferenceNumber, authSubmission.AuthenticationToken.Token, cancellationToken);
 
             Console.WriteLine(
                 $"Polling: StatusCode={authStatus.Status.Code}, " +
@@ -128,7 +128,7 @@ public class AuthController : ControllerBase
             Console.WriteLine("Timeout: Brak tokena po 2 minutach.");
             throw new Exception("Timeout Uwierzytelniania: Brak tokena po 2 minutach.");
         }
-        AuthenticationOperationStatusResponse accessTokenResponse = await _ksefClient.GetAccessTokenAsync(authSubmission.AuthenticationToken.Token, cancellationToken);
+        AuthenticationOperationStatusResponse accessTokenResponse = await _authorizationClient.GetAccessTokenAsync(authSubmission.AuthenticationToken.Token, cancellationToken);
 
         // 7) Zwróć token            
         return accessTokenResponse;
@@ -137,7 +137,7 @@ public class AuthController : ControllerBase
     [HttpPost("access-token")]
     public async Task<AuthenticationOperationStatusResponse> GetAuthOperationStatusAsync([FromBody] CertificateRequestModel certificateRequestModel)
     {
-        AuthenticationChallengeResponse challengeResponse = await _ksefClient.GetAuthChallengeAsync();
+        AuthenticationChallengeResponse challengeResponse = await _authorizationClient.GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
             .Create()
@@ -157,7 +157,7 @@ public class AuthController : ControllerBase
                 .Build();
 
         string signedXml = _signatureService.Sign(unsignedXml, certificate);
-        SignatureResponse signatureResponse = await _ksefClient.SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
+        SignatureResponse signatureResponse = await _authorizationClient.SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
 
         AuthStatus authStatus;
         DateTime startTime = DateTime.UtcNow;
@@ -165,7 +165,7 @@ public class AuthController : ControllerBase
 
         do
         {
-            authStatus = await _ksefClient
+            authStatus = await _authorizationClient
                 .GetAuthStatusAsync(signatureResponse.ReferenceNumber, signatureResponse.AuthenticationToken.Token);
 
             if (authStatus.Status.Code != 200)
@@ -183,7 +183,7 @@ public class AuthController : ControllerBase
             throw new Exception(msg);
         }
 
-        AuthenticationOperationStatusResponse authResult = await _ksefClient.GetAccessTokenAsync(signatureResponse.AuthenticationToken.Token);
+        AuthenticationOperationStatusResponse authResult = await _authorizationClient.GetAccessTokenAsync(signatureResponse.AuthenticationToken.Token);
         return authResult;
     }
 }
@@ -201,11 +201,11 @@ public class CertificateRequestModel
 public static class AuthSessionStepByStepHelper
 {
     public static async Task<AuthenticationOperationStatusResponse>
-        AuthSessionStepByStep(this IKSeFClient ksefClient, AuthenticationTokenSubjectIdentifierTypeEnum authIdentifierType, string contextIdentifier, Func<string, Task<string>> xmlSigner, AuthenticationTokenAuthorizationPolicy? authorizationPolicy = null, CancellationToken cancellationToken = default)
+        AuthSessionStepByStep(this IAuthorizationClient authorizationClient, AuthenticationTokenSubjectIdentifierTypeEnum authIdentifierType, string contextIdentifier, Func<string, Task<string>> xmlSigner, AuthenticationTokenAuthorizationPolicy? authorizationPolicy = null, CancellationToken cancellationToken = default)
     {
 
         // Wykonanie auth challenge.
-        AuthenticationChallengeResponse challengeResponse = await ksefClient
+        AuthenticationChallengeResponse challengeResponse = await authorizationClient
             .GetAuthChallengeAsync();
 
         Console.WriteLine(challengeResponse.Challenge);
@@ -226,7 +226,7 @@ public static class AuthSessionStepByStepHelper
         string signedXml = await xmlSigner.Invoke(unsignedXml);
 
         // Przesłanie podpisanego XML do systemu KSeF
-        SignatureResponse authOperationInfo = await ksefClient.
+        SignatureResponse authOperationInfo = await authorizationClient.
             SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken);
 
         AuthStatus authorizationStatus;
@@ -242,7 +242,7 @@ public static class AuthSessionStepByStepHelper
             }
 
             await Task.Delay(sleepTime + TimeSpan.FromSeconds(currentLoginAttempt));
-            authorizationStatus = await ksefClient.GetAuthStatusAsync(
+            authorizationStatus = await authorizationClient.GetAuthStatusAsync(
                 authOperationInfo.ReferenceNumber,
                 authOperationInfo.AuthenticationToken.Token);
             currentLoginAttempt++;
@@ -250,7 +250,7 @@ public static class AuthSessionStepByStepHelper
         while (authorizationStatus.Status.Code != 200);
 
         // Uzyskanie accessToken w celu uwierzytelniania 
-        AuthenticationOperationStatusResponse accessTokenResult = await ksefClient
+        AuthenticationOperationStatusResponse accessTokenResult = await authorizationClient
             .GetAccessTokenAsync(authOperationInfo.AuthenticationToken.Token, cancellationToken);
 
         return accessTokenResult;

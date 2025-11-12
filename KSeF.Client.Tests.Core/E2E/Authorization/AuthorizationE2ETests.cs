@@ -20,7 +20,7 @@ public class AuthorizationE2ETests : TestBase
     {
         // Arrange & Act
         AuthenticationOperationStatusResponse authResult =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, default, encryptionMethodEnum);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, default, encryptionMethodEnum);
 
         // Assert
         Assert.NotNull(authResult);

@@ -26,6 +26,7 @@
 		<PackageReference Include="QRCoder" Version="1.6.0" />
 		<PackageReference Include="Microsoft.Maui.Graphics" Version="9.0.90" />
 		<PackageReference Include="Microsoft.Maui.Graphics.Skia" Version="9.0.90" />
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.116.1" />
 		<!-- Core dependencies -->
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />

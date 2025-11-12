@@ -1,6 +1,7 @@
 using KSeF.Client.Api.Builders.AuthorizationPermissions;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Peppol;
@@ -29,12 +30,6 @@ public class PeppolPefE2ETests : TestBase
 {
     protected ITestDataClient _testClient => _scope.ServiceProvider.GetRequiredService<ITestDataClient>();
 
-    private const int StatusProcessing = 100;
-    private const int StatusSessionClosed = 170;
-    private const int StatusSessionProcessedSuccessfully = 200;
-    private const int StatusInvoiceProcessing = 150;
-
-
     // Wymaganie PeppolId (CN):
     private static readonly Regex PeppolIdRegex =
         new(@"^P[A-Z]{2}[0-9]{6}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -59,7 +54,7 @@ public class PeppolPefE2ETests : TestBase
         _iban = MiscellaneousUtils.GeneratePolishIban();
 
         AuthenticationOperationStatusResponse auth = AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, _companyNip)
+            .AuthenticateAsync(AuthorizationClient, SignatureService, _companyNip)
             .GetAwaiter().GetResult();
 
         _accessToken = auth.AccessToken.Token;
@@ -79,7 +74,7 @@ public class PeppolPefE2ETests : TestBase
             await _testClient.EnableAttachmentAsync(request);
             await Task.Delay(SleepTime);
 
-            RefreshTokenResponse refreshToken = await KsefClient.RefreshAccessTokenAsync(_refreshToken);
+            RefreshTokenResponse refreshToken = await AuthorizationClient.RefreshAccessTokenAsync(_refreshToken);
             _accessToken = refreshToken.AccessToken.Token;
         }
 
@@ -159,7 +154,7 @@ public class PeppolPefE2ETests : TestBase
             await _testClient.EnableAttachmentAsync(request);
             await Task.Delay(SleepTime);
 
-            RefreshTokenResponse refreshToken = await KsefClient.RefreshAccessTokenAsync(_refreshToken);
+            RefreshTokenResponse refreshToken = await AuthorizationClient.RefreshAccessTokenAsync(_refreshToken);
             _accessToken = refreshToken.AccessToken.Token;
         }
 
@@ -272,7 +267,7 @@ public class PeppolPefE2ETests : TestBase
             "\n-----END PUBLIC KEY-----";
 
         AuthenticationOperationStatusResponse providerAuth = await AuthenticationUtils.AuthenticateAsync(
-            ksefClient: KsefClient,
+            authorizationClient: AuthorizationClient,
             signatureService: SignatureService,
             certificate: providerSeal,
             contextIdentifierType: AuthenticationTokenContextIdentifierType.PeppolId,
@@ -427,8 +422,8 @@ public class PeppolPefE2ETests : TestBase
         }
 
         Assert.Null(statusProcessing.FailedInvoiceCount);
-        Assert.Equal(StatusProcessing, statusProcessing.Status.Code);
-        Assert.Equal(StatusProcessing, statusProcessing.Status.Code);
+        Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusProcessing.Status.Code);
+        Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusProcessing.Status.Code);
 
         await KsefClient.CloseOnlineSessionAsync(openSession.ReferenceNumber, providerToken, CancellationToken.None);
 
@@ -438,7 +433,7 @@ public class PeppolPefE2ETests : TestBase
            check: async () =>
            {
                SessionStatusResponse st = await KsefClient.GetSessionStatusAsync(openSession.ReferenceNumber, providerToken, CancellationToken.None);
-               return st?.Status?.Code == StatusSessionClosed || st?.Status?.Code == StatusSessionProcessedSuccessfully;
+               return st?.Status?.Code == OnlineSessionCodeResponse.SessionClosed || st?.Status?.Code == OnlineSessionCodeResponse.ProcessedSuccessfully;
            },
            delay: TimeSpan.FromMilliseconds(SleepTime),
            maxAttempts: 10);
@@ -450,7 +445,7 @@ public class PeppolPefE2ETests : TestBase
         SessionInvoice sessionInvoice = invoices.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
 
         // jeżeli faktura jeszcze jest w statusie „processing”, spróbuj odświeżyć kilka razy zamiast jednego sleepa
-        if (sessionInvoice.Status.Code == StatusInvoiceProcessing)
+        if (sessionInvoice.Status.Code == InvoiceInSessionStatusCodeResponse.Processing)
         {
             await AsyncPollingUtils.PollAsync(
                description: "faktura gotowa (status inny niż processing)",
@@ -458,7 +453,7 @@ public class PeppolPefE2ETests : TestBase
                {
                    SessionInvoicesResponse inv = await KsefClient.GetSessionInvoicesAsync(openSession.ReferenceNumber, providerToken, pageSize: 10);
                    SessionInvoice refreshed = inv.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
-                   return refreshed.Status.Code != StatusInvoiceProcessing;
+                   return refreshed.Status.Code != InvoiceInSessionStatusCodeResponse.Processing;
                },
                delay: TimeSpan.FromMilliseconds(SleepTime),
                maxAttempts: 5);
@@ -517,8 +512,8 @@ public class PeppolPefE2ETests : TestBase
         }
 
         Assert.Null(statusProcessing.FailedInvoiceCount);
-        Assert.Equal(StatusProcessing, statusProcessing.Status.Code);
-        Assert.Equal(StatusProcessing, statusProcessing.Status.Code);
+        Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusProcessing.Status.Code);
+        Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusProcessing.Status.Code);
 
         await KsefClient.CloseOnlineSessionAsync(openSession.ReferenceNumber, providerToken, CancellationToken.None);
 
@@ -528,7 +523,7 @@ public class PeppolPefE2ETests : TestBase
            check: async () =>
            {
                SessionStatusResponse st = await KsefClient.GetSessionStatusAsync(openSession.ReferenceNumber, providerToken, CancellationToken.None);
-               return st?.Status?.Code == StatusSessionClosed || st?.Status?.Code == StatusSessionProcessedSuccessfully;
+               return st?.Status?.Code == OnlineSessionCodeResponse.SessionClosed || st?.Status?.Code == OnlineSessionCodeResponse.ProcessedSuccessfully;
            },
            delay: TimeSpan.FromMilliseconds(SleepTime),
            maxAttempts: 10);
@@ -540,7 +535,7 @@ public class PeppolPefE2ETests : TestBase
         SessionInvoice sessionInvoice = invoices.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
 
         // jeżeli faktura jeszcze jest w statusie „processing”, należy odświeżyć kilka razy zamiast jednego sleepa
-        if (sessionInvoice.Status.Code == StatusInvoiceProcessing)
+        if (sessionInvoice.Status.Code == InvoiceInSessionStatusCodeResponse.Processing)
         {
             await AsyncPollingUtils.PollAsync(
                description: "faktura gotowa (status inny niż processing)",
@@ -548,7 +543,7 @@ public class PeppolPefE2ETests : TestBase
                {
                    SessionInvoicesResponse inv = await KsefClient.GetSessionInvoicesAsync(openSession.ReferenceNumber, providerToken, pageSize: 10);
                    SessionInvoice refreshed = inv.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
-                   return refreshed.Status.Code != StatusInvoiceProcessing;
+                   return refreshed.Status.Code != InvoiceInSessionStatusCodeResponse.Processing;
                },
                delay: TimeSpan.FromMilliseconds(SleepTime),
                maxAttempts: 5);

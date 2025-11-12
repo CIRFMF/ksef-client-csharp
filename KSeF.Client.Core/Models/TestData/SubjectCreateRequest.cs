@@ -19,12 +19,7 @@ namespace KSeF.Client.Core.Models.TestData
         public string Description { get; set; }
 
         /// <summary>Data utworzenia</summary>
-        public string CreatedDate { get; set; }
-
-        public void SetCreatedDate(DateTime createdDate)
-        {
-            CreatedDate = createdDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
-        }
+        public DateTimeOffset? CreatedDate { get; set; }
     }
 
     public sealed class SubjectSubunit

@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -15,6 +15,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSeF.Client.Core", "KSeF.Client.Core\KSeF.Client.Core.csproj", "{062608DE-A11F-4316-BE2D-C2AC4F1D3BD4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSeF.Client.Tests.CertTestApp", "KSeF.Client.Tests.CertTestApp\KSeF.Client.Tests.CertTestApp.csproj", "{0BD2C922-DB7D-4F24-8D68-8E186A32E020}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSeF.Client.Tests.PdfTestApp", "KSeF.Client.Tests.PdfTestApp\KSeF.Client.Tests.PdfTestApp.csproj", "{D73360BD-D88D-4CF2-876C-DDF33A97C36B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -50,6 +52,10 @@ Global
 		{0BD2C922-DB7D-4F24-8D68-8E186A32E020}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BD2C922-DB7D-4F24-8D68-8E186A32E020}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0BD2C922-DB7D-4F24-8D68-8E186A32E020}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D73360BD-D88D-4CF2-876C-DDF33A97C36B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D73360BD-D88D-4CF2-876C-DDF33A97C36B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D73360BD-D88D-4CF2-876C-DDF33A97C36B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D73360BD-D88D-4CF2-876C-DDF33A97C36B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

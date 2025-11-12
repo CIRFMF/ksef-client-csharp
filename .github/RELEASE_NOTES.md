@@ -1,5 +1,28 @@
 > Info: 🔧 zmienione • ➕ dodane • ➖ usunięte • 🔀 przeniesione
 
+## Changelog zmian – ## Wersja 2.0.0 RC5.7 
+
+### Nowe
+- **API Responses** — dodano zestaw klas reprezentujących odpowiedzi statusów operacji:
+  - `AuthenticationStatusCodeResponse`
+  - `CertificateStatusCodeResponse`
+  - `InvoiceExportStatusCodeResponse`
+  - `InvoiceInSessionStatusCodeResponse`
+  - `OperationStatusCodeResponse`
+- **Operation Status Codes** — dodano nowy kod statusu **550 – "OperationCancelled"**  
+
+### Zmodyfikowane
+- `BatchFilePartInfo` — pole `FileName` oznaczono jako **Obsolete** (planowane usunięcie w przyszłych wersjach).
+
+## Changelog zmian – ## Wersja 2.0.0 RC5.6 
+
+### Nowe
+- **PdfTestApp** ➕
+  - Dodano aplikację konsolową `KSeF.Client.Tests.PdfTestApp` do automatycznego generowania wizualizacji PDF faktur KSeF i dokumentów UPO.
+  - Obsługuje generowanie PDF zarówno dla faktur (`faktura`, `invoice`) jak i dokumentów UPO (`upo`).
+  - Automatyczna instalacja zależności: npm packages, Chromium (Playwright).
+  - Dokumentacja w README.md z instrukcjami instalacji i przykładami użycia.
+
 ## Changelog zmian – ## Wersja 2.0.0 RC5.5 
 
 ### Nowe

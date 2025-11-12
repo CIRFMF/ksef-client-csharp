@@ -16,7 +16,7 @@ public class KsefTokenE2ETests : TestBase
     public KsefTokenE2ETests()
     {
         Nip = MiscellaneousUtils.GetRandomNip();
-        AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, Nip)
+        AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, Nip)
                                           .GetAwaiter()
                                           .GetResult();
         AccessToken = authInfo.AccessToken.Token;
@@ -109,7 +109,7 @@ public class KsefTokenE2ETests : TestBase
     private async Task<AuthenticationOperationStatusResponse> AuthenticateWithKsefTokenAsync(string ksefToken, string nip)
     {
         // 1) Pobierz challenge i timestamp
-        AuthenticationChallengeResponse challenge = await KsefClient.GetAuthChallengeAsync(CancellationToken);
+        AuthenticationChallengeResponse challenge = await AuthorizationClient.GetAuthChallengeAsync(CancellationToken);
         long timestampMs = challenge.Timestamp.ToUnixTimeMilliseconds();
 
         // 2) Przygotuj "token|timestamp" i zaszyfruj RSA-OAEP SHA-256 zgodnie z wymaganiem API
@@ -131,7 +131,7 @@ public class KsefTokenE2ETests : TestBase
             AuthorizationPolicy = null
         };
 
-        SignatureResponse signature = await KsefClient.SubmitKsefTokenAuthRequestAsync(request, CancellationToken);
+        SignatureResponse signature = await AuthorizationClient.SubmitKsefTokenAuthRequestAsync(request, CancellationToken);
         Assert.False(string.IsNullOrWhiteSpace(signature.ReferenceNumber));
         Assert.False(string.IsNullOrWhiteSpace(signature.AuthenticationToken?.Token));
 
@@ -140,7 +140,7 @@ public class KsefTokenE2ETests : TestBase
         int statusAttempts = Math.Max(1, (int)(pollTimeout.TotalMilliseconds / SleepTime));
 
         AuthStatus status = await AsyncPollingUtils.PollAsync(
-            async () => await KsefClient.GetAuthStatusAsync(signature.ReferenceNumber, signature.AuthenticationToken.Token, CancellationToken),
+            async () => await AuthorizationClient.GetAuthStatusAsync(signature.ReferenceNumber, signature.AuthenticationToken.Token, CancellationToken),
             result => result is not null && result.Status?.Code == SuccessfulAuthStatusCode,
             delay: TimeSpan.FromMilliseconds(SleepTime),
             maxAttempts: statusAttempts,
@@ -149,7 +149,7 @@ public class KsefTokenE2ETests : TestBase
         Assert.Equal(SuccessfulAuthStatusCode, status.Status.Code);
 
         // 5) Pobierz access/refresh tokeny
-        AuthenticationOperationStatusResponse tokens = await KsefClient.GetAccessTokenAsync(signature.AuthenticationToken.Token, CancellationToken);
+        AuthenticationOperationStatusResponse tokens = await AuthorizationClient.GetAccessTokenAsync(signature.AuthenticationToken.Token, CancellationToken);
         return tokens;
     }
 

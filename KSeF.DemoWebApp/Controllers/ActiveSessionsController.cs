@@ -7,11 +7,11 @@ namespace WebApplication.Controllers;
 [ApiController]
 public class ActiveSessionsController : ControllerBase
 {
-    private readonly IKSeFClient ksefClient;
+    private readonly IActiveSessionsClient _activeSessionsClient;
 
-    public ActiveSessionsController(IKSeFClient ksefClient)
+    public ActiveSessionsController(IActiveSessionsClient activeSessionsClient)
     {
-        this.ksefClient = ksefClient;
+       _activeSessionsClient = activeSessionsClient;
     }
 
     /// <summary>
@@ -25,7 +25,7 @@ public class ActiveSessionsController : ControllerBase
         List<AuthenticationListItem> activeSessions = new List<AuthenticationListItem>();
         do
         {
-            AuthenticationListResponse response = await ksefClient.GetActiveSessions(accessToken, pageSize, continuationToken, cancellationToken);
+            AuthenticationListResponse response = await _activeSessionsClient.GetActiveSessions(accessToken, pageSize, continuationToken, cancellationToken);
             continuationToken = response.ContinuationToken;
             activeSessions.AddRange(response.Items);
         }
@@ -42,7 +42,7 @@ public class ActiveSessionsController : ControllerBase
     [HttpDelete("revoke-current-session")]
     public async Task<ActionResult> RevokeCurrentSessionAsync([FromQuery] string token, CancellationToken cancellationToken)
     {
-        await ksefClient.RevokeCurrentSessionAsync(token, cancellationToken);
+        await _activeSessionsClient.RevokeCurrentSessionAsync(token, cancellationToken);
         return NoContent();
     }
 
@@ -52,7 +52,7 @@ public class ActiveSessionsController : ControllerBase
     [HttpDelete("revoke-session")]
     public async Task<ActionResult> RevokeSessionAsync([FromQuery] string sessionReferenceNumber, [FromQuery] string accessToken, CancellationToken cancellationToken)
     {
-        await ksefClient.RevokeSessionAsync(sessionReferenceNumber, accessToken, cancellationToken);
+        await _activeSessionsClient.RevokeSessionAsync(sessionReferenceNumber, accessToken, cancellationToken);
         return NoContent();
     }
 }

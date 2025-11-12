@@ -1,16 +1,16 @@
 using KSeF.Client.Api.Builders.PersonPermissions;
-using KSeF.Client.Core.Models.Permissions.Person;
-using KSeF.Client.Core.Models.Permissions;
-using KSeF.Client.Tests.Utils;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
+using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
+using KSeF.Client.Core.Models.Permissions.Person;
+using KSeF.Client.Tests.Utils;
 
 namespace KSeF.Client.Tests.Core.E2E.Permissions.PersonPermissions;
 
 public class PersonPermissionE2ETests : TestBase
 {
     private const string PermissionDescription = "E2E test grant";
-    private const int OperationSuccessfulStatusCode = 200;
 
     private string accessToken = string.Empty;
     private GrantPermissionsPersonSubjectIdentifier Person { get; } = new();
@@ -19,7 +19,7 @@ public class PersonPermissionE2ETests : TestBase
     {
         // Arrange: uwierzytelnienie i przygotowanie danych testowych
         Client.Core.Models.Authorization.AuthenticationOperationStatusResponse auth = AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService)
+            .AuthenticateAsync(AuthorizationClient, SignatureService)
             .GetAwaiter().GetResult();
 
         accessToken = auth.AccessToken.Token;
@@ -91,7 +91,7 @@ public class PersonPermissionE2ETests : TestBase
         Assert.NotEmpty(revokeResult);
         Assert.Equal(searchAfterGrant.Permissions.Count, revokeResult.Count);
         Assert.All(revokeResult, r =>
-            Assert.True(r.Status.Code == OperationSuccessfulStatusCode,
+            Assert.True(r.Status.Code == OperationStatusCodeResponse.Success,
                 $"Operacja cofnięcia uprawnień nie powiodła się: {r.Status.Description}, szczegóły: [{string.Join(",", r.Status.Details ?? Array.Empty<string>())}]")
         );
 
@@ -198,7 +198,7 @@ public class PersonPermissionE2ETests : TestBase
             PermissionsOperationStatusResponse status =
                 await AsyncPollingUtils.PollAsync(
                     async () => await KsefClient.OperationsStatusAsync(revokeResponse.ReferenceNumber, accessToken),
-                    result => result is not null && result.Status is not null && result.Status.Code == OperationSuccessfulStatusCode,
+                    result => result is not null && result.Status is not null && result.Status.Code == OperationStatusCodeResponse.Success,
                     delay: TimeSpan.FromMilliseconds(SleepTime),
                     maxAttempts: 60,
                     cancellationToken: CancellationToken);

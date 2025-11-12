@@ -27,7 +27,7 @@ public class PersonalPermissionsPeselInNipContext_MyPermissionsE2ETests : TestBa
 
         // Właściciel uwierzytelnia się we własnym kontekście
         AuthenticationOperationStatusResponse ownerAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, contextNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, contextNip);
 
         // Nadaj uprawnienia dla osoby (PESEL) w kontekście NIP właściciela
         GrantPermissionsPersonSubjectIdentifier subject = new GrantPermissionsPersonSubjectIdentifier
@@ -61,7 +61,7 @@ public class PersonalPermissionsPeselInNipContext_MyPermissionsE2ETests : TestBa
                 .Build();
 
         AuthenticationOperationStatusResponse personAuth = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             contextNip,
             AuthenticationTokenContextIdentifierType.Nip,

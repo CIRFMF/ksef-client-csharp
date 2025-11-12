@@ -323,7 +323,6 @@ public sealed class RestClient : IRestClient
                     throw KsefRateLimitException.FromRetryAfterHeader(
                         rateLimitMessage,
                         retryAfterHeaderValue,
-                        apiErrorResponse.Exception?.ServiceCode,
                         apiErrorResponse);
                 }
             }
@@ -355,7 +354,7 @@ public sealed class RestClient : IRestClient
             {
                 ApiErrorResponse apiErrorResponse = JsonUtil.Deserialize<ApiErrorResponse>(responseBody);
                 string fullMessage = BuildErrorMessageFromDetails(apiErrorResponse);
-                throw new KsefApiException(fullMessage, responseMessage.StatusCode, apiErrorResponse?.Exception?.ServiceCode, apiErrorResponse);
+                throw new KsefApiException(fullMessage, responseMessage.StatusCode, apiErrorResponse);
             }
             catch (KsefApiException)
             {

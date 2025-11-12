@@ -1,4 +1,5 @@
 ﻿using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -9,7 +10,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.PersonPermissions;
 
 public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedPesel_E2ETests : TestBase
 {
-    private const int OperationSuccessfulStatusCode = 200;
 
     /// <summary>
     /// E2E: nadane uprawnienia (właściciel) w kontekście NIP z filtrowaniem po PESEL.
@@ -31,7 +31,7 @@ public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedPesel_E2ETests :
 
         // owner (nadawca == owner)
         AuthenticationOperationStatusResponse ownerAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
         string ownerAccessToken = ownerAuth.AccessToken.Token;
 
         // GRANT — nadajemy np. InvoiceRead osobie o PESEL
@@ -55,7 +55,7 @@ public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedPesel_E2ETests :
         PermissionsOperationStatusResponse grantStatus =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(grantOperation.ReferenceNumber, ownerAccessToken),
-                condition: r => r.Status.Code == OperationSuccessfulStatusCode,
+                condition: r => r.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam na nadanie uprawnienia (200)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,
@@ -116,7 +116,7 @@ public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedPesel_E2ETests :
         PermissionsOperationStatusResponse revokeStatus =
             await AsyncPollingUtils.PollAsync(
                 () => KsefClient.OperationsStatusAsync(revokeOperation.ReferenceNumber, ownerAccessToken),
-                r => r.Status.Code == OperationSuccessfulStatusCode,
+                r => r.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam na zakończenie REVOKE (200)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,

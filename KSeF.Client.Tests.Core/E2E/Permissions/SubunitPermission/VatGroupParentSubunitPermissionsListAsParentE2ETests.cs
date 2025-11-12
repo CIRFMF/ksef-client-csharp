@@ -2,6 +2,7 @@ using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Api.Builders.SubUnitPermissions;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -24,7 +25,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.SubunitPermissions;
 /// </summary>
 public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
 {
-    private const int OperationSuccessfulStatusCode = 200;
     private const int DefaultPageOffset = 0;
     private const int DefaultPageSize = 10;
 
@@ -54,11 +54,11 @@ public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
         // Assert: status operacji nadania uprawnień osobowych = 200
         PermissionsOperationStatusResponse personGrantStatus = await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(personGrantOperation.ReferenceNumber, _parentAccessToken),
-            condition: status => status?.Status?.Code == OperationSuccessfulStatusCode,
+            condition: status => status?.Status?.Code == OperationStatusCodeResponse.Success,
             delay: TimeSpan.FromSeconds(1),
             maxAttempts: 60,
             cancellationToken: CancellationToken);
-        Assert.Equal(OperationSuccessfulStatusCode, personGrantStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, personGrantStatus.Status.Code);
 
         // Act: uwierzytelnienie jako jednostka podrzędna w kontekście jednostki nadrzędnej (certyfikat osobisty)
         _subunitAccessToken = await AuthenticateAsSubunitAsync(_vatGroupNip, _subunitNip);
@@ -72,11 +72,11 @@ public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
         // Assert: status operacji nadania uprawnienia administratora = 200
         PermissionsOperationStatusResponse grantStatus = await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(grantResponse.ReferenceNumber, _subunitAccessToken),
-            condition: s => s?.Status?.Code == OperationSuccessfulStatusCode,
+            condition: s => s?.Status?.Code == OperationStatusCodeResponse.Success,
             delay: TimeSpan.FromSeconds(1),
             maxAttempts: 60,
             cancellationToken: CancellationToken);
-        Assert.Equal(OperationSuccessfulStatusCode, grantStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, grantStatus.Status.Code);
 
         // Act: jako jednostka nadrzędna pobierz listę uprawnień w jednostkach podrzędnych
         SubunitPermissionsQueryRequest query = new SubunitPermissionsQueryRequest
@@ -113,7 +113,7 @@ public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
         // Assert: wszystkie operacje cofnięcia zakończyły się powodzeniem
         Assert.NotNull(revokeStatuses);
         Assert.NotEmpty(revokeStatuses);
-        Assert.All(revokeStatuses, rs => Assert.Equal(OperationSuccessfulStatusCode, rs.Status.Code));
+        Assert.All(revokeStatuses, rs => Assert.Equal(OperationStatusCodeResponse.Success, rs.Status.Code));
 
         // Arrange/Act: sprzątanie danych testowych
         await RemoveSubjectAsync();
@@ -158,7 +158,7 @@ public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
     /// <returns>Access token.</returns>
     private async Task<string> AuthenticateAsync(string nip)
     {
-        AuthenticationOperationStatusResponse auth = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, nip);
+        AuthenticationOperationStatusResponse auth = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, nip);
         return auth.AccessToken.Token;
     }
 
@@ -178,7 +178,7 @@ public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
             commonName: "Anna Testowa - Subunit");
 
         AuthenticationOperationStatusResponse auth = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             unitNip,
             AuthenticationTokenContextIdentifierType.Nip,
@@ -256,7 +256,7 @@ public class VatGroupParentSubunitPermissionsListAsParentE2ETests : TestBase
         {
             PermissionsOperationStatusResponse status = await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(revokeOperation.ReferenceNumber, accessToken),
-                condition: s => s?.Status?.Code == OperationSuccessfulStatusCode,
+                condition: s => s?.Status?.Code == OperationStatusCodeResponse.Success,
                 delay: TimeSpan.FromSeconds(1),
                 maxAttempts: 60,
                 cancellationToken: CancellationToken);

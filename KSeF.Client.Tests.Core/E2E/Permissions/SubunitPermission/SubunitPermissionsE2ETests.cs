@@ -1,6 +1,7 @@
 using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Api.Builders.SubUnitPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -21,7 +22,6 @@ public class SubunitPermissionsE2ETests : TestBase
 {
     private readonly SubunitPermissionsScenarioE2EFixture _fixture;
 
-    private const int OperationSuccessfulStatusCode = 200;
     private const int DefaultPageOffset = 0;
     private const int DefaultPageSize = 10;
 
@@ -69,13 +69,13 @@ public class SubunitPermissionsE2ETests : TestBase
         // Polling do uzyskania statusu 200 
         PermissionsOperationStatusResponse grantOperationStatus = await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(personGrantOperation.ReferenceNumber, _unitAccessToken),
-            condition: status => status?.Status?.Code == OperationSuccessfulStatusCode,
+            condition: status => status?.Status?.Code == OperationStatusCodeResponse.Success,
             delay: TimeSpan.FromSeconds(1),
             maxAttempts: 60,
             cancellationToken: CancellationToken
         );
 
-        Assert.Equal(OperationSuccessfulStatusCode, grantOperationStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, grantOperationStatus.Status.Code);
         #endregion
 
         #region Uwierzytelnia w kontekście jednostki głównej jako jednostka podrzędna przy użyciu certyfikatu osobistego.
@@ -98,13 +98,13 @@ public class SubunitPermissionsE2ETests : TestBase
         // Polling statusu operacji nadania uprawnień jednostce podrzędnej
         PermissionsOperationStatusResponse grantSubunitStatus = await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(_fixture.GrantResponse.ReferenceNumber, _subunitAccessToken),
-            condition: status => status?.Status?.Code == OperationSuccessfulStatusCode,
+            condition: status => status?.Status?.Code == OperationStatusCodeResponse.Success,
             delay: TimeSpan.FromSeconds(1),
             maxAttempts: 60,
             cancellationToken: CancellationToken
         );
 
-        Assert.Equal(OperationSuccessfulStatusCode, grantSubunitStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, grantSubunitStatus.Status.Code);
         #endregion
 
         #region Wyszukaj uprawnienia nadane administratorowi jednostki podrzędnej
@@ -174,7 +174,7 @@ public class SubunitPermissionsE2ETests : TestBase
         Assert.NotEmpty(_fixture.RevokeStatusResults);
         Assert.Equal(_fixture.SearchResponse.Permissions.Count, _fixture.RevokeStatusResults.Count);
         Assert.All(_fixture.RevokeStatusResults, r =>
-            Assert.True(r.Status.Code == OperationSuccessfulStatusCode,
+            Assert.True(r.Status.Code == OperationStatusCodeResponse.Success,
                 $"Operacja cofnięcia uprawnień nie powiodła się: {r.Status.Description}, szczegóły: [{string.Join(",", r.Status.Details ?? Array.Empty<string>())}]")
         );
         #endregion
@@ -203,7 +203,7 @@ public class SubunitPermissionsE2ETests : TestBase
     private async Task<string> AuthenticateAsUnitAsync()
     {
         AuthenticationOperationStatusResponse authInfo = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             _fixture.Unit.Value);
 
@@ -223,7 +223,7 @@ public class SubunitPermissionsE2ETests : TestBase
             commonName: "Jan Testowy Certificate");
 
         AuthenticationOperationStatusResponse ownerAuthInfo = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             _fixture.Unit.Value,
             AuthenticationTokenContextIdentifierType.Nip,
@@ -327,7 +327,7 @@ public class SubunitPermissionsE2ETests : TestBase
         {
             PermissionsOperationStatusResponse revokeStatus = await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(revokeResponse.ReferenceNumber, _subunitAccessToken),
-                condition: status => status?.Status?.Code == OperationSuccessfulStatusCode,
+                condition: status => status?.Status?.Code == OperationStatusCodeResponse.Success,
                 delay: TimeSpan.FromSeconds(1),
                 maxAttempts: 60,
                 cancellationToken: CancellationToken

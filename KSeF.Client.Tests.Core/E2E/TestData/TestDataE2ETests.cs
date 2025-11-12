@@ -18,6 +18,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
         private const string VatGroupUnitRole = "VatGroupUnit";
         private const string LocalGovernmentUnitRole = "LocalGovernmentUnit";
         private const string EnforcementAuthorityRole = "EnforcementAuthority";
+        private const int MaxPollingAttempts = 30;
 
         /// <summary>
         /// Weryfikacja poprawności tworzenia i usuwania testowego podmiotu z jednostką podrzędną.
@@ -61,7 +62,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
 
             // Uwierzytelnienie jako podmiot główny
             AuthenticationOperationStatusResponse authOperationStatusResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 subjectNip);
 
@@ -72,7 +73,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                     && r.Roles is not null
                     && r.Roles.Any(role => role.Role == expectedRoleType),
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja przypisania ról po utworzeniu podmiotu głównego
@@ -95,7 +96,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 condition: r => r is not null
                     && r.Roles is not null,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja usunięcia ról podmiotu głównego
@@ -133,7 +134,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
 
             // Uwierzytelnienie jako organ egzekucyjny
             AuthenticationOperationStatusResponse authOperationStatusResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 subjectNip);
 
@@ -144,7 +145,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                     && r.Roles is not null
                     && r.Roles.Any(role => role.Role == EnforcementAuthorityRole),
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja przypisania roli EnforcementAuthority po utworzeniu
@@ -167,7 +168,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 condition: r => r is not null
                     && r.Roles is not null,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja usunięcia roli EnforcementAuthority
@@ -206,7 +207,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
 
             // Uwierzytelnienie jako utworzona osoba fizyczna
             AuthenticationOperationStatusResponse authOperationStatusResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 personNip);
 
@@ -217,7 +218,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                     && r.Roles is not null
                     && r.Roles.Any(role => role.Role == CourtBailiffRole),
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja przypisania roli CourtBailiff po utworzeniu
@@ -240,7 +241,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 condition: r => r is not null
                     && r.Roles is not null,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja usunięcia roli CourtBailiff wraz z osobą fizyczną
@@ -303,13 +304,28 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 serialNumber: authorizedUserNip,
                 commonName: "Paweł Testowy");
 
-            // Uwierzytelnienie jako uprawniony podmiotu w kontekście właściciela
-            AuthenticationOperationStatusResponse authOperationStatusResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
-                SignatureService,
-                ownerNip,
-                AuthenticationTokenContextIdentifierType.Nip,
-                authorizedUserCertificate);
+            // Uwierzytelnienie jako uprawniony podmiot w kontekście właściciela z pollingiem
+            AuthenticationOperationStatusResponse authOperationStatusResponse = await AsyncPollingUtils.PollAsync(
+                action: async () =>
+                {
+                    try
+                    {
+                        return await AuthenticationUtils.AuthenticateAsync(
+                            AuthorizationClient,
+                            SignatureService,
+                            ownerNip,
+                            AuthenticationTokenContextIdentifierType.Nip,
+                            authorizedUserCertificate);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                },
+                condition: authOperationStatusResponse => authOperationStatusResponse is not null,
+                delay: TimeSpan.FromMilliseconds(SleepTime),
+                maxAttempts: MaxPollingAttempts,
+                cancellationToken: CancellationToken);
 
             // Act - Pobranie wszystkich uprawnień uprawnionego podmiotu
             PersonalPermissionsQueryRequest permissionsQuery = new PersonalPermissionsQueryRequest();
@@ -322,7 +338,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                         && r.Permissions is not null
                         && r.Permissions.Count > 0,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja nadanych uprawnień
@@ -357,7 +373,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 condition: r => r is not null
                         && r.Permissions is not null,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             Assert.NotNull(revokedPermissions);
@@ -391,7 +407,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
 
             // Uwierzytelnienie podmiotu
             AuthenticationOperationStatusResponse authOperationStatusResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 subjectNip);
 
@@ -400,7 +416,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 action: () => KsefClient.GetAttachmentPermissionStatusAsync(authOperationStatusResponse.AccessToken.Token),
                 condition: r => r is not null && r.IsAttachmentAllowed == true,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja nadania uprawnienia
@@ -421,7 +437,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
                 action: () => KsefClient.GetAttachmentPermissionStatusAsync(authOperationStatusResponse.AccessToken.Token),
                 condition: r => r is not null && r.IsAttachmentAllowed == false,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
-                maxAttempts: 30,
+                maxAttempts: MaxPollingAttempts,
                 cancellationToken: CancellationToken);
 
             // Assert - Weryfikacja cofnięcia uprawnienia

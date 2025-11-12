@@ -1,7 +1,13 @@
 ﻿using KSeF.Client.DI;
+using KSeF.Client.Extensions;
 using Microsoft.AspNetCore.Http.Json;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
+CryptoConfig.AddAlgorithm(
+    typeof(Ecdsa256SignatureDescription),
+      "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256");
 
 WebApplicationBuilder builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder(args);
 
@@ -20,7 +26,7 @@ builder.Services.AddKSeFClient(options =>
 });
 
 // UWAGA: w aplikacji webowej używamy AddCryptographyClient do rejestracji CryptographyClient i powiązanych serwisów
-// tutaj z domyślnym delegatem pobierającym certyfikaty, zobacz dostępne parametry w dokumentacji metody rozszerzającej
+// tutaj z domyślnym DefaultCertificateFetcher pobierającym certyfikaty, zobacz dostępne parametry w dokumentacji metody rozszerzającej
 builder.Services.AddCryptographyClient();
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);

@@ -42,7 +42,7 @@ public class IncrementalInvoiceRetrievalE2ETests : TestBase
     {
         _sellerNip = MiscellaneousUtils.GetRandomNip();
         AuthenticationOperationStatusResponse authOperationStatusResponse = AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, _sellerNip)
+            .AuthenticateAsync(AuthorizationClient, SignatureService, _sellerNip)
             .GetAwaiter()
             .GetResult();
 

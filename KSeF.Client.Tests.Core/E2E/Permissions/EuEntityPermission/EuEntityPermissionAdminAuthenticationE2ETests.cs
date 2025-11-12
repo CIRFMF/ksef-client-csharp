@@ -1,5 +1,6 @@
 using KSeF.Client.Api.Builders.EuEntityPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.EUEntity;
@@ -16,7 +17,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermissions
     {
         private const string AdminSubjectName = "EU Admin Entity";
         private const string AdminPermissionDescription = "E2E EU Entity Admin Permission Test";
-        private const int SuccessStatusCode = 200;
 
         /// <summary>
         /// Test kompletnego scenariusza nadania uprawnień administracyjnych:
@@ -64,7 +64,7 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermissions
 
             // Uwierzytelnienie właściciela w kontekście NIP
             AuthenticationOperationStatusResponse ownerAuthResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 ownerNip,
                 AuthenticationTokenContextIdentifierType.Nip,
@@ -116,7 +116,7 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermissions
                 async () => await KsefClient.OperationsStatusAsync(grantOperationResponse.ReferenceNumber, ownerAccessToken),
                 status => status is not null &&
                          status.Status is not null &&
-                         status.Status.Code == SuccessStatusCode,
+                         status.Status.Code == OperationStatusCodeResponse.Success,
                 delay: TimeSpan.FromSeconds(1),
                 maxAttempts: 60,
                 cancellationToken: CancellationToken.None);
@@ -124,8 +124,8 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermissions
             Assert.NotNull(grantOperationStatus);
             Assert.NotNull(grantOperationStatus.Status);
             Assert.True(
-                SuccessStatusCode == grantOperationStatus.Status.Code,
-                $"Operacja nadania uprawnień powinna zakończyć się sukcesem (kod {SuccessStatusCode}), otrzymano {grantOperationStatus.Status.Code}. " +
+                OperationStatusCodeResponse.Success == grantOperationStatus.Status.Code,
+                $"Operacja nadania uprawnień powinna zakończyć się sukcesem (kod {OperationStatusCodeResponse.Success}), otrzymano {grantOperationStatus.Status.Code}. " +
                 $"Opis: {grantOperationStatus.Status.Description}"
             );
 
@@ -158,7 +158,7 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermissions
 
             // Uwierzytelnienie jako administrator w kontekście NipVatUe właściciela
             AuthenticationOperationStatusResponse euAdminAuthResponse = await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 ownerNipVatEu, 
                 AuthenticationTokenContextIdentifierType.NipVatUe,

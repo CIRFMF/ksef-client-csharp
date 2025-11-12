@@ -1,4 +1,5 @@
 using KSeF.Client.Core.Exceptions;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Sessions;
 using KSeF.Client.Core.Models.Sessions.BatchSession;
@@ -31,22 +32,13 @@ public class BatchTests : KsefIntegrationTestBase
     private const int EncryptionKeySize = 256; // bytes dla RSA
     private const int InitializationVectorSize = 16; // bytes
 
-
-    // Kody statusów sesji KSeF
-    private const int StatusCodeProcessing = 150;
-    private const int StatusCodeDecryptionError = 405;
-    private const int StatusCodeInvalidEncryptionKey = 415;
-    private const int StatusCodeExceededInvoiceLimit = 420;
-    private const int StatusCodeInvalidInitializationVector = 430;
-    private const int StatusCodeInvalidInvoices = 445;
-
     private string authenticatedNip;
     private string accessToken;
 
     public BatchTests()
     {
         authenticatedNip = MiscellaneousUtils.GetRandomNip();
-        accessToken = AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, authenticatedNip)
+        accessToken = AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, authenticatedNip)
             .GetAwaiter()
             .GetResult()
             .AccessToken.Token;
@@ -100,7 +92,7 @@ public class BatchTests : KsefIntegrationTestBase
             openSessionResponse.ReferenceNumber,
             accessToken);
 
-        Assert.True(sessionStatus.Status.Code != StatusCodeProcessing);
+        Assert.True(sessionStatus.Status.Code != BatchSessionCodeResponse.Processing);
         Assert.Equal(DefaultInvoiceCount, sessionStatus.SuccessfulInvoiceCount);
 
         SessionInvoicesResponse sessionInvoices = await BatchUtils.GetSessionInvoicesAsync(
@@ -168,7 +160,7 @@ public class BatchTests : KsefIntegrationTestBase
             accessToken);
 
         // Kod 445 Błąd weryfikacji, brak poprawnych faktur
-        Assert.True(sessionStatus.Status.Code == StatusCodeInvalidInvoices);
+        Assert.True(sessionStatus.Status.Code == BatchSessionCodeResponse.NoValidInvoices);
         Assert.Equal(DefaultInvoiceCount, sessionStatus.FailedInvoiceCount);
     }
 
@@ -220,7 +212,7 @@ public class BatchTests : KsefIntegrationTestBase
             accessToken);
 
         // Kod 420 Przekroczony limit faktur w sesji
-        Assert.Equal(StatusCodeExceededInvoiceLimit, sessionStatus.Status.Code);
+        Assert.Equal(BatchSessionCodeResponse.InvoiceLimitExceeded, sessionStatus.Status.Code);
     }
 
     /// <summary>
@@ -340,7 +332,7 @@ public class BatchTests : KsefIntegrationTestBase
                 maxAttempts: 360);
 
             Assert.NotNull(sessionStatus);
-            Assert.True(sessionStatus.Status.Code != StatusCodeProcessing);
+            Assert.True(sessionStatus.Status.Code != BatchSessionCodeResponse.Processing);
 
             int success = sessionStatus.SuccessfulInvoiceCount ?? 0;
             int failed = sessionStatus.FailedInvoiceCount ?? 0;
@@ -498,7 +490,7 @@ public class BatchTests : KsefIntegrationTestBase
             accessToken);
 
         // Kod 415 Błąd odszyfrowania dostarczonego klucza
-        Assert.Equal(StatusCodeInvalidEncryptionKey, sessionStatus.Status.Code);
+        Assert.Equal(BatchSessionCodeResponse.KeyDecryptionError, sessionStatus.Status.Code);
     }
 
     /// <summary>
@@ -559,7 +551,7 @@ public class BatchTests : KsefIntegrationTestBase
             accessToken);
 
         // Kod 405 Błąd weryfikacji poprawności dostarczonych elementów paczki
-        Assert.Equal(StatusCodeDecryptionError, sessionStatus.Status.Code);
+        Assert.Equal(BatchSessionCodeResponse.ValidationError, sessionStatus.Status.Code);
     }
 
     /// <summary>
@@ -625,7 +617,7 @@ public class BatchTests : KsefIntegrationTestBase
             accessToken);
 
         // Kod 430 Błąd dekompresji pierwotnego archiwum
-        Assert.Equal(StatusCodeInvalidInitializationVector, sessionStatus.Status.Code);
+        Assert.Equal(BatchSessionCodeResponse.ArchiveDecompressionError, sessionStatus.Status.Code);
     }
 
     /// <summary>

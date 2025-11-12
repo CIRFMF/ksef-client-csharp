@@ -70,6 +70,16 @@ internal class OpenBatchSessionRequestBuilderImpl
         return this;
     }
 
+    public IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(
+        IEnumerable<(string fileName, int ordinalNumber, long fileSize, string fileHash)> parts)
+    {
+        foreach ((string fileName, int ordinalNumber, long fileSize, string fileHash) part in parts)
+        {
+            AddBatchFilePart(part.fileName, part.ordinalNumber, part.fileSize, part.fileHash);
+        }
+        return this;
+    }
+    
     public IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(string fileName, int ordinalNumber, long fileSize, string fileHash)
     {
         if (string.IsNullOrWhiteSpace(fileName) || ordinalNumber < 0 || fileSize < 0 || string.IsNullOrWhiteSpace(fileHash))

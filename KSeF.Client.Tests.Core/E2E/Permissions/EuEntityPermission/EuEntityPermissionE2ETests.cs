@@ -1,10 +1,12 @@
 using KSeF.Client.Api.Builders.EuEntityPermissions;
-using KSeF.Client.Core.Models.Permissions.EUEntity;
-using KSeF.Client.Tests.Utils;
-using KSeF.Client.Core.Models.Permissions;
-using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.Authorization;
+using KSeF.Client.Core.Models.Permissions;
+using KSeF.Client.Core.Models.Permissions.EUEntity;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
+using KSeF.Client.Tests.Utils;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermissions;
 
@@ -22,13 +24,15 @@ public class EuEntityPermissionE2ETests : TestBase
 
     public EuEntityPermissionE2ETests()
     {
-        TestFixture = new EuEntityPermissionScenarioE2EFixture();
         string nip = MiscellaneousUtils.GetRandomNip();
+        X509Certificate2 certificate = CertificateUtils.GetPersonalCertificate("A", "R", "TINPL", nip, "A R");
+        string fingerprint = GetFingerprintWithSeparators(certificate, "SHA256", "");
+        TestFixture = new EuEntityPermissionScenarioE2EFixture();
         TestFixture.NipVatUe = MiscellaneousUtils.GetRandomNipVatEU(nip, "CZ");
         AuthenticationOperationStatusResponse authOperationStatusResponse =
-            AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, nip).GetAwaiter().GetResult();
+            AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, nip).GetAwaiter().GetResult();
         accessToken = authOperationStatusResponse.AccessToken.Token;
-        TestFixture.EuEntity.Value = MiscellaneousUtils.GetRandomNipVatEU("CZ");
+        TestFixture.EuEntity.Value = fingerprint;
     }
 
     /// <summary>
@@ -165,5 +169,27 @@ public class EuEntityPermissionE2ETests : TestBase
 
             TestFixture.RevokeStatusResults.Add(status);
         }
+    }
+
+    /// <summary>
+    /// Zwraca fingerprint certyfikatu.
+    /// </summary>
+    /// <param name="certificate">Certyfikat typu X509Certificate2</param>
+    /// <param name="algorithmName">Algorytm certyfikatu</param>
+    /// <param name="separator">Separator fingerprint</param>
+    /// <returns></returns>
+    private string GetFingerprintWithSeparators(X509Certificate2 certificate, string algorithmName = "SHA256", string separator = ":")
+    {
+        byte[] raw = certificate.RawData;
+        using HashAlgorithm hash = algorithmName.ToUpperInvariant() switch
+        {
+            "SHA1" => SHA1.Create(),
+            "SHA256" => SHA256.Create(),
+            "SHA384" => SHA384.Create(),
+            "SHA512" => SHA512.Create(),
+            _ => HashAlgorithm.Create(algorithmName) ?? SHA256.Create()
+        };
+        byte[] digest = hash.ComputeHash(raw);
+        return string.Join(separator, digest.Select(b => b.ToString("X2"))); // wielkie litery
     }
 }

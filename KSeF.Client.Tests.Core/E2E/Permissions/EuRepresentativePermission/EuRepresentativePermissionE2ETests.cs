@@ -62,7 +62,7 @@ public class EuRepresentativePermissionE2ETests : TestBase
         // Działanie
         // 1) Uwierzytelnij właściciela (kontekst NIP)
         AuthenticationOperationStatusResponse ownerAuthInfo = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             ownerNip,
             AuthenticationTokenContextIdentifierType.Nip,
@@ -97,7 +97,7 @@ public class EuRepresentativePermissionE2ETests : TestBase
 
         // 4) Uwierzytelnij jako jednostka unijna (kontekst NipVatEu) używając certyfikatu osobistego jednostki unijnej
         AuthenticationOperationStatusResponse euAuthInfo = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             ownerNipVatEu, // nipvateu kontekstu
             AuthenticationTokenContextIdentifierType.NipVatUe, // typ identyfikatora kontekstu

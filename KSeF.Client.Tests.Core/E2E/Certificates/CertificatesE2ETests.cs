@@ -3,12 +3,14 @@ using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Api.Builders.X509Certificates;
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Certificates;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Tests.Utils;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -29,6 +31,10 @@ public class CertificatesE2ETests : TestBase
 
     private const string OrganizationName = "Spółka Testowa sp. z o.o.";
     private const string OrganizationCommonName = "Spółka Testowa";
+    private const int MaxDegreeOfParallelism = 5;
+    private const int PollDelayTimeInSeconds = 2;
+    private const string ExpectedCertificatesLimitExceededExceptionMessage = "25007: Osiągnięto limit dopuszczalnej liczby posiadanych certyfikatów.";
+    private const int CertificatesLimitTestPollAsyncMaxAttempts = 10;
 
     public CertificatesE2ETests()
     {
@@ -49,7 +55,7 @@ public class CertificatesE2ETests : TestBase
         string delegateNip = MiscellaneousUtils.GetRandomNip();
 
         //zaloguj jako właściciel 
-        AuthenticationOperationStatusResponse ownerAuthProcessResponse = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+        AuthenticationOperationStatusResponse ownerAuthProcessResponse = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
         string ownerAccessToken = ownerAuthProcessResponse.AccessToken.Token;
 
         #region nadanie uprawnień CredentialsManage
@@ -68,20 +74,20 @@ public class CertificatesE2ETests : TestBase
         PermissionsOperationStatusResponse operationStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(operationResult.ReferenceNumber, ownerAccessToken, CancellationToken),
-                result => result.Status.Code == 200,
+                result => result.Status.Code == OperationStatusCodeResponse.Success,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,
                 cancellationToken: CancellationToken);
 
         Assert.NotNull(operationStatus);
-        Assert.Equal(200, operationStatus.Status.Code);
+        Assert.Equal(OperationStatusCodeResponse.Success, operationStatus.Status.Code);
 
         #endregion nadanie uprawnień CredentialsManage
 
         #region zaloguj jako podmiot trzeci w kontekście właściciela
 
         AuthenticationOperationStatusResponse delegateAuthOperationStatusResponse =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, delegateNip, ownerNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, delegateNip, ownerNip);
         string delegateAccessToken = delegateAuthOperationStatusResponse.AccessToken.Token;
 
         #endregion
@@ -132,15 +138,15 @@ public class CertificatesE2ETests : TestBase
         CertificateEnrollmentStatusResponse certificateEnrollmentStatusResponse =
             await AsyncPollingUtils.PollAsync(
                 async () => await GetCertificateEnrollmentStatusAsync(delegateAccessToken),
-                result => result.Status.Code == StatusCompletedCode,
-                delay: TimeSpan.FromSeconds(5),
-                maxAttempts: 10,
+                result => result.Status.Code == CertificateStatusCodeResponse.RequestProcessedSuccessfully,
+                delay: TimeSpan.FromSeconds(MaxDegreeOfParallelism),
+                maxAttempts: CertificatesLimitTestPollAsyncMaxAttempts,
                 cancellationToken: CancellationToken);
 
         TestFixture.EnrollmentStatus = certificateEnrollmentStatusResponse;
 
         // Assert
-        Assert.Equal(StatusCompletedCode, TestFixture.EnrollmentStatus.Status.Code);
+        Assert.Equal(CertificateStatusCodeResponse.RequestProcessedSuccessfully, TestFixture.EnrollmentStatus.Status.Code);
         #endregion
 
         #region Pobierz zarejestrowany certyfikat
@@ -189,7 +195,7 @@ public class CertificatesE2ETests : TestBase
                 new PersonPermissionsQueryRequest { },
                 delegateAccessToken,
                 pageOffset: 0,
-                pageSize: 10,
+                pageSize: CertificatesLimitTestPollAsyncMaxAttempts,
                 CancellationToken);
 
         Assert.NotEmpty(permissions.Permissions);
@@ -199,7 +205,7 @@ public class CertificatesE2ETests : TestBase
         // Poll status operacji cofnięcia uprawnień do 200
         PermissionsOperationStatusResponse revokeOpStatus = await AsyncPollingUtils.PollAsync(
             async () => await KsefClient.OperationsStatusAsync(operationResponse.ReferenceNumber, ownerAccessToken, CancellationToken),
-            result => result.Status.Code == 200,
+            result => result.Status.Code == OperationStatusCodeResponse.Success,
             delay: TimeSpan.FromMilliseconds(SleepTime),
             maxAttempts: 30,
             cancellationToken: CancellationToken);
@@ -213,7 +219,7 @@ public class CertificatesE2ETests : TestBase
                     new PersonPermissionsQueryRequest { },
                     delegateAccessToken,
                     pageOffset: 0,
-                    pageSize: 10,
+                    pageSize: CertificatesLimitTestPollAsyncMaxAttempts,
                     CancellationToken),
             result => result.Permissions is { Count: 0 },
             delay: TimeSpan.FromMilliseconds(SleepTime),
@@ -288,106 +294,142 @@ public class CertificatesE2ETests : TestBase
         Assert.True(certificate.HasPrivateKey);
     }
 
+    /// <summary>
+    /// Sprawdzenie poprawnej komunikacji od API po przekroczeniu limitu wystawionych certyfikatów.
+    /// </summary>
     [Fact]
-    public async Task CertificatesLimits_WhenExtended_ShouldThrowException()
+    public async Task CertificatesLimits_WhenExceeded_ShouldThrowException()
     {
         // Arrange
-        // uwierzytelnienie
+        
+        // liczba równolegle wykonywanych wątków tak, żeby nie przekroczyć limitów serwera
+        int maxDegreeOfParallelism = MaxDegreeOfParallelism;
         string ownerNip = MiscellaneousUtils.GetRandomNip();
         AuthenticationOperationStatusResponse authenticationOperationStatusResponse =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
 
-        // pobieranie limitów
-        CertificateLimitResponse certsLimits = await KsefClient.GetCertificateLimitsAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+        // pobranie limitów
+        CertificateLimitResponse certsLimits =
+            await KsefClient.GetCertificateLimitsAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+
         Assert.NotNull(certsLimits);
         Assert.True(certsLimits.Certificate.Remaining > 0);
         Assert.True(certsLimits.Certificate.Limit > 0);
 
-        // Act - generowanie certyfikatów do wyczerpania limitu
-        int certificateMaxLimit = certsLimits.Certificate.Limit;
-        int currentIteration = 0;
-        List<CertificateEnrollmentStatusResponse> certificates = new List<CertificateEnrollmentStatusResponse>();
+        int toCreate = certsLimits.Certificate.Remaining;
+        ConcurrentBag<CertificateEnrollmentStatusResponse> certificates = new ConcurrentBag<CertificateEnrollmentStatusResponse>();
+
         try
         {
-            do
-            {
-                CertificateEnrollmentsInfoResponse enrollmentInfo = await KsefClient.GetCertificateEnrollmentDataAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
-                (string csr, string key) = CryptographyService.GenerateCsrWithRsa(enrollmentInfo, RSASignaturePadding.Pkcs1);
-                
-                SendCertificateEnrollmentRequest sendCertificateEnrollmentRequest = SendCertificateEnrollmentRequestBuilder
-                    .Create()
-                    .WithCertificateName($"{TestCertificateName} {currentIteration + 1}")
-                    .WithCertificateType(CertificateType.Authentication)
-                    .WithCsr(csr)
-                    .WithValidFrom(DateTimeOffset.UtcNow.AddDays(CertificateValidityDays))
-                    .Build();
-                CertificateEnrollmentResponse certificateEnrollmentResponse = await KsefClient
-                    .SendCertificateEnrollmentAsync(sendCertificateEnrollmentRequest, authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+            // Act – równoległe generowanie certyfikatów do wyczerpania limitu
+            IEnumerable<int> range = Enumerable.Range(0, toCreate);
 
-                CertificateEnrollmentStatusResponse certificate =
-                    await AsyncPollingUtils.PollAsync(
-                    action: async () => await KsefClient.GetCertificateEnrollmentStatusAsync(
-                            certificateEnrollmentResponse.ReferenceNumber,
+            await Parallel.ForEachAsync(
+                range,
+                        new ParallelOptions
+                        {
+                            CancellationToken = CancellationToken,
+                            MaxDegreeOfParallelism = maxDegreeOfParallelism
+                        },
+                        async (i, cancellationToken) =>
+                        {
+                            // pobierz data do CSR
+                            CertificateEnrollmentsInfoResponse enrollmentInfo =
+                                await KsefClient.GetCertificateEnrollmentDataAsync(
+                                    authenticationOperationStatusResponse.AccessToken.Token,
+                                    cancellationToken);
+
+                            (string csr, string key) = CryptographyService.GenerateCsrWithRsa(enrollmentInfo, RSASignaturePadding.Pkcs1);
+
+                            SendCertificateEnrollmentRequest sendCertificateEnrollmentRequest = SendCertificateEnrollmentRequestBuilder
+                                .Create()
+                                .WithCertificateName($"{TestCertificateName} {i + 1}")
+                                .WithCertificateType(CertificateType.Authentication)
+                                .WithCsr(csr)
+                                .WithValidFrom(DateTimeOffset.UtcNow.AddDays(CertificateValidityDays))
+                                .Build();
+
+                            CertificateEnrollmentResponse certificateEnrollmentResponse =
+                        await KsefClient.SendCertificateEnrollmentAsync(
+                            sendCertificateEnrollmentRequest,
                             authenticationOperationStatusResponse.AccessToken.Token,
-                            CancellationToken)
-                    ,
-                    condition:  certificate => certificate is not null &&
-                                !string.IsNullOrWhiteSpace(certificate.CertificateSerialNumber),
-                    delay: TimeSpan.FromSeconds(2),
-                    maxAttempts: 10,
-                    cancellationToken: CancellationToken);
+                            cancellationToken);
 
+                            Assert.NotNull(certificateEnrollmentResponse);
+                            Assert.False(string.IsNullOrWhiteSpace(certificateEnrollmentResponse.ReferenceNumber));
 
-                certificates.Add(certificate);
-                Assert.NotNull(certificateEnrollmentResponse);
-                Assert.False(string.IsNullOrWhiteSpace(certificateEnrollmentResponse.ReferenceNumber));
+                            // polling aż certyfikat będzie gotowy
+                            CertificateEnrollmentStatusResponse certificate =
+                                await AsyncPollingUtils.PollAsync(
+                                    action: async () => await KsefClient.GetCertificateEnrollmentStatusAsync(
+                                        certificateEnrollmentResponse.ReferenceNumber,
+                                        authenticationOperationStatusResponse.AccessToken.Token,
+                                        cancellationToken),
+                                    condition: c => c is not null &&
+                                                    !string.IsNullOrWhiteSpace(c.CertificateSerialNumber),
+                                    delay: TimeSpan.FromSeconds(PollDelayTimeInSeconds),
+                                    maxAttempts: CertificatesLimitTestPollAsyncMaxAttempts,
+                                    cancellationToken: cancellationToken);
 
-                // sprawdź limity ponownie
-                certsLimits = await KsefClient.GetCertificateLimitsAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
-                Assert.NotNull(certsLimits);
-                Assert.True(certsLimits.Certificate.Remaining >= 0);
-                Assert.True(certsLimits.Certificate.Limit > 0);
-            }
-            while (certsLimits.Certificate.Remaining > 0);
+                            Assert.NotNull(certificate);
+                            certificates.Add(certificate);
+                        });
 
-            // Assert - żądanie wystawienia certyfikatu przekraczające limit powinno zakończyć się wyjątkiem
+            // po równoległym wystawieniu limit powinien być 0
+            certsLimits = await KsefClient.GetCertificateLimitsAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+            Assert.NotNull(certsLimits);
+            Assert.Equal(0, certsLimits.Certificate.Remaining);
+
+            // Assert – próba przekroczenia limitu powinna rzucić wyjątkiem
             KsefApiException ksefApiException = await Assert.ThrowsAsync<KsefApiException>(async () =>
             {
-                CertificateEnrollmentsInfoResponse enrollmentInfo = await KsefClient.GetCertificateEnrollmentDataAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+                CertificateEnrollmentsInfoResponse enrollmentInfo = await KsefClient
+                    .GetCertificateEnrollmentDataAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+
                 (string csr, string key) = CryptographyService.GenerateCsrWithRsa(enrollmentInfo, RSASignaturePadding.Pkcs1);
-                
+
                 SendCertificateEnrollmentRequest sendCertificateEnrollmentRequest = SendCertificateEnrollmentRequestBuilder
                     .Create()
-                    .WithCertificateName($"Test certificate")
+                    .WithCertificateName("Test certificate")
                     .WithCertificateType(CertificateType.Authentication)
                     .WithCsr(csr)
                     .WithValidFrom(DateTimeOffset.UtcNow.AddDays(CertificateValidityDays))
                     .Build();
-                CertificateEnrollmentResponse certificateEnrollmentResponse = await KsefClient
-                    .SendCertificateEnrollmentAsync(sendCertificateEnrollmentRequest, authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
+
+                _ = await KsefClient.SendCertificateEnrollmentAsync(
+                    sendCertificateEnrollmentRequest,
+                    authenticationOperationStatusResponse.AccessToken.Token,
+                    CancellationToken);
             });
 
-            string expectedExceptionMessage = "25007: Osiągnięto limit dopuszczalnej liczby posiadanych certyfikatów.";
             Assert.NotNull(ksefApiException);
-            Assert.Equal(expectedExceptionMessage, ksefApiException.Message);
+            Assert.Equal(ExpectedCertificatesLimitExceededExceptionMessage, ksefApiException.Message);
         }
         finally
         {
-            // czyszczenie - odwołanie wystawionych certyfikatów
-            foreach (CertificateEnrollmentStatusResponse certificate in certificates)
-            {
-                await KsefClient.RevokeCertificateAsync(
-                    RevokeCertificateRequestBuilder
-                        .Create()
-                        .WithRevocationReason(CertificateRevocationReason.Superseded)
-                        .Build(),
-                    certificate.CertificateSerialNumber,
-                    authenticationOperationStatusResponse.AccessToken.Token,
-                    CancellationToken);
-            }
-            await Task.Delay(SleepTime);
+            // odwoływanie stworzonych certyfikatów
+            await Parallel.ForEachAsync(
+                certificates,
+                new ParallelOptions
+                {
+                    CancellationToken = CancellationToken,
+                    MaxDegreeOfParallelism = 4
+                },
+                async (certificate, cancellationToken) =>
+                {
+                    await KsefClient.RevokeCertificateAsync(
+                        RevokeCertificateRequestBuilder
+                            .Create()
+                            .WithRevocationReason(CertificateRevocationReason.Superseded)
+                            .Build(),
+                        certificate.CertificateSerialNumber,
+                        authenticationOperationStatusResponse.AccessToken.Token,
+                        cancellationToken);
+                });
 
-            // sprawdzenie limitów po odwołaniu certyfikatów - powinny wrócić do wartości początkowej
+            await Task.Delay(SleepTime, CancellationToken);
+
+            // sprawdzenie limitów po odwołaniu
             certsLimits = await KsefClient.GetCertificateLimitsAsync(authenticationOperationStatusResponse.AccessToken.Token, CancellationToken);
             Assert.NotNull(certsLimits);
             Assert.True(certsLimits.Certificate.Remaining > 0);
@@ -474,7 +516,7 @@ public class CertificatesE2ETests : TestBase
     /// </summary>
     /// <param name="accessToken"></param>
     /// <returns>Listę metadanych wystawionych certyfikatów.</returns>
-    private async Task<CertificateMetadataListResponse> GetCertificateMetadataListAsync(string accessToken, CertificateMetadataListRequest? requestPayload = null, int pageSize = 10, int pageOffset = 0)
+    private async Task<CertificateMetadataListResponse> GetCertificateMetadataListAsync(string accessToken, CertificateMetadataListRequest? requestPayload = null, int pageSize = CertificatesLimitTestPollAsyncMaxAttempts, int pageOffset = 0)
     {
         CertificateMetadataListResponse certificateMetadataListResponse = await KsefClient
             .GetCertificateMetadataListAsync(accessToken, requestPayload, pageSize, pageOffset, CancellationToken);

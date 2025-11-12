@@ -32,17 +32,14 @@ namespace KSeF.Client.Core.Exceptions
         /// <param name="message">Szczegółowy komunikat wyjątku.</param>
         /// <param name="retryAfterSeconds">Opóźnienie ponawiania w sekundach z nagłówka Retry-After.</param>
         /// <param name="retryAfterDate">Data ponawiania z nagłówka Retry-After.</param>
-        /// <param name="serviceCode">Opcjonalny kod usługi z API.</param>
         /// <param name="error">Opcjonalna strukturalna odpowiedź błędu z API.</param>
         public KsefRateLimitException(
             string message, 
             int? retryAfterSeconds = null, 
             DateTimeOffset? retryAfterDate = null,
-            string serviceCode = null, 
             ApiErrorResponse error = null)
             : base(message,
                    (HttpStatusCode)429,
-                   serviceCode,
                    error)
         {
             RetryAfterSeconds = retryAfterSeconds;
@@ -55,13 +52,11 @@ namespace KSeF.Client.Core.Exceptions
         /// </summary>
         /// <param name="message">Komunikat wyjątku.</param>
         /// <param name="retryAfterHeaderValue">Wartość nagłówka Retry-After.</param>
-        /// <param name="serviceCode">Opcjonalny kod usługi z API.</param>
         /// <param name="error">Opcjonalna strukturalna odpowiedź błędu z API.</param>
         /// <returns>Nowa instancja KsefRateLimitException.</returns>
         public static KsefRateLimitException FromRetryAfterHeader(
             string message,
             string retryAfterHeaderValue,
-            string serviceCode = null,
             ApiErrorResponse error = null)
         {
             int? retryAfterSeconds = null;
@@ -81,7 +76,7 @@ namespace KSeF.Client.Core.Exceptions
                 }
             }
 
-            return new KsefRateLimitException(message, retryAfterSeconds, retryAfterDate, serviceCode, error);
+            return new KsefRateLimitException(message, retryAfterSeconds, retryAfterDate, error);
         }
 
         /// <summary>

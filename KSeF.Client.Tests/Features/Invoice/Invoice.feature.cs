@@ -1,6 +1,7 @@
+using KSeF.Client.Core.Exceptions;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Tests.Utils;
-using KSeF.Client.Core.Exceptions;
 
 namespace KSeF.Client.Tests.Features
 {
@@ -15,7 +16,7 @@ namespace KSeF.Client.Tests.Features
         public InvoiceTests()
         {
             nip = MiscellaneousUtils.GetRandomNip();
-            Core.Models.Authorization.AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, nip).GetAwaiter().GetResult();
+            Core.Models.Authorization.AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, nip).GetAwaiter().GetResult();
             authToken = authInfo.AccessToken.Token;
         }
 
@@ -122,7 +123,7 @@ namespace KSeF.Client.Tests.Features
                     sendInvoiceResponse.ReferenceNumber,
                     authToken);
                 Assert.NotNull(sendInvoiceStatus);
-                Assert.Equal(410, sendInvoiceStatus.Status.Code); // CODE 410, Insufficient permissions
+                Assert.Equal(InvoiceInSessionStatusCodeResponse.InvalidPermissions, sendInvoiceStatus.Status.Code); // CODE 410, Insufficient permissions
             }
             finally
             {
@@ -162,7 +163,7 @@ namespace KSeF.Client.Tests.Features
                     sendInvoiceResponse.ReferenceNumber,
                     authToken);
                 Assert.NotNull(sendInvoiceStatus);
-                Assert.Equal(450, sendInvoiceStatus.Status.Code); // CODE 450, Semantic validation error of the invoice document
+                Assert.Equal(InvoiceInSessionStatusCodeResponse.InvoiceSemanticValidationError, sendInvoiceStatus.Status.Code); // CODE 450, Semantic validation error of the invoice document
             }
             finally
             {
@@ -202,7 +203,7 @@ namespace KSeF.Client.Tests.Features
                     sendInvoiceResponse.ReferenceNumber,
                     authToken);
                 Assert.NotNull(sendInvoiceStatus);
-                Assert.Equal(450, sendInvoiceStatus.Status.Code); // CODE 450, Semantic validation error of the invoice document
+                Assert.Equal(InvoiceInSessionStatusCodeResponse.InvoiceSemanticValidationError, sendInvoiceStatus.Status.Code); // CODE 450, Semantic validation error of the invoice document
             }
             finally
             {

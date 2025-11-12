@@ -1,5 +1,6 @@
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Core.Models.Permissions.IndirectEntity;
@@ -114,7 +115,7 @@ public partial class CredentialsRevokeTests
             await Task.Delay(1000);
 
             PermissionsOperationStatusResponse status = await PermissionsUtils.GetPermissionsOperationStatusAsync(client, operationResponse.ReferenceNumber!, token);
-            return status?.Status?.Code == 200;
+            return status?.Status?.Code == OperationStatusCodeResponse.Success;
         }
     }
 }

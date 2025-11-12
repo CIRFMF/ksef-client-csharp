@@ -16,7 +16,7 @@ Wymaga to autoryzacji przy pomocy osobistego tokena dostępu (Personal Access To
 
 Aby uzyskać dostęp do paczek z GitHub Packages, należy utworzyć Personal Access Token (PAT) z odpowiednimi uprawnieniami:
 
-Scieżka: GitHub -> Settings -> Developer settings -> Personal access tokens -> Tokens (classic) -> Generate new token -> Generate new token (classic)
+Ścieżka: GitHub -> Settings -> Developer settings -> Personal access tokens -> Tokens (classic) -> Generate new token -> Generate new token (classic)
 
 W sekcji **Select scopes** należy wybrać **read:packages** a następnie wygenerować i skopiować wartość tokena (będzie widoczna tylko raz)
 

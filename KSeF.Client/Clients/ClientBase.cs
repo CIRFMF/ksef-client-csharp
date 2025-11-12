@@ -82,4 +82,24 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
         return _restClient.ExecuteAsync(req, cancellationToken);
     }
+
+  
+    protected virtual Task<TResponse> ExecuteAsync<TResponse>(string relativeEndpoint, HttpMethod httpMethod, string accessToken, IDictionary<string, string> additionalHeaders, CancellationToken cancellationToken)
+    {
+        string path = _routeBuilder.Build(relativeEndpoint);
+        RestRequest req = RestRequest
+            .New(path, httpMethod)
+            .AddAccessToken(accessToken);
+
+        if (additionalHeaders is { Count: > 0 })
+        {
+            foreach (KeyValuePair<string, string> header in additionalHeaders)
+            {
+                req.AddHeader(header.Key, header.Value);
+            }
+        }
+
+        return _restClient.ExecuteAsync<TResponse>(req, cancellationToken);
+    }
+
 }

@@ -16,7 +16,7 @@ public class LimitsE2ETests : TestBase
         // 1. Uwierzytelnianie i uzyskanie tokenu dostępu
         AuthenticationOperationStatusResponse authorizationInfo =
             await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 MiscellaneousUtils.GetRandomNip());
         string accessToken = authorizationInfo.AccessToken.Token;
@@ -96,7 +96,7 @@ public class LimitsE2ETests : TestBase
         // 1. Uwierzytelnianie i uzyskanie tokenu dostępu
         AuthenticationOperationStatusResponse authorizationInfo =
             await AuthenticationUtils.AuthenticateAsync(
-                KsefClient,
+                AuthorizationClient,
                 SignatureService,
                 MiscellaneousUtils.GetRandomNip());
         string accessToken = authorizationInfo.AccessToken.Token;

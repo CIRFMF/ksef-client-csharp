@@ -1,5 +1,6 @@
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Interfaces.Services;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -15,12 +16,10 @@ namespace KSeF.Client.Tests.Core.E2E.OnlineSession;
 [Collection("OnlineSessionScenario")]
 public class OnlineSessionE2ETests : TestBase
 {
-    private const int SuccessfulSessionStatusCode = 200;
     private const SystemCode DefaultSystemCode = SystemCode.FA3;
     private const string DefaultSchemaVersion = "1-0E";
     private const string DefaultFormCodeValue = "FA";
     private const int SuccessfulInvoiceCountExpected = 1;
-    private const int SessionStatusCodeExpected = 100;
     private const int MaxRetries = 60;
 
     private string accessToken = string.Empty;
@@ -29,7 +28,7 @@ public class OnlineSessionE2ETests : TestBase
     public OnlineSessionE2ETests()
     {
         Nip = MiscellaneousUtils.GetRandomNip();
-        AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, Nip)
+        AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, Nip)
                                           .GetAwaiter()
                                           .GetResult();
         accessToken = authInfo.AccessToken.Token;
@@ -82,12 +81,11 @@ public class OnlineSessionE2ETests : TestBase
         Assert.Equal(SuccessfulInvoiceCountExpected, statusAfterSend.SuccessfulInvoiceCount);
         Assert.True(statusAfterSend.FailedInvoiceCount is null);
         Assert.Null(statusAfterSend.Upo);
-        Assert.Equal(SessionStatusCodeExpected, statusAfterSend.Status.Code);
         
         SessionInvoicesResponse invoices = await KsefClient.GetSessionInvoicesAsync(openSessionResponse.ReferenceNumber, accessToken);
 
         // 3) Autoryzacja drugiego nipu
-        AuthenticationOperationStatusResponse unauthorizedNipToken = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, authorizedNip);
+        AuthenticationOperationStatusResponse unauthorizedNipToken = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, authorizedNip);
 
         // 4) Próba pobrania faktur sesji przez nieautoryzowany nip
         await Assert.ThrowsAsync<KsefApiException>(async () =>
@@ -129,7 +127,7 @@ public class OnlineSessionE2ETests : TestBase
         Assert.Equal(SuccessfulInvoiceCountExpected, statusAfterSend.SuccessfulInvoiceCount);
         Assert.True(statusAfterSend.FailedInvoiceCount is null);
         Assert.Null(statusAfterSend.Upo);
-        Assert.Equal(SessionStatusCodeExpected, statusAfterSend.Status.Code);
+        Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusAfterSend.Status.Code);
         await Task.Delay(SleepTime);
 
         // 4) Zamknięcie sesji
@@ -146,7 +144,7 @@ public class OnlineSessionE2ETests : TestBase
         // 6) Status po zamknięciu (kod 200) i numer referencyjny UPO
         SessionStatusResponse statusAfterClose = await GetSessionStatusAsync(openSessionResponse.ReferenceNumber);
         Assert.NotNull(statusAfterClose);
-        Assert.Equal(SuccessfulSessionStatusCode, statusAfterClose.Status.Code);
+        Assert.Equal(InvoiceInSessionStatusCodeResponse.Success, statusAfterClose.Status.Code);
         string upoReferenceNumber = statusAfterClose.Upo.Pages.First().ReferenceNumber;
 
         // 7) pobranie UPO faktury z URL zawartego w metadanych faktury

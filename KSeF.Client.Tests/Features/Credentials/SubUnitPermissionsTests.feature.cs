@@ -1,5 +1,6 @@
 ﻿using KSeF.Client.Api.Builders.SubUnitPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Permissions;
@@ -31,7 +32,7 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
 
         // --- Etap 1: Wystawienie faktury przez wykonawcę dla przedszkola (jednostki podrzędnej) ---
         string invoiceCreatorAuthToken = (await AuthenticationUtils.AuthenticateAsync(
-            KsefClient, SignatureService, invoiceCreatorNip)).AccessToken.Token;
+            AuthorizationClient, SignatureService, invoiceCreatorNip)).AccessToken.Token;
 
         OpenOnlineSessionResponse openSessionResponse = await OnlineSessionUtils.OpenOnlineSessionAsync(
             KsefClient,
@@ -75,7 +76,7 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
 
         // --- Etap 2: Gmina nadaje uprawnienia dyrektorowi przedszkola do zarządzania uprawnieniami w kontekście przedszkola---
         string municipalOfficeAuthToken = (await AuthenticationUtils.AuthenticateAsync(
-            KsefClient, SignatureService, municipalOfficeNip)).AccessToken.Token;
+            AuthorizationClient, SignatureService, municipalOfficeNip)).AccessToken.Token;
 
         GrantPermissionsSubunitRequest grantSubUnitRequest = GrantSubunitPermissionsRequestBuilder
             .Create()
@@ -105,7 +106,7 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
 
         // --- Etap 3: dyrektor w kontekście przedszkola nadaje sobie prawo do odczytu faktur ---
         AuthenticationOperationStatusResponse kindergartenAuthResult = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             directorPesel,
             kindergartenId,
@@ -131,7 +132,7 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
                 async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient,grantPersonResponse.ReferenceNumber, kindergartenAuthToken),
                 status => status is not null &&
                          status.Status is not null &&
-                         status.Status.Code == 200,
+                         status.Status.Code == OperationStatusCodeResponse.Success,
                 delay: TimeSpan.FromSeconds(5),
                 maxAttempts: 60,
                 cancellationToken: CancellationToken.None);
@@ -140,7 +141,7 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
         Assert.Equal((int)200, grantPersonStatus.Status.Code);
 
         // --- Etap 4: Dyrektor przedszkola wyszukuje faktury ---
-        RefreshTokenResponse refreshedAccessTokenResponse = await KsefClient.RefreshAccessTokenAsync(kindergartenAuthResult.RefreshToken.Token);
+        RefreshTokenResponse refreshedAccessTokenResponse = await AuthorizationClient.RefreshAccessTokenAsync(kindergartenAuthResult.RefreshToken.Token);
         kindergartenAuthToken = refreshedAccessTokenResponse.AccessToken.Token;
 
         InvoiceQueryFilters invoiceQuery = new InvoiceQueryFilters

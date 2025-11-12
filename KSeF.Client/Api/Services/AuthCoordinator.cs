@@ -1,23 +1,24 @@
-using KSeF.Client.Core.Interfaces;
-using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Api.Builders.Auth;
-using System.Text;
-using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Interfaces;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
+using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
+using KSeF.Client.Core.Models.Authorization;
+using System.Text;
 
 namespace KSeF.Client.Api.Services;
 
 /// <inheritdoc />
 public class AuthCoordinator : IAuthCoordinator
 {
-    private readonly IKSeFClient _ksefClient;
+    private readonly IAuthorizationClient _authorizationClient;
 
     public AuthCoordinator(
-        IKSeFClient ksefClient
+        IAuthorizationClient authorizationClient
         )
     {
-        _ksefClient = ksefClient;
+        _authorizationClient = authorizationClient;
     }
 
     /// <inheritdoc />
@@ -31,11 +32,10 @@ public class AuthCoordinator : IAuthCoordinator
         CancellationToken cancellationToken = default)
     {
         // 1) Pobranie challenge i timestamp
-        AuthenticationChallengeResponse challengeResponse = await _ksefClient
+        AuthenticationChallengeResponse challengeResponse = await _authorizationClient
             .GetAuthChallengeAsync(cancellationToken);
 
         string challenge = challengeResponse.Challenge;
-        DateTimeOffset timestamp = challengeResponse.Timestamp;
 
         long timestampMs = challengeResponse.Timestamp.ToUnixTimeMilliseconds();
 
@@ -61,49 +61,24 @@ public class AuthCoordinator : IAuthCoordinator
             .WithEncryptedToken(encryptedToken);
 
         if (ipAddressPolicy != null)
+        {
             requestBuilder = requestBuilder.WithAuthorizationPolicy(ipAddressPolicy);
+        }
 
         AuthenticationKsefTokenRequest authKsefTokenRequest = requestBuilder.Build();
 
         // 5) Wysłanie do KSeF
-        SignatureResponse submissionResponse = await _ksefClient
+        SignatureResponse submissionResponse = await _authorizationClient
             .SubmitKsefTokenAuthRequestAsync(authKsefTokenRequest, cancellationToken);
 
         // 6) Odpytanie o gotowość tokenu
-        AuthStatus authStatus;
-        DateTime startTime = DateTime.UtcNow;
-        TimeSpan timeout = TimeSpan.FromMinutes(2);
+        await WaitForAuthCompletionAsync(submissionResponse, cancellationToken);
 
-        do
-        {
-            authStatus = await _ksefClient.GetAuthStatusAsync(submissionResponse.ReferenceNumber, submissionResponse.AuthenticationToken.Token, cancellationToken);
-            
-            if (authStatus.Status.Code == 400)
-            {
-                string exMsg = $"Polling: StatusCode={authStatus.Status.Code}, Description={authStatus.Status.Description}, Details={string.Join(", ", (authStatus.Status.Details ?? new List<string>()))}'";
-                throw new Exception(exMsg);
-            }
-
-            if (authStatus.Status.Code != 200 && !cancellationToken.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-            }
-        }
-        while (authStatus.Status.Code == 100
-            && !cancellationToken.IsCancellationRequested
-            && (DateTime.UtcNow - startTime) < timeout);
-
-        if (authStatus.Status.Code != 200)
-        {
-            string exMsg = $"Polling: StatusCode={authStatus.Status.Code}, Description={authStatus.Status.Description}, Details={string.Join(", ", (authStatus.Status.Details ?? new List<string>()))}'";
-            throw new Exception($"Brak tokena po 2 minutach. {exMsg}");
-        }
-        AuthenticationOperationStatusResponse accessTokenResponse = await _ksefClient.GetAccessTokenAsync(submissionResponse.AuthenticationToken.Token, cancellationToken);
+        AuthenticationOperationStatusResponse accessTokenResponse = await _authorizationClient.GetAccessTokenAsync(submissionResponse.AuthenticationToken.Token, cancellationToken);
 
         // 7) Zwróć token            
         return accessTokenResponse;
     }
-
 
     /// <inheritdoc />
     public async Task<AuthenticationOperationStatusResponse> AuthAsync(
@@ -116,7 +91,7 @@ public class AuthCoordinator : IAuthCoordinator
         bool verifyCertificateChain = false)
     {
         // 1) Challenge
-        AuthenticationChallengeResponse challengeResponse = await _ksefClient
+        AuthenticationChallengeResponse challengeResponse = await _authorizationClient
             .GetAuthChallengeAsync(cancellationToken);
 
         string challenge = challengeResponse.Challenge;
@@ -132,7 +107,7 @@ public class AuthCoordinator : IAuthCoordinator
         if (ipAddressPolicy != null)
         {
             authTokenRequest = authTokenRequest
-            .WithAuthorizationPolicy(ipAddressPolicy);               
+            .WithAuthorizationPolicy(ipAddressPolicy);
         }
 
         AuthenticationTokenRequest authorizeRequest = authTokenRequest.Build();
@@ -140,43 +115,88 @@ public class AuthCoordinator : IAuthCoordinator
         // 3) Serializacja do XML
         string unsignedXml = AuthenticationTokenRequestSerializer.SerializeToXmlString(authorizeRequest);
 
-        // 4) wywołanie mechanizmu podpisującego XML
+        // 4) Wywołanie mechanizmu podpisującego XML
         string signedXml = await xmlSigner.Invoke(unsignedXml);
 
-        // 5)// Przesłanie podpisanego XML do systemu KSeF
-        SignatureResponse authSubmission = await _ksefClient
+        // 5) Przesłanie podpisanego XML do systemu KSeF
+        SignatureResponse authSubmission = await _authorizationClient
             .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken);
 
         // 6) Odpytanie o gotowość tokenu
-        AuthStatus authStatus;
+        await WaitForAuthCompletionAsync(authSubmission, cancellationToken);
+
+        AuthenticationOperationStatusResponse accessTokenResponse = await _authorizationClient.GetAccessTokenAsync(authSubmission.AuthenticationToken.Token, cancellationToken);
+
+        // 7) Zwrócenie tokena           
+        return accessTokenResponse;
+    }
+
+    /// <summary>
+    /// Oczekuje na zakończenie operacji uwierzytelnienia, sprawdzając status co sekundę.
+    /// </summary>
+    private async Task WaitForAuthCompletionAsync(
+        SignatureResponse authOperationInfo,
+        CancellationToken cancellationToken,
+        TimeSpan? timeout = null)
+    {
+        TimeSpan effectiveTimeout = timeout ?? TimeSpan.FromMinutes(2);
         DateTime startTime = DateTime.UtcNow;
-        TimeSpan timeout = TimeSpan.FromMinutes(2);
+        AuthStatus authStatus;
 
         do
         {
-            authStatus = await _ksefClient.GetAuthStatusAsync(authSubmission.ReferenceNumber, authSubmission.AuthenticationToken.Token, cancellationToken);
+            authStatus = await _authorizationClient.GetAuthStatusAsync(
+                authOperationInfo.ReferenceNumber,
+                authOperationInfo.AuthenticationToken.Token,
+                cancellationToken);
 
-            if (authStatus.Status.Code != 200 && !cancellationToken.IsCancellationRequested)
+            // (4xx) - błąd po stronie danych/żądania
+            if (authStatus.Status.Code >= AuthenticationStatusCodeResponse.BadRequest && authStatus.Status.Code < AuthenticationStatusCodeResponse.UnknownError)
+            {
+                string details = authStatus.Status.Details != null && authStatus.Status.Details.Any()
+                    ? string.Join(", ", authStatus.Status.Details)
+                    : "brak szczegółów";
+
+                throw new Exception(
+                    $"Błąd autoryzacji KSeF. " +
+                    $"Status: {authStatus.Status.Code}, " +
+                    $"Opis: {authStatus.Status.Description}, " +
+                    $"Szczegóły: {details}");
+            }
+
+            // Sukces - wyjście z pętli
+            if (authStatus.Status.Code == AuthenticationStatusCodeResponse.AuthenticationSuccess)
+            {
+                return;
+            }
+
+            // Status 100 (Processing) lub inne - czekamy przed kolejną próbą
+            if (!cancellationToken.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
             }
         }
-        while (authStatus.Status.Code != 200
+        while (authStatus.Status.Code != AuthenticationStatusCodeResponse.AuthenticationSuccess
             && !cancellationToken.IsCancellationRequested
-            && (DateTime.UtcNow - startTime) < timeout);
+            && (DateTime.UtcNow - startTime) < effectiveTimeout);
 
-        if (authStatus.Status.Code != 200)
+        // Timeout lub nieoczekiwany status
+        if (authStatus.Status.Code != AuthenticationStatusCodeResponse.AuthenticationSuccess)
         {
-            throw new Exception($"Timeout Uwierzytelniania: Brak tokena po 2 minutach. {authStatus.Status.Description}");
-        }
-        AuthenticationOperationStatusResponse accessTokenResponse = await _ksefClient.GetAccessTokenAsync(authSubmission.AuthenticationToken.Token, cancellationToken);
+            string details = authStatus.Status.Details != null && authStatus.Status.Details.Any()
+                ? string.Join(", ", authStatus.Status.Details)
+                : "brak szczegółów";
 
-        // 7) Zwróć token            
-        return accessTokenResponse;
+            throw new TimeoutException(
+                $"Timeout uwierzytelniania: Brak tokena po {effectiveTimeout.TotalSeconds}s. " +
+                $"Status: {authStatus.Status.Code}, " +
+                $"Opis: {authStatus.Status.Description}, " +
+                $"Szczegóły: {details}");
+        }
     }
 
     /// <inheritdoc />
     public Task<TokenInfo> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
-        => _ksefClient.RefreshAccessTokenAsync(refreshToken, cancellationToken)
+        => _authorizationClient.RefreshAccessTokenAsync(refreshToken, cancellationToken)
                          .ContinueWith(t => t.Result.AccessToken, cancellationToken);
 }

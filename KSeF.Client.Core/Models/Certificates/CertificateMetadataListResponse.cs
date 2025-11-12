@@ -18,6 +18,7 @@ namespace KSeF.Client.Core.Models.Certificates
         public CertificateSubjectIdentifier SubjectIdentifier { get; set; }
         public DateTimeOffset ValidFrom { get; set; }
         public DateTimeOffset ValidTo { get; set; }
-        public DateTimeOffset LastUseDate { get; set; }
+        public DateTimeOffset? LastUseDate { get; set; }
+        public DateTimeOffset RequestDate { get; set; }
     }
 }

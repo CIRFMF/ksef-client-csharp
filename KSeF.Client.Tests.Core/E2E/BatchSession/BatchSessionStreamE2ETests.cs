@@ -26,7 +26,7 @@ public class BatchSessionStreamE2ETests : TestBase
     {
         string nip = MiscellaneousUtils.GetRandomNip();
         Client.Core.Models.Authorization.AuthenticationOperationStatusResponse authOperationStatusResponse = AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, nip)
+            .AuthenticateAsync(AuthorizationClient, SignatureService, nip)
             .GetAwaiter().GetResult();
 
         accessToken = authOperationStatusResponse.AccessToken.Token;

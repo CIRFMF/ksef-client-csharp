@@ -44,7 +44,7 @@ internal class GetCertificateListRequestBuilderImpl : IGetCertificateListRequest
 
     public IGetCertificateListRequestBuilder WithCertificateType(CertificateType certificateType)
     {
-        _request.CertificateType = certificateType;
+        _request.Type = certificateType;
         return this;
     }
 

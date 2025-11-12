@@ -9,8 +9,8 @@ namespace KSeF.Client.Core.Models.Invoices
     }
     public enum AmountType
     {
-        Brutto,
-        Netto,
-        Vat
+        Brutto, // Gross
+        Netto,  // Net
+        Vat     // VAT
     }
 }

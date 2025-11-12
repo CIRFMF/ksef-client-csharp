@@ -1,5 +1,6 @@
 using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -19,7 +20,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.PersonPermissions;
 public class EnforcementOperationsNegativeE2ETests : TestBase
 {
     private const string PermissionDescription = "E2E negative grant EnforcementOperations";
-    private const int OperationSuccessfulStatusCode = 200;
 
     [Fact]
     public async Task GrantEnforcementOperations_InNotAllowedContext_E2E_FailsAndNotVisible()
@@ -29,7 +29,7 @@ public class EnforcementOperationsNegativeE2ETests : TestBase
         string granteeNip = MiscellaneousUtils.GetRandomNip();
 
         AuthenticationOperationStatusResponse authorizationInfo = await AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+            .AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
 
         string accessToken = authorizationInfo.AccessToken.Token;
 
@@ -54,14 +54,14 @@ public class EnforcementOperationsNegativeE2ETests : TestBase
         // Odczytywanie statusu operacji aż będzie różny od 200 (niepowodzenie)
         PermissionsOperationStatusResponse grantStatus = await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(grantResponse.ReferenceNumber, accessToken),
-            condition: s => s is not null && s.Status is not null && s.Status.Code != OperationSuccessfulStatusCode,
+            condition: s => s is not null && s.Status is not null && s.Status.Code != OperationStatusCodeResponse.Success,
             delay: TimeSpan.FromMilliseconds(SleepTime),
             maxAttempts: 60,
             cancellationToken: CancellationToken);
 
         Assert.NotNull(grantStatus);
         Assert.NotNull(grantStatus.Status);
-        Assert.NotEqual(OperationSuccessfulStatusCode, grantStatus.Status.Code);
+        Assert.NotEqual(OperationStatusCodeResponse.Success, grantStatus.Status.Code);
 
         // Potwierdzenie, że uprawnienie nie zostało nadane (nie występuje w wyszukiwaniu)
         PersonPermissionsQueryRequest query = new PersonPermissionsQueryRequest

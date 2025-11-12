@@ -1,5 +1,6 @@
 ﻿using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -11,7 +12,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.PersonPermissions;
 
 public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedNip_E2ETests : TestBase
 {
-    private const int OperationSuccessfulStatusCode = 200;
 
     /// <summary>
     /// E2E: „Nadane uprawnienia” (właściciel, kontekst NIP) z filtrowaniem po NIP uprawnionego.
@@ -52,7 +52,7 @@ public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedNip_E2ETests : T
 
         // Auth po stronie właściciela (kontekst NIP)
         AuthenticationOperationStatusResponse ownerAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
         string ownerAccessToken = ownerAuth.AccessToken.Token;
 
         // Grant (REAL API): persons/grants – uprawnienie InvoiceRead dla osoby identyfikowanej NIP
@@ -77,7 +77,7 @@ public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedNip_E2ETests : T
         PermissionsOperationStatusResponse grantStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(grantOp.ReferenceNumber, ownerAccessToken),
-                result => result is not null && result.Status is not null && result.Status.Code == OperationSuccessfulStatusCode,
+                result => result is not null && result.Status is not null && result.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam aż pojawi się wpis (Nadane/NIP uprawnionego)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 60,
@@ -142,7 +142,7 @@ public class PersonPermissions_OwnerNip_Granted_FilterAuthorizedNip_E2ETests : T
         PermissionsOperationStatusResponse revokeStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(revokeOp.ReferenceNumber, ownerAccessToken),
-                result => result is not null && result.Status is not null && result.Status.Code == OperationSuccessfulStatusCode,
+                result => result is not null && result.Status is not null && result.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Wait for PERSON revoke 200",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 60,

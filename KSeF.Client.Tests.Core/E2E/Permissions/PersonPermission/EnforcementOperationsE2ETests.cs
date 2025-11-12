@@ -1,5 +1,6 @@
 using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -16,7 +17,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.PersonPermissions;
 public class EnforcementOperationsE2ETests : TestBase
 {
     private const string PermissionDescription = "E2E grant EnforcementOperations";
-    private const int OperationSuccessfulStatusCode = 200;
 
     /// <summary>
     /// Scenariusz dla EnforcementAuthority:
@@ -37,7 +37,7 @@ public class EnforcementOperationsE2ETests : TestBase
         await CreateEnforcementAuthorityAsync(enforcementAuthorityNip);
 
         AuthenticationOperationStatusResponse authorizationInfo = await AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, enforcementAuthorityNip);
+            .AuthenticateAsync(AuthorizationClient, SignatureService, enforcementAuthorityNip);
 
         string accessToken = authorizationInfo.AccessToken.Token;
 
@@ -83,7 +83,7 @@ public class EnforcementOperationsE2ETests : TestBase
         Assert.NotEmpty(revokeStatuses);
         Assert.Equal(toRevoke.Count, revokeStatuses.Count);
         Assert.All(revokeStatuses, s =>
-            Assert.Equal(OperationSuccessfulStatusCode, s.Status.Code));
+            Assert.Equal(OperationStatusCodeResponse.Success, s.Status.Code));
 
         // Ponowne wyszukiwanie — aż uprawnienie zniknie
         PagedPermissionsResponse<PersonPermission> searchAfterRevoke = await AsyncPollingUtils.PollAsync(
@@ -131,7 +131,7 @@ public class EnforcementOperationsE2ETests : TestBase
         await CreateCourtBailiffAsync(bailiffNip, bailiffPesel);
 
         AuthenticationOperationStatusResponse auth = await AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService, bailiffNip);
+            .AuthenticateAsync(AuthorizationClient, SignatureService, bailiffNip);
 
         string accessToken = auth.AccessToken.Token;
 
@@ -177,7 +177,7 @@ public class EnforcementOperationsE2ETests : TestBase
         Assert.NotEmpty(revokeStatuses);
         Assert.Equal(toRevoke.Count, revokeStatuses.Count);
         Assert.All(revokeStatuses, s =>
-            Assert.Equal(OperationSuccessfulStatusCode, s.Status.Code));
+            Assert.Equal(OperationStatusCodeResponse.Success, s.Status.Code));
 
         // Ponowne wyszukiwanie — aż uprawnienie zniknie
         PagedPermissionsResponse<PersonPermission> searchAfterRevoke = await AsyncPollingUtils.PollAsync(
@@ -348,7 +348,7 @@ public class EnforcementOperationsE2ETests : TestBase
         {
             PermissionsOperationStatusResponse status = await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(revokeResponse.ReferenceNumber, accessToken),
-                condition: s => s is not null && s.Status is not null && s.Status.Code == OperationSuccessfulStatusCode,
+                condition: s => s is not null && s.Status is not null && s.Status.Code == OperationStatusCodeResponse.Success,
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 60,
                 cancellationToken: CancellationToken);

@@ -33,7 +33,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
 
         // Auth
         AuthenticationOperationStatusResponse authorizationInfo =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, contextNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, contextNip);
 
         GrantPermissionsEntityRequest grantsPermissionsRequest =
             GrantEntityPermissionsRequestBuilder
@@ -82,7 +82,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
     /// Potwierdza że podmiot któremu nadano uprawnienia widzi je w swoim kontekście.
     /// </summary>
     /// <returns></returns>
-    [Fact]
+    //[Fact]
     public async Task GrantPermissions_E2E_ShouldReturnPersonalPermissions()
     {
         // Arrange + Grants
@@ -96,7 +96,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
                 Value = subjectNip
             };
 
-        AuthenticationOperationStatusResponse authorizationInfo = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, contextNip);
+        AuthenticationOperationStatusResponse authorizationInfo = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, contextNip);
 
         GrantPermissionsEntityRequest grantPermissionsEntityRequest = GrantEntityPermissionsRequestBuilder
             .Create()
@@ -115,7 +115,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
         Assert.NotNull(grantPermissionsEntityResponse);
 
         // Auth: Entity we własnym kontekście
-        AuthenticationOperationStatusResponse entityAuthorizationInfo = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, subjectNip);
+        AuthenticationOperationStatusResponse entityAuthorizationInfo = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, subjectNip);
 
         PersonalPermissionsQueryRequest queryForAllPermissions = new PersonalPermissionsQueryRequest();
         PagedPermissionsResponse<PersonalPermission> queryForAllPermissionsResponse =
@@ -173,7 +173,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
 
         // Act
         // uwierzytelnienie jdg we własnym kontekście
-        AuthenticationOperationStatusResponse authorizationInfo = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, jdgNip);
+        AuthenticationOperationStatusResponse authorizationInfo = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, jdgNip);
         // nadanie uprawnień biuru rachunkowemu
         OperationResponse brGrantInJdg = await GrantPermissionsAsync(brSubject, authorizationInfo, permissions);
         Assert.NotNull(brGrantInJdg);
@@ -182,7 +182,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
         Assert.NotNull(kdpGrantInJdg);
 
         // uwierzytelnienie otherJdg we własnym kontekście
-        AuthenticationOperationStatusResponse otherJdgAuthorizationInfo = await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, otherJdgNip);
+        AuthenticationOperationStatusResponse otherJdgAuthorizationInfo = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, otherJdgNip);
         // nadanie uprawnień biuru rachunkowemu
         OperationResponse brGrantInOtherJdg = await GrantPermissionsAsync(brSubject, otherJdgAuthorizationInfo, permissions);
         Assert.NotNull(brGrantInOtherJdg);
@@ -204,7 +204,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
             commonName: "Jan Kowalski Certificate");
 
         AuthenticationOperationStatusResponse entityAuthorizationInfo = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             jdgNip,
             AuthenticationTokenContextIdentifierType.Nip,

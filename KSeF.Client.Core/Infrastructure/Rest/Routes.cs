@@ -45,5 +45,29 @@
             public const string RateLimits = "rate-limits";
             
         }
+
+        public static class ActiveSessions
+        {
+            public const string Session = "auth/sessions";
+            public const string CurrentSession = Session + "/current";
+        }
+
+        /// <summary>
+        /// Adresy endpointów dotyczących uwierzytelniania.
+        /// </summary>
+        public static class Authorization
+        {
+            private const string Prefix = "auth";
+            public const string Challenge = Prefix + "/challenge";
+            public const string XadesSignature = Prefix + "/xades-signature"; 
+            public const string KsefToken = Prefix + "/ksef-token";
+            public static string Status(string reference) => Prefix + "/" + reference;
+            public static class Token
+            {
+                private const string TokenPrefix = Prefix + "/token";
+                public const string Redeem = TokenPrefix + "/redeem";
+                public const string Refresh = TokenPrefix + "/refresh"; 
+            }
+        }
     }
 }

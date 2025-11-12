@@ -16,7 +16,7 @@ public class SignatureE2ETests : TestBase
         // Arrange
         string pesel = MiscellaneousUtils.GetRandomPesel();
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient.GetAuthChallengeAsync();
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient.GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
            .Create()
@@ -53,7 +53,7 @@ public class SignatureE2ETests : TestBase
         // Arrange
         string pesel = MiscellaneousUtils.GetRandomPesel();
 
-        AuthenticationChallengeResponse challengeResponse = await KsefClient.GetAuthChallengeAsync();
+        AuthenticationChallengeResponse challengeResponse = await AuthorizationClient.GetAuthChallengeAsync();
 
         AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
            .Create()
@@ -76,7 +76,7 @@ public class SignatureE2ETests : TestBase
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         // Act
-        SignatureResponse authOperationInfo = await KsefClient
+        SignatureResponse authOperationInfo = await AuthorizationClient
             .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
 
         // Assert

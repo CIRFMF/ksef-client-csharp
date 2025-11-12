@@ -109,6 +109,7 @@ namespace KSeF.Client.Core.Interfaces.Services
         /// Zwraca asynchronicznie metadane pliku: rozmiar i hash SHA256 dla strumienia bez buforowania całej zawartości w pamięci.
         /// </summary>
         /// <param name="fileStream">Strumień pliku.</param>
+        /// <param name="cancellationToken">Token anulowania</param>
         /// <returns><see cref="FileMetadata"/></returns>
         Task<FileMetadata> GetMetaDataAsync(Stream fileStream, CancellationToken cancellationToken = default);
 
@@ -147,6 +148,12 @@ namespace KSeF.Client.Core.Interfaces.Services
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
         Task ForceRefreshAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Metoda pozwalająca na ręczne ustawienie materiałów kryptograficznych.
+        /// Pomija mechanizm fetchera i odświeżania.
+        /// </summary>
+        void SetExternalMaterials(X509Certificate2 symmetricKeyCert, X509Certificate2 ksefTokenCert);
 
         /// <summary>
         /// Certyfikat używany do szyfrowania symetrycznego klucza AES.

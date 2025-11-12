@@ -14,6 +14,6 @@ namespace KSeF.Client.Core.Models.Sessions
 
         public int? FailedInvoiceCount { get; set; }
 
-        public DateTimeOffset ValidUntil { get; set; }
+        public DateTimeOffset? ValidUntil { get; set; }
     }
 }

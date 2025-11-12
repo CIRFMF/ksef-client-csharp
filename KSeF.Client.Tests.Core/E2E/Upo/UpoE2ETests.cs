@@ -25,7 +25,7 @@ public class UpoE2ETests : TestBase
     public UpoE2ETests()
     {
         nip = MiscellaneousUtils.GetRandomNip();
-        AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, nip)
+        AuthenticationOperationStatusResponse authInfo = AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, nip)
                                           .GetAwaiter()
                                           .GetResult();
         accessToken = authInfo.AccessToken.Token;

@@ -26,7 +26,7 @@ public class EuEntityAdminsListAsOwnerE2ETests : TestBase
 
         // Uwierzytelnij właściciela w kontekście NIP
         AuthenticationOperationStatusResponse ownerAuth = await AuthenticationUtils.AuthenticateAsync(
-            KsefClient,
+            AuthorizationClient,
             SignatureService,
             ownerNip);
 

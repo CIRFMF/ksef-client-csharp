@@ -6,6 +6,7 @@ using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
+using KSeF.Client.Core.Models.ApiResponses;
 
 namespace KSeF.Client.Tests.Core.E2E.Permissions.EntityPermissions;
 
@@ -20,7 +21,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EntityPermissions;
 public partial class EntityPermissionE2ETests : TestBase
 {
     private const string PermissionDescription = "E2E test grant";
-    private const int OperationSuccessfulStatusCode = 200;
 
     // Zamiast fixture: prywatne readonly pola
     private string accessToken = string.Empty;
@@ -29,7 +29,7 @@ public partial class EntityPermissionE2ETests : TestBase
     public EntityPermissionE2ETests()
     {
         AuthenticationOperationStatusResponse authOperationStatusResponse = AuthenticationUtils
-            .AuthenticateAsync(KsefClient, SignatureService)
+            .AuthenticateAsync(AuthorizationClient, SignatureService)
             .GetAwaiter().GetResult();
 
         accessToken = authOperationStatusResponse.AccessToken.Token;
@@ -82,7 +82,7 @@ public partial class EntityPermissionE2ETests : TestBase
         Assert.NotEmpty(revokeResult);
         Assert.Equal(searchAfterGrant.Permissions.Count, revokeResult.Count);
         Assert.All(revokeResult, r =>
-            Assert.True(r.Status.Code == OperationSuccessfulStatusCode,
+            Assert.True(r.Status.Code == OperationStatusCodeResponse.Success,
                 $"Operacja cofnięcia uprawnień nie powiodła się: {r.Status.Description}, szczegóły: [{string.Join(",", r.Status.Details ?? Array.Empty<string>())}]")
         );
 
@@ -156,7 +156,7 @@ public partial class EntityPermissionE2ETests : TestBase
             PermissionsOperationStatusResponse status =
                 await AsyncPollingUtils.PollAsync(
                     async () => await KsefClient.OperationsStatusAsync(revokeResponse.ReferenceNumber, accessToken),
-                    result => result.Status.Code == OperationSuccessfulStatusCode,
+                    result => result.Status.Code == OperationStatusCodeResponse.Success,
                     delay: TimeSpan.FromMilliseconds(SleepTime),
                     maxAttempts: 30,
                     cancellationToken: CancellationToken);

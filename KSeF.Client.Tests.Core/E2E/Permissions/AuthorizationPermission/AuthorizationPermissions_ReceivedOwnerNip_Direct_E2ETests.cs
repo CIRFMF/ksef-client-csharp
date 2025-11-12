@@ -1,5 +1,6 @@
 ﻿using KSeF.Client.Api.Builders.AuthorizationPermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Authorizations;
@@ -11,8 +12,6 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.AuthorizationPermissions;
 
 public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
 {
-    private const int OperationSuccessfulStatusCode = 200;
-
     /// <summary>
     /// E2E bez buildera: GRANT (podmiot nadający) → oczekiwanie na 200 → SEARCH Received (NIP właściciela) → asercje → REVOKE → oczekiwanie na 200.
     /// </summary>
@@ -23,7 +22,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         string ownerNip = MiscellaneousUtils.GetRandomNip();
 
         AuthenticationOperationStatusResponse grantorAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService);
         string grantorAccessToken = grantorAuth.AccessToken.Token;
 
         // Nadajemy uprawnienie Authorization(SelfInvoicing) podmiotowi o wskazanym NIP (grantor context).
@@ -46,7 +45,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         PermissionsOperationStatusResponse grantStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(grantOperation.ReferenceNumber, grantorAccessToken),
-                result => result.Status.Code == OperationSuccessfulStatusCode,
+                result => result.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam na nadanie uprawnienia (200)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,
@@ -56,7 +55,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         #region Act
         // Dla Received wyszukujemy „po stronie właściciela” (owner context).
         AuthenticationOperationStatusResponse ownerAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
         string ownerAccessToken = ownerAuth.AccessToken.Token;
 
         EntityAuthorizationsQueryRequest searchRequest = new EntityAuthorizationsQueryRequest
@@ -101,7 +100,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         PermissionsOperationStatusResponse revokeStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(revokeOperation.ReferenceNumber, grantorAccessToken),
-                result => result.Status.Code == OperationSuccessfulStatusCode,
+                result => result.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam na zakończenie REVOKE (200)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,
@@ -121,7 +120,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         string ownerNip = MiscellaneousUtils.GetRandomNip();
 
         AuthenticationOperationStatusResponse grantorAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService);
         string grantorAccessToken = grantorAuth.AccessToken.Token;
 
         GrantPermissionsAuthorizationRequest grantRequest =
@@ -142,7 +141,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         PermissionsOperationStatusResponse grantStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(grantOperation.ReferenceNumber, grantorAccessToken),
-                result => result.Status.Code == OperationSuccessfulStatusCode,
+                result => result.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam na nadanie uprawnienia (200)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,
@@ -151,7 +150,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
 
         #region Act
         AuthenticationOperationStatusResponse ownerAuth =
-            await AuthenticationUtils.AuthenticateAsync(KsefClient, SignatureService, ownerNip);
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, SignatureService, ownerNip);
         string ownerAccessToken = ownerAuth.AccessToken.Token;
 
         EntityAuthorizationsQueryRequest searchRequest =
@@ -190,7 +189,7 @@ public class AuthorizationPermissions_ReceivedOwnerNip_E2ETests : TestBase
         PermissionsOperationStatusResponse revokeStatus =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.OperationsStatusAsync(revokeOperation.ReferenceNumber, grantorAccessToken),
-                result => result.Status.Code == OperationSuccessfulStatusCode,
+                result => result.Status.Code == OperationStatusCodeResponse.Success,
                 description: "Czekam na zakończenie REVOKE (200)",
                 delay: TimeSpan.FromMilliseconds(SleepTime),
                 maxAttempts: 30,

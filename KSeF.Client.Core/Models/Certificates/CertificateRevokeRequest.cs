@@ -2,7 +2,7 @@ namespace KSeF.Client.Core.Models.Certificates
 {
     public class CertificateRevokeRequest
     {
-        public CertificateRevocationReason RevocationReason { get; set; }
+        public CertificateRevocationReason? RevocationReason { get; set; }
     }
     public enum CertificateRevocationReason
     {

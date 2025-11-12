@@ -14,11 +14,6 @@ namespace KSeF.Client.Core.Exceptions
         public HttpStatusCode StatusCode { get; }
 
         /// <summary>
-        /// Opcjonalny kod usługi z błędu API.
-        /// </summary>
-        public string ServiceCode { get; }
-
-        /// <summary>
         /// Opcjonalna odpowiedź błędu z API.
         /// </summary>
         public ApiErrorResponse Error { get; }
@@ -28,14 +23,12 @@ namespace KSeF.Client.Core.Exceptions
         /// </summary>
         /// <param name="message">Szczegółowy komunikat wyjątku.</param>
         /// <param name="statusCode">Kod stanu HTTP.</param>
-        /// <param name="serviceCode">Opcjonalny kod usługi z API.</param>
         /// <param name="error">Szczegóły błędu zwrócone przez API (opcjonalnie).</param>
         /// <param name="innerException">Wewnętrzny wyjątek, jeśli wystąpił (opcjonalnie).</param>
-        public KsefApiException(string message, HttpStatusCode statusCode, string serviceCode = null, ApiErrorResponse error = null, Exception innerException = null)
+        public KsefApiException(string message, HttpStatusCode statusCode, ApiErrorResponse error = null, Exception innerException = null)
             : base(message, innerException)
         {
             StatusCode = statusCode;
-            ServiceCode = serviceCode;
             Error = error;
         }
     }

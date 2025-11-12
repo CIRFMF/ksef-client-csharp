@@ -1,15 +1,22 @@
 using KSeF.Client.Api.Builders.Auth;
 using KSeF.Client.Api.Services;
+using KSeF.Client.Api.Services.Internal;
 using KSeF.Client.Clients;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.DI;
+using KSeF.Client.Extensions;
 using KSeF.Client.Tests.Utils;
 using Microsoft.Extensions.DependencyInjection;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+
+CryptoConfig.AddAlgorithm(
+            typeof(Ecdsa256SignatureDescription),
+              "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256");
 
 // Tryb wyjścia: screen (domyślnie) lub file
 string outputMode = ParseOutputMode(args);
@@ -25,16 +32,8 @@ services.AddKSeFClient(options =>
 
 // UWAGA! w testach nie używamy AddCryptographyClient tylko rejestrujemy ręcznie, bo on uruchamia HostedService w tle
 services.AddSingleton<ICryptographyClient, CryptographyClient>();
-services.AddSingleton<ICryptographyService, CryptographyService>(serviceProvider =>
-{
-    // Definicja domyślnego delegata
-    return new CryptographyService(async cancellationToken =>
-    {
-        using IServiceScope scope = serviceProvider.CreateScope();
-        ICryptographyClient cryptographyClient = scope.ServiceProvider.GetRequiredService<ICryptographyClient>();
-        return await cryptographyClient.GetPublicCertificatesAsync(cancellationToken);
-    });
-});
+services.AddSingleton<ICertificateFetcher, DefaultCertificateFetcher>();
+services.AddSingleton<ICryptographyService, CryptographyService>();
 // Rejestracja usługi hostowanej (Hosted Service) jako singleton na potrzeby testów
 services.AddSingleton<CryptographyWarmupHostedService>();
 
@@ -48,6 +47,7 @@ scope.ServiceProvider.GetRequiredService<CryptographyWarmupHostedService>()
            .StartAsync(CancellationToken.None).GetAwaiter().GetResult();
 
 IKSeFClient ksefClient = provider.GetRequiredService<IKSeFClient>();
+IAuthorizationClient authorizationClient = provider.GetRequiredService<IAuthorizationClient>();
 ISignatureService signatureService = provider.GetRequiredService<ISignatureService>();
 
 try
@@ -60,7 +60,7 @@ try
 
     // 2) Challenge
     Console.WriteLine("[2] Pobieranie wyzwania (challenge) z KSeF...");
-    AuthenticationChallengeResponse challengeResponse = await ksefClient.GetAuthChallengeAsync();
+    AuthenticationChallengeResponse challengeResponse = await authorizationClient.GetAuthChallengeAsync();
     Console.WriteLine($"    Challenge: {challengeResponse.Challenge}");
 
     // 3) Budowa AuthTokenRequest
@@ -120,7 +120,7 @@ try
 
     // 7) Przesłanie podpisanego XML do KSeF
     Console.WriteLine("[7] Wysyłanie podpisanego XML do KSeF...");
-    SignatureResponse submission = await ksefClient.SubmitXadesAuthRequestAsync(signedXml, verifyCertificateChain: false);
+    SignatureResponse submission = await authorizationClient.SubmitXadesAuthRequestAsync(signedXml, verifyCertificateChain: false);
     Console.WriteLine($"    ReferenceNumber: {submission.ReferenceNumber}");
 
     // 8) Odpytanie o status
@@ -130,7 +130,7 @@ try
     AuthStatus status;
     do
     {
-        status = await ksefClient.GetAuthStatusAsync(submission.ReferenceNumber, submission.AuthenticationToken.Token);
+        status = await authorizationClient.GetAuthStatusAsync(submission.ReferenceNumber, submission.AuthenticationToken.Token);
         Console.WriteLine($"      Status: {status.Status.Code} - {status.Status.Description} | upłynęło: {DateTime.UtcNow - startTime:mm\\:ss}");
         if (status.Status.Code != 200)
         {
@@ -148,7 +148,7 @@ try
 
     // 9) Pobranie access token
     Console.WriteLine("[9] Pobieranie access token...");
-    AuthenticationOperationStatusResponse tokenResponse = await ksefClient.GetAccessTokenAsync(submission.AuthenticationToken.Token);
+    AuthenticationOperationStatusResponse tokenResponse = await authorizationClient.GetAccessTokenAsync(submission.AuthenticationToken.Token);
 
     string accessToken = tokenResponse.AccessToken?.Token ?? string.Empty;
     string refreshToken = tokenResponse.RefreshToken?.Token ?? string.Empty;
