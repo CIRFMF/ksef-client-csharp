@@ -1,200 +1,211 @@
 using KSeF.Client.Api.Builders.Auth;
 using KSeF.Client.Api.Services;
-using KSeF.Client.Api.Services.Internal;
 using KSeF.Client.Clients;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.DI;
-using KSeF.Client.Extensions;
 using KSeF.Client.Tests.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-CryptographyConfigInitializer.EnsureInitialized();
+namespace KSeF.Client.Tests.CertTestApp;
 
-// Tryb wyjścia: screen (domyślnie) lub file
-string outputMode = ParseOutputMode(args);
-Console.WriteLine("KSeF.Client.Tests.CertTestApp – demonstracja procesu uwierzytelnienia XAdES");
-Console.WriteLine($"Tryb wyjścia: {outputMode}");
-
-// 0) DI i konfiguracja klienta
-ServiceCollection services = new();
-services.AddKSeFClient(options =>
+/// <summary>
+/// XAdES Certificate Authentication Demonstration
+/// Uses certificate with XAdES signature for authentication
+/// </summary>
+public class Program
 {
-    options.BaseUrl = KsefEnvironmentsUris.TEST;
-});
+    //const string CERTIFICATE_FILE_PATH = "C:\\Users\\jesper.madsen\\Desktop\\test_cert.p12"; // <--- CHANGE THIS
+    //const string CERTIFICATE_PASSWORD = "6XpGo+9M:SNi"; // <--- CHANGE THIS
 
-// UWAGA! w testach nie używamy AddCryptographyClient tylko rejestrujemy ręcznie, bo on uruchamia HostedService w tle
-services.AddSingleton<ICryptographyClient, CryptographyClient>();
-services.AddSingleton<ICertificateFetcher, DefaultCertificateFetcher>();
-services.AddSingleton<ICryptographyService, CryptographyService>();
-// Rejestracja usługi hostowanej (Hosted Service) jako singleton na potrzeby testów
-services.AddSingleton<CryptographyWarmupHostedService>();
+    private const string CERTIFICATE_FILE_PATH = "C:\\Users\\jesper.madsen\\Desktop\\NemHandel_eDelivery.p12";
+    private const string CERTIFICATE_PASSWORD = "ICKse5qJx4v-"; // <--- CHANGE THIS
 
-ServiceProvider provider = services.BuildServiceProvider();
+    private const string NipNumber = "5272689745";
+    //const string NipNumber = "5250001003";
 
-using IServiceScope scope = provider.CreateScope();
-
-// opcjonalne: inicjalizacja lub inne czynności startowe
-// Uruchomienie usługi hostowanej w trybie blokującym (domyślnym) na potrzeby testów
-scope.ServiceProvider.GetRequiredService<CryptographyWarmupHostedService>()
-           .StartAsync(CancellationToken.None).GetAwaiter().GetResult();
-
-IKSeFClient ksefClient = provider.GetRequiredService<IKSeFClient>();
-IAuthorizationClient authorizationClient = provider.GetRequiredService<IAuthorizationClient>();
-
-try
-{
-    // 1) NIP (z parametru lub losowy)
-    Console.WriteLine("[1] Przygotowanie NIP...");
-    string nipArg = ParseNip(args);
-    string nip = string.IsNullOrWhiteSpace(nipArg) ? MiscellaneousUtils.GetRandomNip() : nipArg.Trim();
-    Console.WriteLine($"    NIP: {nip} {(string.IsNullOrWhiteSpace(nipArg) ? "(losowy)" : "(z parametru)")}");
-
-    // 2) Challenge
-    Console.WriteLine("[2] Pobieranie wyzwania (challenge) z KSeF...");
-    AuthenticationChallengeResponse challengeResponse = await authorizationClient.GetAuthChallengeAsync().ConfigureAwait(false);
-    Console.WriteLine($"    Challenge: {challengeResponse.Challenge}");
-
-    // 3) Budowa AuthTokenRequest
-    Console.WriteLine("[3] Budowanie AuthTokenRequest (builder)...");
-    AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
-        .Create()
-        .WithChallenge(challengeResponse.Challenge)
-        .WithContext(AuthenticationTokenContextIdentifierType.Nip, nip)
-        .WithIdentifierType(AuthenticationTokenSubjectIdentifierTypeEnum.CertificateSubject)
-        .Build();
-
-    // 4) Serializacja do XML
-    Console.WriteLine("[4] Serializacja żądania do XML (unsigned)...");
-    string unsignedXml = AuthenticationTokenRequestSerializer.SerializeToXmlString(authTokenRequest);
-    PrintXmlToConsole(unsignedXml, "XML przed podpisem");
-
-    // 5) Samopodpisany certyfikat do podpisu XAdES
-    Console.WriteLine("[5] Generowanie samopodpisanego certyfikatu testowego (Utils)...");
-    X509Certificate2 certificate = CertificateUtils.GetPersonalCertificate("A", "R", "TINPL", nip, "A R");
-    Console.WriteLine($"    Certyfikat: {certificate.Subject}");
-
-    // (5a) Zapis certyfikatu gdy tryb file
-    // Eksportowanie: PFX (z kluczem prywatnym) oraz CER (część publiczna)
-    string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
-    if (outputMode.Equals("file", StringComparison.OrdinalIgnoreCase))
+    public static async Task Main(string[] args)
     {
-        string certPfxPath = Path.Combine(Environment.CurrentDirectory, $"cert-{timestamp}.pfx");
-        string certCerPath = Path.Combine(Environment.CurrentDirectory, $"cert-{timestamp}.cer");
+        // Output mode: screen (default) or file
+        string outputMode = ParseOutputMode(args);
+        Console.WriteLine("KSeF.Client.Tests.CertTestApp – XAdES authentication process demonstration");
+        Console.WriteLine($"Output mode: {outputMode}");
 
-        byte[] pfxBytes = certificate.Export(X509ContentType.Pfx, string.Empty);
-        byte[] cerBytes = certificate.Export(X509ContentType.Cert);
-
-        await File.WriteAllBytesAsync(certPfxPath, pfxBytes).ConfigureAwait(false);
-        await File.WriteAllBytesAsync(certCerPath, cerBytes).ConfigureAwait(false);
-
-        Console.WriteLine($"    Zapisano certyfikat PFX: {certPfxPath}");
-        Console.WriteLine($"    Zapisano certyfikat CER: {certCerPath}");
-    }
-
-    // 6) Podpis XAdES
-    Console.WriteLine("[6] Podpisywanie XML (XAdES)...");
-    string signedXml = SignatureService.Sign(unsignedXml, certificate);
-
-    // Tryb wyjścia:
-    // - file: zapis do pliku (bez wyświetlania XML w konsoli)
-    // - screen lub pusty: wyświetlenie XML w konsoli (bez zapisu do pliku)
-    if (outputMode.Equals("file", StringComparison.OrdinalIgnoreCase))
-    {
-        string filePath = Path.Combine(Environment.CurrentDirectory, $"signed-auth-{timestamp}.xml");
-        await File.WriteAllTextAsync(filePath, signedXml, Encoding.UTF8).ConfigureAwait(false);
-        Console.WriteLine($"Zapisano podpisany XML: {filePath}");
-    }
-    else
-    {
-        PrintXmlToConsole(signedXml, "XML po podpisie (XAdES)");
-    }
-
-    // 7) Przesłanie podpisanego XML do KSeF
-    Console.WriteLine("[7] Wysyłanie podpisanego XML do KSeF...");
-    SignatureResponse submission = await authorizationClient.SubmitXadesAuthRequestAsync(signedXml, verifyCertificateChain: false).ConfigureAwait(false);
-    Console.WriteLine($"    ReferenceNumber: {submission.ReferenceNumber}");
-
-    // 8) Odpytanie o status
-    Console.WriteLine("[8] Odpytanie o status operacji uwierzytelnienia...");
-    DateTime startTime = DateTime.UtcNow;
-    TimeSpan timeout = TimeSpan.FromMinutes(2);
-    AuthStatus status;
-    do
-    {
-        status = await authorizationClient.GetAuthStatusAsync(submission.ReferenceNumber, submission.AuthenticationToken.Token).ConfigureAwait(false);
-        Console.WriteLine($"      Status: {status.Status.Code} - {status.Status.Description} | upłynęło: {DateTime.UtcNow - startTime:mm\\:ss}");
-        if (status.Status.Code != 200)
+        // 0) DI and client configuration
+        ServiceCollection services = new ServiceCollection();
+        services.AddKSeFClient(options =>
         {
-            await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
-        }
-    }
-    while (status.Status.Code == 100 && (DateTime.UtcNow - startTime) < timeout);
+            options.BaseUrl = KsefEnvironmentsUris.DEMO;
+        });
 
-    if (status.Status.Code != 200)
-    {
-        Console.WriteLine("[!] Uwierzytelnienie nie powiodło się lub przekroczono czas oczekiwania.");
-        Console.WriteLine($"    Kod: {status.Status.Code}, Opis: {status.Status.Description}");
-        return;
-    }
-
-    // 9) Pobranie access token
-    Console.WriteLine("[9] Pobieranie access token...");
-    AuthenticationOperationStatusResponse tokenResponse = await authorizationClient.GetAccessTokenAsync(submission.AuthenticationToken.Token).ConfigureAwait(false);
-
-    string accessToken = tokenResponse.AccessToken?.Token ?? string.Empty;
-    string refreshToken = tokenResponse.RefreshToken?.Token ?? string.Empty;
-    Console.WriteLine($"    AccessToken: {accessToken}");
-    Console.WriteLine($"    RefreshToken: {refreshToken}");
-
-    Console.WriteLine("Zakończono pomyślnie.");
-}
-catch (Exception ex)
-{
-    Console.WriteLine("Wystąpił błąd podczas procesu demonstracyjnego.");
-    Console.WriteLine(ex.ToString());
-}
-Console.ReadKey();
-
-static void PrintXmlToConsole(string xml, string title)
-{
-    Console.WriteLine($"----- {title} -----");
-    Console.WriteLine(xml);
-    Console.WriteLine($"----- KONIEC: {title} -----\n");
-}
-
-static string ParseOutputMode(string[] args)
-{
-    // akceptowane: --output screen|file
-    for (int i = 0; i < args.Length; i++)
-    {
-        if (string.Equals(args[i], "--output", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+        // NOTE! In tests we don't use AddCryptographyClient, instead we register manually, because it starts a HostedService in the background
+        services.AddSingleton<ICryptographyClient, CryptographyClient>();
+        services.AddSingleton<ICryptographyService, CryptographyService>(serviceProvider =>
         {
-            string value = args[i + 1].Trim();
-            if (value.Equals("file", StringComparison.OrdinalIgnoreCase))
+            // Default delegate definition
+            return new CryptographyService(async cancellationToken =>
             {
-                return "file";
+                using IServiceScope scope = serviceProvider.CreateScope();
+                ICryptographyClient cryptographyClient = scope.ServiceProvider.GetRequiredService<ICryptographyClient>();
+                return await cryptographyClient.GetPublicCertificatesAsync(cancellationToken);
+            });
+        });
+        // Register hosted service as singleton for testing purposes
+        services.AddSingleton<CryptographyWarmupHostedService>();
+
+        ServiceProvider provider = services.BuildServiceProvider();
+
+        using IServiceScope scope = provider.CreateScope();
+
+        // optional: initialization or other startup activities
+        // Start hosted service in blocking (default) mode for testing purposes
+        scope.ServiceProvider.GetRequiredService<CryptographyWarmupHostedService>()
+                   .StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        IKSeFClient ksefClient = provider.GetRequiredService<IKSeFClient>();
+        ISignatureService signatureService = provider.GetRequiredService<ISignatureService>();
+
+        try
+        {
+            // 1) NIP (from parameter or random)
+            Console.WriteLine("[1] Preparing NIP...");
+            string? nipArg = ParseNip(args);
+            string nip = NipNumber; // string.IsNullOrWhiteSpace(nipArg) ? MiscellaneousUtils.GetRandomNip() : nipArg.Trim();
+            Console.WriteLine($"    NIP: {nip} {(string.IsNullOrWhiteSpace(nipArg) ? "(random)" : "(from parameter)")}");
+
+            // 2) Challenge
+            Console.WriteLine("[2] Retrieving challenge from KSeF...");
+            AuthenticationChallengeResponse challengeResponse = await ksefClient.GetAuthChallengeAsync();
+            Console.WriteLine($"    Challenge: {challengeResponse.Challenge}");
+
+            // 3) Build AuthTokenRequest
+            Console.WriteLine("[3] Building AuthTokenRequest (builder)...");
+            // IMPORTANT: For EU certificates (non-Polish), use CertificateSubject
+            // For EU/Danish certificates, MUST use CertificateSubject (not CertificateFingerprint)
+            AuthenticationTokenRequest authTokenRequest = AuthTokenRequestBuilder
+                .Create()
+                .WithChallenge(challengeResponse.Challenge)
+                .WithContext(AuthenticationTokenContextIdentifierType.Nip, nip)
+                .WithIdentifierType(AuthenticationTokenSubjectIdentifierTypeEnum.CertificateFingerprint) // Danish certificate requires CertificateSubject
+                .Build();
+
+            // 4) Serialize to XML
+            Console.WriteLine("[4] Serializing request to XML (unsigned)...");
+            string unsignedXml = AuthenticationTokenRequestSerializer.SerializeToXmlString(authTokenRequest);
+            PrintXmlToConsole(unsignedXml, "XML before signature");
+
+            // 5) Load EU Certificate for XAdES signature <--- MODIFIED STEP
+            Console.WriteLine("[5] Loading external certificate from PFX/P12 file...");
+
+            // IMPORTANT: X509KeyStorageFlags.MachineKeySet can be used for server environments. 
+            // X509KeyStorageFlags.Exportable is useful for development.
+            X509Certificate2 certificate = new X509Certificate2(
+                CERTIFICATE_FILE_PATH,
+                CERTIFICATE_PASSWORD,
+                X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable
+            );
+            Console.WriteLine($"    Certificate Subject: {certificate.Subject}");
+            Console.WriteLine($"    Certificate Thumbprint: {certificate.Thumbprint}");
+            // 6) XAdES signature
+            Console.WriteLine("[6] Signing XML (XAdES)...");
+            string signedXml = signatureService.Sign(unsignedXml, certificate);
+
+            // Output mode
+            string timestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
+            if (outputMode.Equals("file", StringComparison.OrdinalIgnoreCase))
+            {
+                string filePath = Path.Combine(Environment.CurrentDirectory, $"signed-auth-{timestamp}.xml");
+                await File.WriteAllTextAsync(filePath, signedXml, Encoding.UTF8);
+                Console.WriteLine($"Saved signed XML: {filePath}");
+            }
+            else
+            {
+                PrintXmlToConsole(signedXml, "XML after signature (XAdES)");
             }
 
-            return "screen";
-        }
-    }
-    return "screen";
-}
+            // 7) Submit signed XML to KSeF
+            Console.WriteLine("[7] Sending signed XML to KSeF...");
+            SignatureResponse submission = await ksefClient.SubmitXadesAuthRequestAsync(signedXml, verifyCertificateChain: false);
+            Console.WriteLine($"    ReferenceNumber: {submission.ReferenceNumber}");
 
-static string ParseNip(string[] args)
-{
-    // akceptowane: --nip 1111111111
-    for (int i = 0; i < args.Length; i++)
-    {
-        if (string.Equals(args[i], "--nip", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-        {
-            return args[i + 1].Trim();
+            // 8) Poll for status
+            Console.WriteLine("[8] Polling for authentication operation status...");
+            DateTime startTime = DateTime.UtcNow;
+            TimeSpan timeout = TimeSpan.FromMinutes(2);
+            AuthStatus status;
+            do
+            {
+                status = await ksefClient.GetAuthStatusAsync(submission.ReferenceNumber, submission.AuthenticationToken.Token);
+                Console.WriteLine($"      Status: {status.Status.Code} - {status.Status.Description} | elapsed: {DateTime.UtcNow - startTime:mm\\:ss}");
+                if (status.Status.Code != 200)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1));
+                }
+            }
+            while (status.Status.Code == 100 && (DateTime.UtcNow - startTime) < timeout);
+
+            if (status.Status.Code != 200)
+            {
+                Console.WriteLine("[!] Authentication failed or timeout exceeded.");
+                Console.WriteLine($"    Code: {status.Status.Code}, Description: {status.Status.Description}");
+                return;
+            }
+
+            // 9) Retrieve access token
+            Console.WriteLine("[9] Retrieving access token...");
+            AuthenticationOperationStatusResponse tokenResponse = await ksefClient.GetAccessTokenAsync(submission.AuthenticationToken.Token);
+
+            string accessToken = tokenResponse.AccessToken?.Token ?? string.Empty;
+            string refreshToken = tokenResponse.RefreshToken?.Token ?? string.Empty;
+            Console.WriteLine($"    AccessToken: {accessToken}");
+            Console.WriteLine($"    RefreshToken: {refreshToken}");
+
+            Console.WriteLine("Completed successfully.");
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occurred during the demonstration process.");
+            Console.WriteLine(ex.ToString());
+        }
+        Console.ReadKey();
     }
-    return string.Empty;
+
+    private static void PrintXmlToConsole(string xml, string title)
+    {
+        Console.WriteLine($"----- {title} -----");
+        Console.WriteLine(xml);
+        Console.WriteLine($"----- END: {title} -----\n");
+    }
+
+    private static string ParseOutputMode(string[] args)
+    {
+        // accepted: --output screen|file
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (string.Equals(args[i], "--output", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                string val = args[i + 1].Trim();
+                if (val.Equals("file", StringComparison.OrdinalIgnoreCase)) return "file";
+                return "screen";
+            }
+        }
+        return "screen";
+    }
+
+    private static string? ParseNip(string[] args)
+    {
+        // accepted: --nip 1111111111
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (string.Equals(args[i], "--nip", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
+            {
+                return args[i + 1].Trim();
+            }
+        }
+        return null;
+    }
 }
