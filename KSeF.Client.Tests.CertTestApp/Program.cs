@@ -7,6 +7,7 @@ using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.DI;
 using KSeF.Client.Tests.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -19,17 +20,16 @@ namespace KSeF.Client.Tests.CertTestApp;
 /// </summary>
 public class Program
 {
-    //const string CERTIFICATE_FILE_PATH = "C:\\Users\\jesper.madsen\\Desktop\\test_cert.p12"; // <--- CHANGE THIS
-    //const string CERTIFICATE_PASSWORD = "6XpGo+9M:SNi"; // <--- CHANGE THIS
-
-    private const string CERTIFICATE_FILE_PATH = "C:\\Users\\jesper.madsen\\Desktop\\NemHandel_eDelivery.p12";
-    private const string CERTIFICATE_PASSWORD = "ICKse5qJx4v-"; // <--- CHANGE THIS
-
-    private const string NipNumber = "5272689745";
-    //const string NipNumber = "5250001003";
+    private static IConfiguration? _configuration;
 
     public static async Task Main(string[] args)
     {
+        // Load configuration from appsettings.json
+        _configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
         // Output mode: screen (default) or file
         string outputMode = ParseOutputMode(args);
         Console.WriteLine("KSeF.Client.Tests.CertTestApp – XAdES authentication process demonstration");
@@ -74,8 +74,9 @@ public class Program
             // 1) NIP (from parameter or random)
             Console.WriteLine("[1] Preparing NIP...");
             string? nipArg = ParseNip(args);
-            string nip = NipNumber; // string.IsNullOrWhiteSpace(nipArg) ? MiscellaneousUtils.GetRandomNip() : nipArg.Trim();
-            Console.WriteLine($"    NIP: {nip} {(string.IsNullOrWhiteSpace(nipArg) ? "(random)" : "(from parameter)")}");
+            string configNip = _configuration?["KSeF:Authentication:NipNumber"] ?? string.Empty;
+            string nip = !string.IsNullOrWhiteSpace(nipArg) ? nipArg.Trim() : configNip;
+            Console.WriteLine($"    NIP: {nip} {(string.IsNullOrWhiteSpace(nipArg) ? "(from configuration)" : "(from parameter)")}");
 
             // 2) Challenge
             Console.WriteLine("[2] Retrieving challenge from KSeF...");
@@ -101,11 +102,20 @@ public class Program
             // 5) Load EU Certificate for XAdES signature <--- MODIFIED STEP
             Console.WriteLine("[5] Loading external certificate from PFX/P12 file...");
 
+            // Load certificate path and password from configuration
+            string certificatePath = _configuration?["KSeF:Certificate:FilePath"] ?? string.Empty;
+            string certificatePassword = _configuration?["KSeF:Certificate:Password"] ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(certificatePath) || string.IsNullOrWhiteSpace(certificatePassword))
+            {
+                throw new InvalidOperationException("Certificate path or password not configured in appsettings.json");
+            }
+
             // IMPORTANT: X509KeyStorageFlags.MachineKeySet can be used for server environments. 
             // X509KeyStorageFlags.Exportable is useful for development.
             X509Certificate2 certificate = new X509Certificate2(
-                CERTIFICATE_FILE_PATH,
-                CERTIFICATE_PASSWORD,
+                certificatePath,
+                certificatePassword,
                 X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable
             );
             Console.WriteLine($"    Certificate Subject: {certificate.Subject}");

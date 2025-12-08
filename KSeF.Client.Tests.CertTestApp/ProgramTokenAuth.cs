@@ -10,6 +10,7 @@ using KSeF.Client.Core.Models.Sessions;
 using KSeF.Client.Core.Models.Sessions.OnlineSession;
 using KSeF.Client.DI;
 using KSeF.Client.Tests.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -18,20 +19,22 @@ namespace KSeF.Client.Tests.TokenAuthApp;
 
 /// <summary>
 /// Demonstration of KSeF authentication using a pre-generated KSeF token.
-/// NO CERTIFICATE REQUIRED - just insert your KSeF token below!
+/// NO CERTIFICATE REQUIRED - configure your token in appsettings.json
 /// </summary>
 public class Program
 {
-    // ============================================
-    // CONFIGURATION - INSERT YOUR TOKEN HERE
-    // ============================================
-    private const string KSEF_TOKEN = "20251117-EC-1F7F420000-A32F86EE05-85|nip-5272689745|a3d6a7bcd40545ca96a12ffc360f5dc892cfdd79a1f64a9a96b017b805117f01"; // <--- CHANGE THIS to your KSeF token
-    private const string NIP_NUMBER = "5272689745"; // <--- CHANGE THIS to your NIP
+    private static IConfiguration? _configuration;
 
     public static async Task Main(string[] args)
     {
         Console.WriteLine("KSeF.Client - Token-Based Authentication Demonstration");
         Console.WriteLine("========================================================\n");
+
+        // Load configuration from appsettings.json
+        _configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
 
         // 0) Setup DI and client configuration
         ServiceCollection services = new ServiceCollection();
@@ -68,25 +71,37 @@ public class Program
 
         try
         {
+            // Load configuration values
+            string ksefToken = _configuration?["KSeF:Authentication:KsefToken"] ?? string.Empty;
+            string nipNumber = _configuration?["KSeF:Authentication:NipNumber"] ?? string.Empty;
+
             // Validate configuration
-            if (KSEF_TOKEN == "YOUR_KSEF_TOKEN_HERE")
+            if (string.IsNullOrWhiteSpace(ksefToken) || ksefToken == "YOUR_KSEF_TOKEN_HERE")
             {
-                Console.WriteLine("ERROR: Please set your KSeF token in the KSEF_TOKEN constant!");
-                Console.WriteLine("Update the constant at the top of Program.cs");
+                Console.WriteLine("ERROR: Please set your KSeF token in appsettings.json!");
+                Console.WriteLine("Update KSeF:Authentication:KsefToken in appsettings.json");
                 Console.ReadKey();
                 return;
             }
 
-            Console.WriteLine($"Using NIP: {NIP_NUMBER}");
-            Console.WriteLine($"Using KSeF Token: {KSEF_TOKEN[..10]}...\n");
+            if (string.IsNullOrWhiteSpace(nipNumber) || nipNumber == "YOUR_NIP_NUMBER")
+            {
+                Console.WriteLine("ERROR: Please set your NIP number in appsettings.json!");
+                Console.WriteLine("Update KSeF:Authentication:NipNumber in appsettings.json");
+                Console.ReadKey();
+                return;
+            }
+
+            Console.WriteLine($"Using NIP: {nipNumber}");
+            Console.WriteLine($"Using KSeF Token: {ksefToken[..10]}...\n");
 
             // Step 1: Authenticate with KSeF token (NO CERTIFICATE!)
             Console.WriteLine("[1] Authenticating with KSeF token (no certificate required)...");
             (string accessToken, string referenceNumber, string authToken) authResult = await AuthenticateWithKsefTokenAsync(
                 ksefClient,
                 cryptographyService,
-                KSEF_TOKEN,
-                NIP_NUMBER
+                ksefToken,
+                nipNumber
             );
             string accessToken = authResult.accessToken;
             string referenceNumber = authResult.referenceNumber;
@@ -120,17 +135,17 @@ public class Program
 
             // Step 5: Send XML invoice to KSeF
             Console.WriteLine("\n[5] Sending XML invoice to KSeF...");
-            const string INVOICE_XML_PATH = "C:\\Users\\jesper.madsen\\Downloads\\FA_3_Przykład_1_Logstor (2).xml";
+            string invoiceXmlPath = _configuration?["KSeF:Invoice:XmlPath"] ?? string.Empty;
 
-            if (!File.Exists(INVOICE_XML_PATH))
+            if (string.IsNullOrWhiteSpace(invoiceXmlPath) || !File.Exists(invoiceXmlPath))
             {
-                Console.WriteLine($"    ⚠ Invoice file not found at: {INVOICE_XML_PATH}");
-                Console.WriteLine("    Please update INVOICE_XML_PATH constant with the correct path to your XML invoice file.");
+                Console.WriteLine($"    ⚠ Invoice file not found at: {invoiceXmlPath}");
+                Console.WriteLine("    Please update KSeF:Invoice:XmlPath in appsettings.json with the correct path to your XML invoice file.");
             }
             else
             {
-                Console.WriteLine($"    Reading invoice from: {INVOICE_XML_PATH}");
-                string invoiceXml = await File.ReadAllTextAsync(INVOICE_XML_PATH);
+                Console.WriteLine($"    Reading invoice from: {invoiceXmlPath}");
+                string invoiceXml = await File.ReadAllTextAsync(invoiceXmlPath);
                 Console.WriteLine($"    Invoice XML size: {invoiceXml.Length} characters");
 
                 // Encrypt the invoice with the session encryption keys
