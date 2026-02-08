@@ -162,14 +162,26 @@ internal sealed class SelfSignedCertificateForSignatureBuilderImpl
     /// <inheritdoc />
     public X509Certificate2 Build()
     {
-#if NETSTANDARD2_0
-        throw new PlatformNotSupportedException(
-            "Self-signed certificate generation is not supported on netstandard2.0. " +
-            "Use .NET 8.0 or later, or provide a pre-existing certificate.");
-#else
         _subjectParts.Add("2.5.4.6=PL");
+        string subjectDN = string.Join(", ", _subjectParts);
 
-        X500DistinguishedName subjectName = new(string.Join(", ", _subjectParts));
+#if NETSTANDARD2_0
+        if (_encryptionType == EncryptionMethodEnum.ECDsa)
+        {
+            return Compatibility.SelfSignedCertificateCompat.CreateSelfSignedEcdsa(
+                subjectDN,
+                DateTimeOffset.UtcNow.AddMinutes(-61),
+                DateTimeOffset.Now.AddYears(2));
+        }
+        else
+        {
+            return Compatibility.SelfSignedCertificateCompat.CreateSelfSignedRsa(
+                subjectDN,
+                DateTimeOffset.UtcNow.AddMinutes(-61),
+                DateTimeOffset.Now.AddYears(2));
+        }
+#else
+        X500DistinguishedName subjectName = new(subjectDN);
 
         CertificateRequest request;
         if (_encryptionType == EncryptionMethodEnum.ECDsa)

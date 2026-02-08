@@ -93,16 +93,16 @@ internal sealed class SelfSignedCertificateForSealBuilderImpl
     /// <inheritdoc />
     public X509Certificate2 Build()
     {
-#if NETSTANDARD2_0
-        throw new PlatformNotSupportedException(
-            "Self-signed certificate generation is not supported on netstandard2.0. " +
-            "Use .NET 8.0 or later, or provide a pre-existing certificate.");
-#else
         _subjectParts.Add("2.5.4.6=PL");
+        string subjectDN = string.Join(", ", _subjectParts);
 
-        string subjectName = string.Join(", ", _subjectParts);
-
-        X509Certificate2 certificate = new CertificateRequest(subjectName, RSA.Create(2048), HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
+#if NETSTANDARD2_0
+        return Compatibility.SelfSignedCertificateCompat.CreateSelfSignedRsa(
+            subjectDN,
+            DateTimeOffset.UtcNow.AddMinutes(-61),
+            DateTimeOffset.Now.AddYears(2));
+#else
+        X509Certificate2 certificate = new CertificateRequest(subjectDN, RSA.Create(2048), HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
             .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.Now.AddYears(2));
 
         return certificate;

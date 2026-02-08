@@ -243,27 +243,28 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public (string, string) GenerateCsrWithRsa(CertificateEnrollmentsInfoResponse certificateInfo, RSASignaturePadding padding = null)
     {
-#if NETSTANDARD2_0
-        // CertificateRequest is not available on netstandard2.0.
-        throw new PlatformNotSupportedException(
-            "Generowanie CSR (CertificateRequest) nie jest obsługiwane na platformie netstandard2.0/.NET Framework. " +
-            "Użyj .NET 8+ do operacji rejestracji certyfikatów.");
-#else
         if (padding == null)
         {
             padding = RSASignaturePadding.Pss;
         }
 
+#if NETSTANDARD2_0
+        // RSACng supports both PSS and PKCS1 signing, and guarantees 2048-bit key size.
+        using RSA rsa = new RSACng(2048);
+#else
         using RSA rsa = RSA.Create(2048);
+#endif
         byte[] privateKey = rsa.ExportRSAPrivateKey();
 
         X500DistinguishedName subject = CreateSubjectDistinguishedName(certificateInfo);
 
+#if NETSTANDARD2_0
+        byte[] csrDer = Compatibility.CsrCompat.CreateSigningRequestRsa(subject.RawData, rsa, padding);
+#else
         CertificateRequest request = new(subject, rsa, HashAlgorithmName.SHA256, padding);
-
         byte[] csrDer = request.CreateSigningRequest();
-        return (Convert.ToBase64String(csrDer), Convert.ToBase64String(privateKey));
 #endif
+        return (Convert.ToBase64String(csrDer), Convert.ToBase64String(privateKey));
     }
 
     /// <inheritdoc />
@@ -387,18 +388,26 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public byte[] EncryptWithRSAUsingPublicKey(byte[] content, RSAEncryptionPadding padding)
     {
-        RSA rsa = RSA.Create();
         string publicKey = GetRSAPublicPem(SymmetricKeyEncryptionPem);
+#if NETSTANDARD2_0
+        using RSA rsa = Compatibility.RsaCompat.CreateFromPemWithOaepSupport(publicKey);
+#else
+        RSA rsa = RSA.Create();
         rsa.ImportFromPem(publicKey);
+#endif
         return rsa.Encrypt(content, padding);
     }
 
     /// <inheritdoc />
     public byte[] EncryptKsefTokenWithRSAUsingPublicKey(byte[] content)
     {
-        RSA rsa = RSA.Create();
         string publicKey = GetRSAPublicPem(KsefTokenPem);
+#if NETSTANDARD2_0
+        using RSA rsa = Compatibility.RsaCompat.CreateFromPemWithOaepSupport(publicKey);
+#else
+        RSA rsa = RSA.Create();
         rsa.ImportFromPem(publicKey);
+#endif
         return rsa.Encrypt(content, RSAEncryptionPadding.OaepSHA256);
     }
 
@@ -406,10 +415,29 @@ public class CryptographyService : ICryptographyService, IDisposable
     public byte[] EncryptWithECDSAUsingPublicKey(byte[] content)
     {
 #if NETSTANDARD2_0
-        // ECDiffieHellman and AesGcm are not available on netstandard2.0.
-        throw new PlatformNotSupportedException(
-            "Szyfrowanie ECDH+AES-GCM nie jest obsługiwane na platformie netstandard2.0/.NET Framework. " +
-            "Użyj .NET 8+ do szyfrowania tokenem KSeF z kluczem ECDSA.");
+        using Compatibility.EcdhCompat ecdhReceiver = Compatibility.EcdhCompat.Create();
+        string publicKey = GetECDSAPublicPem(KsefTokenPem);
+        ecdhReceiver.ImportFromPem(publicKey);
+
+        using Compatibility.EcdhCompat ecdhEphemeral = Compatibility.EcdhCompat.Create();
+        byte[] sharedSecret = ecdhEphemeral.DeriveKeyMaterial(ecdhReceiver);
+
+        using Compatibility.AesGcmCompat aes = new(sharedSecret, Compatibility.AesGcmCompat.MaxTagSize);
+        byte[] nonce = new byte[Compatibility.AesGcmCompat.MaxNonceSize];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) { rng.GetBytes(nonce); }
+        byte[] cipherText = new byte[content.Length];
+        byte[] tag = new byte[Compatibility.AesGcmCompat.MaxTagSize];
+        aes.Encrypt(nonce, content, cipherText, tag);
+
+        byte[] subjectPublicKeyInfo = ecdhEphemeral.ExportSubjectPublicKeyInfo();
+
+        byte[] result = new byte[subjectPublicKeyInfo.Length + nonce.Length + tag.Length + cipherText.Length];
+        int offset = 0;
+        Buffer.BlockCopy(subjectPublicKeyInfo, 0, result, offset, subjectPublicKeyInfo.Length); offset += subjectPublicKeyInfo.Length;
+        Buffer.BlockCopy(nonce, 0, result, offset, nonce.Length); offset += nonce.Length;
+        Buffer.BlockCopy(tag, 0, result, offset, tag.Length); offset += tag.Length;
+        Buffer.BlockCopy(cipherText, 0, result, offset, cipherText.Length);
+        return result;
 #else
         using ECDiffieHellman ecdhReceiver = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
         string publicKey = GetECDSAPublicPem(KsefTokenPem);
@@ -653,23 +681,18 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public (string, string) GenerateCsrWithEcdsa(CertificateEnrollmentsInfoResponse certificateInfo)
     {
-#if NETSTANDARD2_0
-        throw new PlatformNotSupportedException(
-            "Generowanie CSR (CertificateRequest) nie jest obsługiwane na platformie netstandard2.0/.NET Framework. " +
-            "Użyj .NET 8+ do operacji rejestracji certyfikatów.");
-#else
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         byte[] privateKey = ecdsa.ExportECPrivateKey();
 
         X500DistinguishedName subject = CreateSubjectDistinguishedName(certificateInfo);
 
-        // Budowanie CSR
+#if NETSTANDARD2_0
+        byte[] csrDer = Compatibility.CsrCompat.CreateSigningRequestEcdsa(subject.RawData, ecdsa);
+#else
         CertificateRequest request = new(subject, ecdsa, HashAlgorithmName.SHA256);
-
-        // Eksport CSR do formatu DER (bajtów)
         byte[] csrDer = request.CreateSigningRequest();
-        return (Convert.ToBase64String(csrDer), Convert.ToBase64String(privateKey));
 #endif
+        return (Convert.ToBase64String(csrDer), Convert.ToBase64String(privateKey));
     }
 
     private static X500DistinguishedName CreateSubjectDistinguishedName(CertificateEnrollmentsInfoResponse certificateInfo)

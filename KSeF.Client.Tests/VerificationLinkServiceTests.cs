@@ -29,7 +29,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         using SHA256 sha256 = SHA256.Create();
         return sha256.ComputeHash(data);
 #else
-        return ComputeSha256(data);
+        return SHA256.HashData(data);
 #endif
     }
 

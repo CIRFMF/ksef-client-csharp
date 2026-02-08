@@ -379,5 +379,28 @@ internal static class RsaCompat
     }
 
     #endregion
+
+    /// <summary>
+    /// Creates an RSA instance from a PEM-encoded public key that supports OAEP-SHA256 encryption.
+    /// On .NET Framework 4.8, <see cref="RSA.Create()"/> returns <see cref="RSACryptoServiceProvider"/>
+    /// which does not support <see cref="RSAEncryptionPadding.OaepSHA256"/>.
+    /// This method uses <see cref="RSACng"/> instead.
+    /// </summary>
+    /// <param name="pem">The PEM-encoded RSA public key.</param>
+    /// <returns>An RSA instance supporting OAEP-SHA256.</returns>
+    public static RSA CreateFromPemWithOaepSupport(string pem)
+    {
+        // Parse the PEM to get RSAParameters using a temporary RSA instance
+        using (RSA temp = RSA.Create())
+        {
+            temp.ImportFromPem(pem);
+            RSAParameters parameters = temp.ExportParameters(false);
+
+            // RSACng supports OaepSHA256 on .NET Framework 4.6.1+
+            RSACng cng = new RSACng();
+            cng.ImportParameters(parameters);
+            return cng;
+        }
+    }
 }
 #endif
