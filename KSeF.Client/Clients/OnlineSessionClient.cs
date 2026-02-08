@@ -13,8 +13,8 @@ public class OnlineSessionClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc />
     public Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OpenOnlineSessionResponse, OpenOnlineSessionRequest>(
             Routes.Sessions.Online.Open,
@@ -29,9 +29,9 @@ public class OnlineSessionClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc />
     public Task<SendInvoiceResponse> SendOnlineSessionInvoiceAsync(SendInvoiceRequest requestPayload, string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Sessions.Online.Invoices(Uri.EscapeDataString(sessionReferenceNumber));
         return ExecuteAsync<SendInvoiceResponse, SendInvoiceRequest>(endpoint, requestPayload, accessToken, cancellationToken);
@@ -40,8 +40,8 @@ public class OnlineSessionClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc />
     public Task CloseOnlineSessionAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Sessions.Online.Close(Uri.EscapeDataString(sessionReferenceNumber));
         return ExecuteAsync(endpoint, HttpMethod.Post, accessToken, cancellationToken);

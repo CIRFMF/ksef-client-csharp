@@ -16,7 +16,7 @@ public static class BatchPartsSender
         CancellationToken cancellationToken = default)
         where TInfo : class
     {
-        ArgumentNullException.ThrowIfNull(restClient);
+        Guard.ThrowIfNull(restClient);
 
         if (parts == null)
         {

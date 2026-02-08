@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Tests.Utils;
 using KSeF.Client.Tests.Utils.Upo;

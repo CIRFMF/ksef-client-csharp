@@ -46,7 +46,12 @@ public class QrCodeTests
         string nip = "0000000000";
         string xml = "<x/>";
         string invoiceHash;
+#if NETFRAMEWORK
+        using SHA256 sha256 = SHA256.Create();
+        invoiceHash = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(xml)));
+#else
         invoiceHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(xml)));
+#endif
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>

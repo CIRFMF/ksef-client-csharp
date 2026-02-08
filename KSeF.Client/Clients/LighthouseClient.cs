@@ -14,7 +14,7 @@ public sealed class LighthouseClient : ClientBase, ILighthouseClient
     public LighthouseClient(IRestClient restClient, IRouteBuilder routeBuilder, LighthouseClientOptions options)
         : base(restClient, routeBuilder)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        Guard.ThrowIfNull(options);
 
         string baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
             ? LighthouseEnvironmentsUris.PROD

@@ -113,8 +113,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddLighthouseClient(this IServiceCollection services,
         Action<LighthouseClientOptions> configure)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configure);
+        Guard.ThrowIfNull(services);
+        Guard.ThrowIfNull(configure);
 
         LighthouseClientOptions options = new();
         configure(options);
@@ -184,7 +184,7 @@ public static class ServiceCollectionExtensions
         Func<CancellationToken, Task<ICollection<PemCertificateInfo>>> pemCertificatesFetcher,
         CryptographyServiceWarmupMode warmupMode = CryptographyServiceWarmupMode.Blocking)
     {
-        ArgumentNullException.ThrowIfNull(pemCertificatesFetcher);
+        Guard.ThrowIfNull(pemCertificatesFetcher);
 
         AddCryptographyClient(services, warmupMode);
 

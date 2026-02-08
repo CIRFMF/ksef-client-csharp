@@ -1,3 +1,4 @@
+#if !NETFRAMEWORK
 using KSeF.Client.Api.Builders.EntityPermissions;
 using KSeF.Client.Core.Models.Permissions.Entity;
 using KSeF.Client.Core.Models.Permissions;
@@ -169,3 +170,4 @@ public partial class EntityPermissionE2ETests : TestBase
         return statuses;
     }
 }
+#endif

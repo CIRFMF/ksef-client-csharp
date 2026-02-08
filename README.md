@@ -18,7 +18,22 @@ Repozytorium zawiera:
 - **Przykładowa aplikacja**
   - **KSeF.DemoWebApp** - aplikacja demonstracyjna ASP.NET
 
-Całość napisana jest w języku **C#** z wykorzystaniem platformy **.NET 8/9** (lub nowszej). Do komunikacji HTTP wykorzystywany jest RestClient, a rejestracja i konfiguracja klienta KSeF odbywa się przez mechanizm Dependency Injection (Microsoft.Extensions.DependencyInjection).
+Całość napisana jest w języku **C#** z wykorzystaniem platformy **.NET 8/9/10** (lub nowszej). Biblioteki **KSeF.Client** i **KSeF.Client.ClientFactory** wspierają również **netstandard2.0**, co zapewnia pełną kompatybilność z **.NET Framework 4.7.2+/4.8**. Do komunikacji HTTP wykorzystywany jest RestClient, a rejestracja i konfiguracja klienta KSeF odbywa się przez mechanizm Dependency Injection (Microsoft.Extensions.DependencyInjection).
+
+### Wspierane platformy
+
+| Biblioteka | Target Frameworks |
+|---|---|
+| **KSeF.Client** | `netstandard2.0` · `net8.0` · `net9.0` · `net10.0` |
+| **KSeF.Client.Core** | `netstandard2.0` |
+| **KSeF.Client.ClientFactory** | `netstandard2.0` · `net8.0` · `net9.0` · `net10.0` |
+
+Dzięki `netstandard2.0` biblioteka jest w pełni kompatybilna z:
+- **.NET Framework 4.7.2+** / **.NET Framework 4.8** (wymaga Windows)
+- **.NET Core 2.0+**
+- **.NET 5+**
+- **Mono 5.4+**
+- **Xamarin**
 
 ## Struktura projektu
 
@@ -199,8 +214,19 @@ Projekt zawiera rozbudowany zestaw testów:
 ### Uruchomienie testów
 
 ```bash
+# Wszystkie testy na domyślnych TFM
 dotnet test KSeF.Client.sln
+
+# Testy na .NET Framework 4.8 (wymaga Windows lub Mono)
+dotnet test KSeF.Client.sln --framework net48
+
+# Testy na konkretnym TFM
+dotnet test KSeF.Client.sln --framework net8.0
+dotnet test KSeF.Client.sln --framework net9.0
+dotnet test KSeF.Client.sln --framework net10.0
 ```
+
+Projekty testowe wspierają: `net48` · `net8.0` · `net9.0` · `net10.0`.
 ## Rozwiązywanie problemów (Troubleshooting)
 
 ### Błąd: "The password may be incorrect" na IIS / Azure

@@ -1,3 +1,4 @@
+#nullable enable
 using Microsoft.Extensions.Configuration;
 
 namespace KSeF.Client.Tests.Core.Config;

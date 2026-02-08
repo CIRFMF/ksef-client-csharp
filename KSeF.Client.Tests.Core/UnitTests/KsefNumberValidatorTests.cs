@@ -135,7 +135,14 @@ public class KsefNumberValidatorTests
         string date = DateTime.UtcNow.ToString("yyyyMMdd", CultureInfo.InvariantCulture); // np. 20250916
         string part1 = RandomHex(10);                       // 10 znaków HEX
         string part2 = RandomHex(10);                       // 10 znaków HEX
+#if NETFRAMEWORK
+        byte[] rndBytes = new byte[4];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) { rng.GetBytes(rndBytes); }
+        int rndVal = (int)(BitConverter.ToUInt32(rndBytes, 0) % 100);
+        string suffix = rndVal.ToString("D2", CultureInfo.InvariantCulture);
+#else
         string suffix = RandomNumberGenerator.GetInt32(0, 100).ToString("D2", CultureInfo.InvariantCulture); // 2 cyfry 00-99
+#endif
 
         string full = $"{date}-EE-{part1}-{part2}-{suffix}"; // długość 36
         return full[..32]; // obcięcie do 32 znaków
@@ -144,8 +151,13 @@ public class KsefNumberValidatorTests
     private static string RandomHex(int length)
     {
         int byteLen = (length + 1) / 2;
+#if NETFRAMEWORK
+        byte[] bytes = new byte[byteLen];
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) { rng.GetBytes(bytes); }
+#else
         Span<byte> bytes = stackalloc byte[byteLen];
         RandomNumberGenerator.Fill(bytes);
+#endif
 
         StringBuilder sb = new(byteLen * 2);
         foreach (byte b in bytes)

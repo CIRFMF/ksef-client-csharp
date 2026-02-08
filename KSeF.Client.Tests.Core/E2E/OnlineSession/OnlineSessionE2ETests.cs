@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Api.Builders.Online;
 using KSeF.Client.Core.Interfaces.Services;

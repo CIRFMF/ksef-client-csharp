@@ -132,7 +132,7 @@ public static class GrantIndirectEntityPermissionsRequestBuilder
         /// <inheritdoc />
         public IContextStep WithSubject(IndirectEntitySubjectIdentifier subject)
         {
-            ArgumentNullException.ThrowIfNull(subject);
+            Guard.ThrowIfNull(subject);
             if (!TypeValueValidator.Validate(subject))
             {
                 throw new ArgumentException($"Nieprawidłowa wartość dla typu {subject.Type}", nameof(subject));
@@ -157,7 +157,7 @@ public static class GrantIndirectEntityPermissionsRequestBuilder
         /// <inheritdoc />
         public IOptionalStep WithDescription(string description)
         {
-            ArgumentNullException.ThrowIfNull(description);
+            Guard.ThrowIfNull(description);
             if (description.Length < ValidValues.PermissionDescriptionMinLength)
             {
                 throw new ArgumentException($"Opis uprawnienia za krótki, minimalna długość: {ValidValues.PermissionDescriptionMinLength} znaków.", nameof(description));
@@ -207,7 +207,7 @@ public static class GrantIndirectEntityPermissionsRequestBuilder
         /// <inheritdoc />
         public IPermissionsStep WithContext(IndirectEntityTargetIdentifier context)
         {
-            ArgumentNullException.ThrowIfNull(context);
+            Guard.ThrowIfNull(context);
             if (!TypeValueValidator.Validate(context))
             {
                 throw new ArgumentException($"Nieprawidłowa wartość dla typu {context.Type}", nameof(context));

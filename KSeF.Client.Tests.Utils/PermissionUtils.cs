@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.IndirectEntityPermissions;
 using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Core.Interfaces.Clients;

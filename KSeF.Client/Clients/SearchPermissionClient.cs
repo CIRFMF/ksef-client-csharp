@@ -30,8 +30,8 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.PersonalGrants, pageOffset, pageSize);
         return ExecuteAsync<PagedPermissionsResponse<PersonalPermission>, PersonalPermissionsQueryRequest>(
@@ -49,8 +49,8 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.PersonsGrants, pageOffset, pageSize);
         return ExecuteAsync<PagedPermissionsResponse<PersonPermission>, PersonPermissionsQueryRequest>(
@@ -68,8 +68,8 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.SubunitsGrants, pageOffset, pageSize);
         return ExecuteAsync<PagedPermissionsResponse<SubunitPermission>, SubunitPermissionsQueryRequest>(
@@ -86,7 +86,7 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.EntitiesRoles, pageOffset, pageSize);
         return ExecuteAsync<PagedRolesResponse<EntityRole>>(endpoint, HttpMethod.Get, accessToken, cancellationToken);
@@ -100,8 +100,8 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.SubordinateEntitiesRoles, pageOffset, pageSize);
         return ExecuteAsync<PagedRolesResponse<SubordinateEntityRole>, SubordinateEntityRolesQueryRequest>(
@@ -119,8 +119,8 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.AuthorizationsGrants, pageOffset, pageSize);
         return ExecuteAsync<PagedAuthorizationsResponse<AuthorizationGrant>, EntityAuthorizationsQueryRequest>(
@@ -138,8 +138,8 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.EuEntitiesGrants, pageOffset, pageSize);
         return ExecuteAsync<PagedPermissionsResponse<EuEntityPermission>, EuEntityPermissionsQueryRequest>(

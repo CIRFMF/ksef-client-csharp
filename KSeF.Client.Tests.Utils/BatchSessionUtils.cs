@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.Batch;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
@@ -107,7 +108,11 @@ public static class BatchUtils
         {
             ZipArchiveEntry entry = archive.CreateEntry(fileName, CompressionLevel.Optimal);
             using Stream entryStream = entry.Open();
+#if NETFRAMEWORK
+            entryStream.Write(content, 0, content.Length);
+#else
             entryStream.Write(content);
+#endif
         }
 
         archive.Dispose();
@@ -144,8 +149,8 @@ public static class BatchUtils
     /// <returns>Lista buforów podzielonych na części.</returns>
     public static List<byte[]> Split(byte[] input, int partCount)
     {
-        ArgumentNullException.ThrowIfNull(input);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(partCount);
+        Guard.ThrowIfNull(input);
+        Guard.ThrowIfNegativeOrZero(partCount);
 
         List<byte[]> result = new(partCount);
         int partSize = (int)Math.Ceiling((double)input.Length / partCount);
@@ -183,9 +188,9 @@ public static class BatchUtils
         ICryptographyService cryptographyService,
         int? partCount = null)
     {
-        ArgumentNullException.ThrowIfNull(zipBytes);
-        ArgumentNullException.ThrowIfNull(encryption);
-        ArgumentNullException.ThrowIfNull(cryptographyService);
+        Guard.ThrowIfNull(zipBytes);
+        Guard.ThrowIfNull(encryption);
+        Guard.ThrowIfNull(cryptographyService);
 
         // Jeśli partCount nie jest podane, wylicz automatycznie
         int actualPartCount = partCount ?? CalculateBatchPartQuantity(zipBytes.Length);
@@ -336,7 +341,7 @@ public static class BatchUtils
         Stream zipStream,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(zipStream);
+        Guard.ThrowIfNull(zipStream);
 
         Dictionary<string, string> files = new(StringComparer.OrdinalIgnoreCase);
 
@@ -351,7 +356,11 @@ public static class BatchUtils
 
             using Stream entryStream = entry.Open();
             using StreamReader reader = new(entryStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+#if NETFRAMEWORK
+            string content = await reader.ReadToEndAsync().ConfigureAwait(false);
+#else
             string content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+#endif
             files[entry.Name] = content;
         }
 
@@ -368,7 +377,7 @@ public static class BatchUtils
         byte[] zipBytes,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(zipBytes);
+        Guard.ThrowIfNull(zipBytes);
 
         using MemoryStream stream = new(zipBytes);
         return await UnzipAsync(stream, cancellationToken).ConfigureAwait(false);
@@ -390,9 +399,9 @@ public static class BatchUtils
         Func<HttpClient>? httpClientFactory = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(parts);
-        ArgumentNullException.ThrowIfNull(encryptionData);
-        ArgumentNullException.ThrowIfNull(crypto);
+        Guard.ThrowIfNull(parts);
+        Guard.ThrowIfNull(encryptionData);
+        Guard.ThrowIfNull(crypto);
 
         MemoryStream decryptedStream = new();
 
@@ -403,7 +412,11 @@ public static class BatchUtils
                 byte[] encryptedBytes = await DownloadPackagePartAsync(part, httpClientFactory, cancellationToken).ConfigureAwait(false);
                 byte[] decryptedBytes = crypto.DecryptBytesWithAES256(encryptedBytes, encryptionData.CipherKey, encryptionData.CipherIv);
 
+#if NETFRAMEWORK
+                await decryptedStream.WriteAsync(decryptedBytes, 0, decryptedBytes.Length, cancellationToken).ConfigureAwait(false);
+#else
                 await decryptedStream.WriteAsync(decryptedBytes, cancellationToken).ConfigureAwait(false);
+#endif
             }
 
             decryptedStream.Position = 0;
@@ -438,6 +451,10 @@ public static class BatchUtils
         using HttpResponseMessage response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
+#if NETFRAMEWORK
+        return await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+#else
         return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+#endif
     }
 }

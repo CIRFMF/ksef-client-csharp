@@ -1,4 +1,5 @@
-﻿using KSeF.Client.Api.Services;
+﻿#nullable enable
+using KSeF.Client.Api.Services;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
 using KSeF.Client.Http;

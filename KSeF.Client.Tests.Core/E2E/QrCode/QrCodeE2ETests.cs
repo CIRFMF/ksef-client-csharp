@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Services;
 using KSeF.Client.Tests.Utils;
 using KSeF.Client.DI;
@@ -58,8 +59,12 @@ public class QrCodeE2ETests : TestBase
             .LoadPkcs12(pfxBytes);
 
         string invoiceHash;
+#if NETFRAMEWORK
+        using (SHA256 sha = SHA256.Create()) { byte[] hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(InvoiceXml)); invoiceHash = Convert.ToBase64String(hashBytes); }
+#else
         byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(InvoiceXml));
         invoiceHash = Convert.ToBase64String(hashBytes);
+#endif
 
         // Act
         // Brak jawnego klucza prywatnego → użycie wbudowanego klucza
@@ -99,8 +104,12 @@ public class QrCodeE2ETests : TestBase
             .LoadPkcs12(pfxBytes);
 
         string invoiceHash;
+#if NETFRAMEWORK
+        using (SHA256 sha = SHA256.Create()) { byte[] hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(InvoiceXml)); invoiceHash = Convert.ToBase64String(hashBytes); }
+#else
         byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(InvoiceXml));
         invoiceHash = Convert.ToBase64String(hashBytes);
+#endif
 
         // Act
         // Nie podajemy privateKey — metoda użyje certWithKey.GetRSAPrivateKey()
@@ -145,8 +154,12 @@ public class QrCodeE2ETests : TestBase
             .LoadPkcs12(pfxBytes);
 
         string invoiceHash;
+#if NETFRAMEWORK
+        using (SHA256 sha = SHA256.Create()) { invoiceHash = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(InvoiceXml))); }
+#else
         invoiceHash = Convert.ToBase64String(
         SHA256.HashData(Encoding.UTF8.GetBytes(InvoiceXml)));
+#endif
 
         // Act
         // Brak jawnego klucza prywatnego → użycie osadzonego klucza ECDSA
@@ -184,8 +197,12 @@ public class QrCodeE2ETests : TestBase
             .LoadPkcs12(pfxBytes);
 
         string invoiceHash;
+#if NETFRAMEWORK
+        using (SHA256 sha = SHA256.Create()) { invoiceHash = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(InvoiceXml))); }
+#else
         invoiceHash = Convert.ToBase64String(
 SHA256.HashData(Encoding.UTF8.GetBytes(InvoiceXml)));
+#endif
 
         // Act
         // Jawny import klucza prywatnego P-256

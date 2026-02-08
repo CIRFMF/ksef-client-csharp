@@ -1,3 +1,4 @@
+#if !NETFRAMEWORK
 using KSeF.Client.Extensions;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -326,3 +327,4 @@ public class X509CertificateLoaderExtensionsTests
         }
     }
 }
+#endif

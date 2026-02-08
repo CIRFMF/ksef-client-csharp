@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Services;
 using KSeF.Client.Core.Interfaces;
 using KSeF.Client.Core.Models.Authorization;

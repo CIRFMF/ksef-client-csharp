@@ -1,4 +1,5 @@
-﻿using KSeF.Client.Core.Models;
+#if !NETFRAMEWORK
+using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Sessions;
@@ -478,3 +479,4 @@ public class IncrementalInvoiceRetrievalE2ETests : TestBase
         IReadOnlyCollection<InvoiceSummary> MetadataSummaries,
         IReadOnlyDictionary<string, string> InvoiceXmlFiles);
 }
+#endif

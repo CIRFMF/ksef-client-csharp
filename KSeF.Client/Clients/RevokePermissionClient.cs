@@ -12,8 +12,8 @@ public class RevokePermissionClient(IRestClient restClient, IRouteBuilder routeB
     /// <inheritdoc />
     public Task<OperationResponse> RevokeCommonPermissionAsync(string permissionId, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(permissionId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(permissionId);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Permissions.Common.GrantById(Uri.EscapeDataString(permissionId));
         return ExecuteAsync<OperationResponse>(endpoint, HttpMethod.Delete, accessToken, cancellationToken);
@@ -22,8 +22,8 @@ public class RevokePermissionClient(IRestClient restClient, IRouteBuilder routeB
     /// <inheritdoc />
     public Task<OperationResponse> RevokeAuthorizationsPermissionAsync(string permissionId, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(permissionId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(permissionId);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Permissions.Authorizations.GrantById(Uri.EscapeDataString(permissionId));
         return ExecuteAsync<OperationResponse>(endpoint, HttpMethod.Delete, accessToken, cancellationToken);

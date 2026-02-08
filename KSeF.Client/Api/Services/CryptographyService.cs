@@ -100,8 +100,8 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public void SetExternalMaterials(X509Certificate2 symmetricKeyCert, X509Certificate2 ksefTokenCert)
     {
-        ArgumentNullException.ThrowIfNull(symmetricKeyCert);
-        ArgumentNullException.ThrowIfNull(ksefTokenCert);
+        Guard.ThrowIfNull(symmetricKeyCert);
+        Guard.ThrowIfNull(ksefTokenCert);
 
         _refreshTimer?.Dispose(); // Wyłącz automatyczne odświeżanie
         _isExternallyManaged = true; // Oznacz jako zarządzane zewnętrznie
@@ -154,10 +154,18 @@ public class CryptographyService : ICryptographyService, IDisposable
     {
         using Aes aes = CreateConfiguredAes(key, iv);
         using ICryptoTransform encryptor = aes.CreateEncryptor();
+#if NETSTANDARD2_0
+        // CryptoStream(stream, transform, mode, leaveOpen) not available on netstandard2.0.
+        // Don't use 'using' — Dispose would close the output stream.
+        CryptoStream cryptoStream = new(output, encryptor, CryptoStreamMode.Write);
+        input.CopyTo(cryptoStream);
+        cryptoStream.FlushFinalBlock();
+#else
         using CryptoStream cryptoStream = new(output, encryptor, CryptoStreamMode.Write, leaveOpen: true);
 
         input.CopyTo(cryptoStream);
         cryptoStream.FlushFinalBlock();
+#endif
 
         if (output.CanSeek)
         {
@@ -170,10 +178,16 @@ public class CryptographyService : ICryptographyService, IDisposable
     {
         using Aes aes = CreateConfiguredAes(key, iv);
         using ICryptoTransform encryptor = aes.CreateEncryptor();
+#if NETSTANDARD2_0
+        CryptoStream cryptoStream = new(output, encryptor, CryptoStreamMode.Write);
+        await input.CopyToAsync(cryptoStream, 81920, cancellationToken).ConfigureAwait(false);
+        cryptoStream.FlushFinalBlock();
+#else
         using CryptoStream cryptoStream = new(output, encryptor, CryptoStreamMode.Write, leaveOpen: true);
 
         await input.CopyToAsync(cryptoStream, 81920, cancellationToken).ConfigureAwait(false);
         await cryptoStream.FlushFinalBlockAsync(cancellationToken).ConfigureAwait(false);
+#endif
 
         if (output.CanSeek)
         {
@@ -229,6 +243,12 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public (string, string) GenerateCsrWithRsa(CertificateEnrollmentsInfoResponse certificateInfo, RSASignaturePadding padding = null)
     {
+#if NETSTANDARD2_0
+        // CertificateRequest is not available on netstandard2.0.
+        throw new PlatformNotSupportedException(
+            "Generowanie CSR (CertificateRequest) nie jest obsługiwane na platformie netstandard2.0/.NET Framework. " +
+            "Użyj .NET 8+ do operacji rejestracji certyfikatów.");
+#else
         if (padding == null)
         {
             padding = RSASignaturePadding.Pss;
@@ -243,12 +263,17 @@ public class CryptographyService : ICryptographyService, IDisposable
 
         byte[] csrDer = request.CreateSigningRequest();
         return (Convert.ToBase64String(csrDer), Convert.ToBase64String(privateKey));
+#endif
     }
 
     /// <inheritdoc />
     public FileMetadata GetMetaData(byte[] file)
     {
+#if NETSTANDARD2_0
+        byte[] hash = HashCompat.SHA256HashData(file);
+#else
         byte[] hash = SHA256.HashData(file);
+#endif
         string base64Hash = Convert.ToBase64String(hash);
 
         int fileSize = file.Length;
@@ -263,7 +288,7 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public FileMetadata GetMetaData(Stream fileStream)
     {
-        ArgumentNullException.ThrowIfNull(fileStream);
+        Guard.ThrowIfNull(fileStream);
 
         long originalPosition = 0;
         bool restorePosition = false;
@@ -311,7 +336,7 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public async Task<FileMetadata> GetMetaDataAsync(Stream fileStream, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(fileStream);
+        Guard.ThrowIfNull(fileStream);
 
         long originalPosition = 0;
         bool restorePosition = false;
@@ -332,7 +357,11 @@ public class CryptographyService : ICryptographyService, IDisposable
         using IncrementalHash hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         byte[] buffer = new byte[81920];
         int read;
+#if NETSTANDARD2_0
+        while ((read = await fileStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+#else
         while ((read = await fileStream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false)) > 0)
+#endif
         {
             hasher.AppendData(buffer, 0, read);
             if (!fileStream.CanSeek)
@@ -376,6 +405,12 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public byte[] EncryptWithECDSAUsingPublicKey(byte[] content)
     {
+#if NETSTANDARD2_0
+        // ECDiffieHellman and AesGcm are not available on netstandard2.0.
+        throw new PlatformNotSupportedException(
+            "Szyfrowanie ECDH+AES-GCM nie jest obsługiwane na platformie netstandard2.0/.NET Framework. " +
+            "Użyj .NET 8+ do szyfrowania tokenem KSeF z kluczem ECDSA.");
+#else
         using ECDiffieHellman ecdhReceiver = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256);
         string publicKey = GetECDSAPublicPem(KsefTokenPem);
         ecdhReceiver.ImportFromPem(publicKey);
@@ -393,6 +428,7 @@ public class CryptographyService : ICryptographyService, IDisposable
         byte[] subjectPublicKeyInfo = ecdhEphemeral.PublicKey.ExportSubjectPublicKeyInfo();
         return [.. subjectPublicKeyInfo
 , .. nonce, .. tag, .. cipherText];
+#endif
     }
     /// <summary>
     /// Zapewnia funkcjonalność do asynchronicznego pobierania kolekcji informacji o certyfikatach PEM.
@@ -437,7 +473,11 @@ public class CryptographyService : ICryptographyService, IDisposable
 
     private static string GetRSAPublicPem(string certificatePem)
     {
+#if NETSTANDARD2_0
+        X509Certificate2 cert = PemHelper.CreateCertificateFromPem(certificatePem);
+#else
         X509Certificate2 cert = X509Certificate2.CreateFromPem(certificatePem);
+#endif
 
         RSA rsa = cert.GetRSAPublicKey();
         if (rsa != null)
@@ -453,7 +493,11 @@ public class CryptographyService : ICryptographyService, IDisposable
 
     private static string GetECDSAPublicPem(string certificatePem)
     {
+#if NETSTANDARD2_0
+        X509Certificate2 cert = PemHelper.CreateCertificateFromPem(certificatePem);
+#else
         X509Certificate2 cert = X509Certificate2.CreateFromPem(certificatePem);
+#endif
 
         ECDsa ecdsa = cert.GetECDsaPublicKey();
         if (ecdsa != null)
@@ -470,13 +514,21 @@ public class CryptographyService : ICryptographyService, IDisposable
     private static string ExportEcdsaPublicKeyToPem(ECDsa ecdsa)
     {
         byte[] pubKeyBytes = ecdsa.ExportSubjectPublicKeyInfo();
+#if NETSTANDARD2_0
+        return PemHelper.EncodePem("PUBLIC KEY", pubKeyBytes);
+#else
         return new string(PemEncoding.Write("PUBLIC KEY", pubKeyBytes));
+#endif
     }
 
     private static string ExportPublicKeyToPem(RSA rsa)
     {
         byte[] pubKeyBytes = rsa.ExportSubjectPublicKeyInfo();
+#if NETSTANDARD2_0
+        return PemHelper.EncodePem("PUBLIC KEY", pubKeyBytes);
+#else
         return new string(PemEncoding.Write("PUBLIC KEY", pubKeyBytes));
+#endif
     }
 
     private static string ToPem(X509Certificate2 certificate) =>
@@ -585,7 +637,11 @@ public class CryptographyService : ICryptographyService, IDisposable
         DateTimeOffset refreshAt = (refreshCandidate < capByMaxInterval) ? refreshCandidate : capByMaxInterval;
 
         // drobny jitter 0–5 min, by nie wstały wszystkie instancje naraz
+#if NETSTANDARD2_0
+        refreshAt -= TimeSpan.FromMinutes(RandomCompat.Shared.Next(0, 5));
+#else
         refreshAt -= TimeSpan.FromMinutes(Random.Shared.Next(0, 5));
+#endif
 
         return new CertificateMaterials(sym, tok, expiresAt, refreshAt);
     }
@@ -597,6 +653,11 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// <inheritdoc />
     public (string, string) GenerateCsrWithEcdsa(CertificateEnrollmentsInfoResponse certificateInfo)
     {
+#if NETSTANDARD2_0
+        throw new PlatformNotSupportedException(
+            "Generowanie CSR (CertificateRequest) nie jest obsługiwane na platformie netstandard2.0/.NET Framework. " +
+            "Użyj .NET 8+ do operacji rejestracji certyfikatów.");
+#else
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         byte[] privateKey = ecdsa.ExportECPrivateKey();
 
@@ -608,6 +669,7 @@ public class CryptographyService : ICryptographyService, IDisposable
         // Eksport CSR do formatu DER (bajtów)
         byte[] csrDer = request.CreateSigningRequest();
         return (Convert.ToBase64String(csrDer), Convert.ToBase64String(privateKey));
+#endif
     }
 
     private static X500DistinguishedName CreateSubjectDistinguishedName(CertificateEnrollmentsInfoResponse certificateInfo)

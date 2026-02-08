@@ -12,8 +12,8 @@ public class PermissionOperationClient(IRestClient restClient, IRouteBuilder rou
     /// <inheritdoc />
     public Task<PermissionsOperationStatusResponse> OperationsStatusAsync(string operationReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(operationReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(operationReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Permissions.Operations.ByReference(Uri.EscapeDataString(operationReferenceNumber));
         return ExecuteAsync<PermissionsOperationStatusResponse>(endpoint, HttpMethod.Get, accessToken, cancellationToken);
@@ -22,7 +22,7 @@ public class PermissionOperationClient(IRestClient restClient, IRouteBuilder rou
     /// <inheritdoc />
     public Task<PermissionsAttachmentAllowedResponse> GetAttachmentPermissionStatusAsync(string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
         return ExecuteAsync<PermissionsAttachmentAllowedResponse>(Routes.Permissions.Attachments.Status, HttpMethod.Get, accessToken, cancellationToken);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+#if !NETSTANDARD2_0
 using System.Security.Cryptography.Pkcs;
+#endif
 using System.Security.Cryptography.X509Certificates;
 
 namespace KSeF.Client.Extensions
@@ -18,13 +20,18 @@ namespace KSeF.Client.Extensions
                 return X509KeyStorageFlags.Exportable;
             }
 
-            // Windows / Linux 
+#if NETSTANDARD2_0
+            // EphemeralKeySet is not available on netstandard2.0
+            return X509KeyStorageFlags.Exportable;
+#else
+            // Windows / Linux
             return X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet;
+#endif
         }
 
         public static X509Certificate2 LoadCertificate(this byte[] certBytes)
         {
-            ArgumentNullException.ThrowIfNull(certBytes);
+            Guard.ThrowIfNull(certBytes);
 
 #if NET9_0_OR_GREATER
             return X509CertificateLoader.LoadCertificate(certBytes);
@@ -38,7 +45,7 @@ namespace KSeF.Client.Extensions
 
         public static X509Certificate2 LoadPkcs12(this byte[] certBytes)
         {
-            ArgumentNullException.ThrowIfNull(certBytes);
+            Guard.ThrowIfNull(certBytes);
 
 #if NET9_0_OR_GREATER
             return X509CertificateLoader.LoadPkcs12(
@@ -55,7 +62,7 @@ namespace KSeF.Client.Extensions
 
         public static X509Certificate2 LoadCertificateFromFile(string certificatePath)
         {
-            ArgumentNullException.ThrowIfNull(certificatePath);
+            Guard.ThrowIfNull(certificatePath);
 
 #if NET9_0_OR_GREATER
             return X509CertificateLoader.LoadCertificateFromFile(certificatePath);
@@ -94,7 +101,7 @@ namespace KSeF.Client.Extensions
             string privateKeyPem,
             string password = null)
         {
-            ArgumentNullException.ThrowIfNull(publicCert);
+            Guard.ThrowIfNull(publicCert);
             if (string.IsNullOrWhiteSpace(privateKeyPem))
             {
                 throw new ArgumentNullException(nameof(privateKeyPem));
@@ -108,9 +115,13 @@ namespace KSeF.Client.Extensions
             string oid = publicCert.PublicKey.Oid?.Value
                 ?? throw new NotSupportedException("Certyfikat nie zawiera klucza publicznego OID.");
 
+#if NETSTANDARD2_0
+            bool isEncrypted = privateKeyPem.Contains("ENCRYPTED PRIVATE KEY");
+#else
             bool isEncrypted = privateKeyPem.Contains(
                 "ENCRYPTED PRIVATE KEY",
                 StringComparison.OrdinalIgnoreCase);
+#endif
 
             if (isEncrypted && string.IsNullOrEmpty(password))
             {
@@ -137,8 +148,10 @@ namespace KSeF.Client.Extensions
             {
                 using ECDsa ecdsa = ECDsa.Create();
 
+#if !NETSTANDARD2_0
                 try
                 {
+#endif
                     if (isEncrypted)
                     {
                         ecdsa.ImportFromEncryptedPem(privateKeyPem, password);
@@ -147,11 +160,13 @@ namespace KSeF.Client.Extensions
                     {
                         ecdsa.ImportFromPem(privateKeyPem);
                     }
+#if !NETSTANDARD2_0
                 }
                 catch (CryptographicException ex) when (isEncrypted && IsPkcs8PasswordError(ex))
                 {
                     return publicCert.MergeWithPemKeyNoProfileForEcdsa(privateKeyPem, password);
                 }
+#endif
 
                 return publicCert.CopyWithPrivateKey(ecdsa);
             }
@@ -160,8 +175,9 @@ namespace KSeF.Client.Extensions
                 $"Algorytym o OID '{oid}' nie jest wspierany.");
         }
 
+#if !NETSTANDARD2_0
         /// <summary>
-        /// Bezpiecznie łączy publiczny certyfikat ECDSA X.509 z zaszyfrowanym kluczem prywatnym w formacie PKCS#8 (PEM), 
+        /// Bezpiecznie łączy publiczny certyfikat ECDSA X.509 z zaszyfrowanym kluczem prywatnym w formacie PKCS#8 (PEM),
         /// nie wymagając profilu użytkownika w systemie.
         /// </summary>
         /// <remarks> Metoda jest przeznaczona do użycia w specyficznych scenariuszach, w których:
@@ -174,7 +190,7 @@ namespace KSeF.Client.Extensions
         /// wyjątków kryptograficznych) uruchamia wewnętrznie ścieżkę opartą o <c>MergeWithPemKeyNoProfileForEcdsa</c>.
         /// </remarks>
         /// <param name="publicCert"> Publiczny certyfikat X.509 zawierający klucz ECDSA, który ma zostać powiązany z kluczem prywatnym.</param>
-        /// <param name="privateKeyPem">Treść zaszyfrowanego klucza prywatnego w formacie PEM (blok „ENCRYPTED PRIVATE KEY” PKCS#8).</param>
+        /// <param name="privateKeyPem">Treść zaszyfrowanego klucza prywatnego w formacie PEM (blok „ENCRYPTED PRIVATE KEY" PKCS#8).</param>
         /// <param name="password"> Hasło użyte do zaszyfrowania klucza prywatnego PKCS#8.</param>
         /// <returns> Nowy obiekt <see cref="X509Certificate2"/> zawierający zarówno certyfikat publiczny,
         /// jak i odpowiadający mu klucz prywatny ECDSA, załadowany wyłącznie w pamięci. </returns>
@@ -185,7 +201,7 @@ namespace KSeF.Client.Extensions
         /// <exception cref="NotSupportedException">Rzucany, gdy zdekodowany klucz PKCS#8 nie reprezentuje klucza ECDSA.</exception>
         public static X509Certificate2 MergeWithPemKeyNoProfileForEcdsa(this X509Certificate2 publicCert, string privateKeyPem, string password)
         {
-            ArgumentNullException.ThrowIfNull(publicCert);
+            Guard.ThrowIfNull(publicCert);
 
             if (string.IsNullOrWhiteSpace(privateKeyPem))
             {
@@ -249,7 +265,7 @@ namespace KSeF.Client.Extensions
 
         private static byte[] ExtractEncryptedPkcs8FromPem(string pem)
         {
-            ArgumentNullException.ThrowIfNull(pem);
+            Guard.ThrowIfNull(pem);
 
             const string Begin = "-----BEGIN ENCRYPTED PRIVATE KEY-----";
             const string End = "-----END ENCRYPTED PRIVATE KEY-----";
@@ -279,12 +295,13 @@ namespace KSeF.Client.Extensions
 
         private static bool IsEcdsaPrivateKey(Pkcs8PrivateKeyInfo privateKeyInfo)
         {
-            ArgumentNullException.ThrowIfNull(privateKeyInfo);
+            Guard.ThrowIfNull(privateKeyInfo);
 
             string algorithmOid = privateKeyInfo.AlgorithmId?.Value ?? string.Empty;
 
             return string.Equals(algorithmOid, EcOid, StringComparison.Ordinal);
         }
+#endif
 
     }
 }

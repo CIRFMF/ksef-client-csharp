@@ -20,7 +20,7 @@ public class AuthorizationClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc/>
     public Task<SignatureResponse> SubmitXadesAuthRequestAsync(string signedXML, bool verifyCertificateChain = false, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(signedXML);
+        Guard.ThrowIfNullOrWhiteSpace(signedXML);
 
         string endpoint = Routes.Authorization.XadesSignature + $"?verifyCertificateChain={verifyCertificateChain.ToString().ToLower(System.Globalization.CultureInfo.CurrentCulture)}";
         string path = routeBuilder.Build(endpoint);
@@ -31,14 +31,14 @@ public class AuthorizationClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc/>
     public Task<SignatureResponse> SubmitKsefTokenAuthRequestAsync(AuthenticationKsefTokenRequest requestPayload, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNull(requestPayload);
         return ExecuteAsync<SignatureResponse, AuthenticationKsefTokenRequest>(Routes.Authorization.KsefToken, requestPayload, cancellationToken);
     }
 
     /// <inheritdoc/>
     public Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(authenticationToken);
+        Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
         string endpoint = Routes.Authorization.Status(Uri.EscapeDataString(authOperationReferenceNumber));
         return restClient.SendAsync<AuthStatus, string>(HttpMethod.Get,
             routeBuilder.Build(endpoint),
@@ -51,7 +51,7 @@ public class AuthorizationClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc/>
     public Task<AuthenticationOperationStatusResponse> GetAccessTokenAsync(string authenticationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(authenticationToken);
+        Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
         return restClient.SendAsync<AuthenticationOperationStatusResponse, string>(HttpMethod.Post,
             routeBuilder.Build(Routes.Authorization.Token.Redeem),
             default,
@@ -63,7 +63,7 @@ public class AuthorizationClient(IRestClient restClient, IRouteBuilder routeBuil
     /// <inheritdoc/>
     public Task<RefreshTokenResponse> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
+        Guard.ThrowIfNullOrWhiteSpace(refreshToken);
         return restClient.SendAsync<RefreshTokenResponse, string>(HttpMethod.Post,
             routeBuilder.Build(Routes.Authorization.Token.Refresh),
             default,

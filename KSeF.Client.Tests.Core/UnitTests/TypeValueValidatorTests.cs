@@ -1,4 +1,5 @@
-﻿using KSeF.Client.Validation;
+#nullable enable
+using KSeF.Client.Validation;
 
 namespace KSeF.Client.Tests.Core.UnitTests;
 

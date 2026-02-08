@@ -140,7 +140,7 @@ namespace KSeF.Client.Api.Builders.SubEntityPermissions
             /// <inheritdoc />
             public IContextStep WithSubject(SubunitSubjectIdentifier subject)
             {
-                ArgumentNullException.ThrowIfNull(subject);
+                Guard.ThrowIfNull(subject);
                 if (!TypeValueValidator.Validate(subject))
                 {
                     throw new ArgumentException($"Nieprawidłowa wartość dla typu {subject.Type}", nameof(subject));
@@ -153,7 +153,7 @@ namespace KSeF.Client.Api.Builders.SubEntityPermissions
             /// <inheritdoc />
             public IOptionalStep WithContext(SubunitContextIdentifier context)
             {
-                ArgumentNullException.ThrowIfNull(context);
+                Guard.ThrowIfNull(context);
                 if (!TypeValueValidator.Validate(context))
                 {
                     throw new ArgumentException($"Nieprawidłowa wartość dla typu {context.Type}", nameof(context));
@@ -166,7 +166,7 @@ namespace KSeF.Client.Api.Builders.SubEntityPermissions
             /// <inheritdoc />
             public IOptionalStep WithDescription(string description)
             {
-                ArgumentNullException.ThrowIfNull(description);
+                Guard.ThrowIfNull(description);
                 if (description.Length < ValidValues.PermissionDescriptionMinLength)
                 {
                     throw new ArgumentException($"Opis uprawnienia za krótki, minimalna długość: {ValidValues.PermissionDescriptionMinLength} znaków.", nameof(description));

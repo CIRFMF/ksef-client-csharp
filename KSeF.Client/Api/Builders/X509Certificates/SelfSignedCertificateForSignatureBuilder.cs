@@ -162,6 +162,11 @@ internal sealed class SelfSignedCertificateForSignatureBuilderImpl
     /// <inheritdoc />
     public X509Certificate2 Build()
     {
+#if NETSTANDARD2_0
+        throw new PlatformNotSupportedException(
+            "Self-signed certificate generation is not supported on netstandard2.0. " +
+            "Use .NET 8.0 or later, or provide a pre-existing certificate.");
+#else
         _subjectParts.Add("2.5.4.6=PL");
 
         X500DistinguishedName subjectName = new(string.Join(", ", _subjectParts));
@@ -179,6 +184,7 @@ internal sealed class SelfSignedCertificateForSignatureBuilderImpl
             request = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
             return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.Now.AddYears(2));
         }
+#endif
     }
 }
 

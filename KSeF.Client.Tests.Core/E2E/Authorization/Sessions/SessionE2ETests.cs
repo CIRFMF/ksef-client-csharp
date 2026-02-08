@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Sessions.ActiveSessions;

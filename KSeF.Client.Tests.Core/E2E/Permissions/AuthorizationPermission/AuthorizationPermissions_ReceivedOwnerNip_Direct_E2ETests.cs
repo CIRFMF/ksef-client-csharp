@@ -1,4 +1,5 @@
-﻿using KSeF.Client.Api.Builders.AuthorizationEntityPermissions;
+#nullable enable
+using KSeF.Client.Api.Builders.AuthorizationEntityPermissions;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;

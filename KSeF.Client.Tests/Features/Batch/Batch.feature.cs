@@ -454,7 +454,11 @@ public class BatchTests : KsefIntegrationTestBase
         // Podmiana prawidłowego klucza zaszyfrowanego RSA na losowe dane
         // Klucz musi być zaszyfrowany RSA-OAEP kluczem publicznym MF, więc losowe dane nie będą poprawne
         byte[] corruptedEncryptedKey = new byte[EncryptionKeySize];
+#if NETFRAMEWORK
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) { rng.GetBytes(corruptedEncryptedKey); }
+#else
         RandomNumberGenerator.Fill(corruptedEncryptedKey);
+#endif
 
         EncryptionData corruptedEncryptionData = new()
         {
@@ -581,7 +585,11 @@ public class BatchTests : KsefIntegrationTestBase
         // Generowanie losowego IV zamiast użycia tego, który wykorzystano przy szyfrowaniu
         // W AES-CBC poprawny IV jest kluczowy dla odszyfrowania pierwszego bloku
         byte[] corruptedInitializationVector = new byte[InitializationVectorSize];
+#if NETFRAMEWORK
+        using (RandomNumberGenerator rng = RandomNumberGenerator.Create()) { rng.GetBytes(corruptedInitializationVector); }
+#else
         RandomNumberGenerator.Fill(corruptedInitializationVector);
+#endif
 
         EncryptionData corruptedEncryptionData = new()
         {

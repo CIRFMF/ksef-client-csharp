@@ -1,3 +1,4 @@
+#nullable enable
 namespace KSeF.Client.Tests.Core.Utils.RateLimit;
 
 /// <summary>
@@ -39,6 +40,10 @@ public static class KsefApiLimits
     /// </summary>
     public static IReadOnlyDictionary<KsefApiEndpoint, ApiLimits> GetAllLimits()
     {
+#if NETFRAMEWORK
+        return new System.Collections.ObjectModel.ReadOnlyDictionary<KsefApiEndpoint, ApiLimits>(_limits);
+#else
         return _limits.AsReadOnly();
+#endif
     }
 }

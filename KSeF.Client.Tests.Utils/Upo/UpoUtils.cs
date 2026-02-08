@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Rest;
 using KSeF.Client.Core.Infrastructure.Rest;
@@ -59,8 +60,8 @@ public static class UpoUtils
     /// </summary>
     public static async Task<UpoWithHash> GetUpoWithHashAsync(IRestClient restClient, Uri uri, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(restClient);
-        ArgumentNullException.ThrowIfNull(uri);
+        Guard.ThrowIfNull(restClient);
+        Guard.ThrowIfNull(uri);
 
         RestResponse<string> response = await restClient
             .SendWithHeadersAsync<string, object>(
@@ -89,9 +90,9 @@ public static class UpoUtils
         CancellationToken cancellationToken,
         Func<CancellationToken, Task<string>>? fallbackFetcher = null)
     {
-        ArgumentNullException.ThrowIfNull(restClient);
-        ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(restClient);
+        Guard.ThrowIfNullOrWhiteSpace(relativePath);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         RestResponse<string> response = await restClient
             .SendWithHeadersAsync<string, object>(
@@ -133,8 +134,8 @@ public static class UpoUtils
         CancellationToken cancellationToken = default,
         IKSeFClient? ksefClientFallback = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ksefNumber);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(ksefNumber);
 
         string path = $"/v2/sessions/{Uri.EscapeDataString(sessionReferenceNumber)}/invoices/ksef/{Uri.EscapeDataString(ksefNumber)}/upo";
 
@@ -159,8 +160,8 @@ public static class UpoUtils
         CancellationToken cancellationToken = default,
         IKSeFClient? ksefClientFallback = null)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(invoiceReferenceNumber);
 
         string path = $"/v2/sessions/{Uri.EscapeDataString(sessionReferenceNumber)}/invoices/{Uri.EscapeDataString(invoiceReferenceNumber)}/upo";
 

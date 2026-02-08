@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;

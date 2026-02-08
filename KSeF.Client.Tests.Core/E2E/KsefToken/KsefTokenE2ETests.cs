@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Tests.Utils;

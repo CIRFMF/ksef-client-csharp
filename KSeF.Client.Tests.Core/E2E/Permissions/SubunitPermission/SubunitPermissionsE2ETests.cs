@@ -204,10 +204,10 @@ public class SubunitPermissionsE2ETests : TestBase
 		Assert.All(searchSubordinateEntityInvoiceRolesResponse.Roles, role =>
 		{
 			Assert.NotNull(role.SubordinateEntityIdentifier);
-			Assert.True(Enum.IsDefined(role.SubordinateEntityIdentifier.Type));
+			Assert.True(Enum.IsDefined(typeof(SubordinateEntityIdentifierType), role.SubordinateEntityIdentifier.Type));
 			Assert.False(string.IsNullOrEmpty(role.SubordinateEntityIdentifier.Value));
 
-			Assert.True(Enum.IsDefined(role.Role));
+			Assert.True(Enum.IsDefined(typeof(SubordinateEntityRoleType), role.Role));
 			Assert.False(string.IsNullOrEmpty(role.Description));
 			Assert.NotEqual(default, role.StartDate);
 		});

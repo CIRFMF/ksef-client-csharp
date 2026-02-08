@@ -1,4 +1,5 @@
-﻿using System.Xml;
+#nullable enable
+using System.Xml;
 using System.Xml.Serialization;
 
 namespace KSeF.Client.Tests.Utils.Upo;

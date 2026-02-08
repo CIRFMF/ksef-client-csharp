@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Services;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
@@ -219,9 +220,127 @@ public class QrCodeOfflineE2ETests : TestBase
     {
         using ECDsa ecdsa = ECDsa.Create();
         byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
+#if NETFRAMEWORK
+        ecdsa.ImportParameters(DecodeECPrivateKey(privateKeyBytes));
+#else
         ecdsa.ImportECPrivateKey(privateKeyBytes, out _);
+#endif
         return cert.CopyWithPrivateKey(ecdsa);
     }
+
+#if NETFRAMEWORK
+    /// <summary>
+    /// Minimal SEC1 ECPrivateKey decoder for .NET Framework 4.8 (where ImportECPrivateKey is not available).
+    /// Parses the DER-encoded EC private key and imports it via ECParameters.
+    /// </summary>
+    private static ECParameters DecodeECPrivateKey(byte[] sec1Key)
+    {
+        // SEC1 ECPrivateKey ::= SEQUENCE { version, privateKey, [0] parameters, [1] publicKey }
+        // This is a simplified parser sufficient for test usage with known curves (P-256).
+        using MemoryStream ms = new(sec1Key);
+        using BinaryReader reader = new(ms);
+
+        byte tag = reader.ReadByte(); // SEQUENCE
+        if (tag != 0x30) throw new System.Security.Cryptography.CryptographicException("Invalid SEC1 EC private key");
+        ReadDerLength(reader);
+
+        // version (INTEGER)
+        ReadDerTagAndContent(reader, 0x02);
+
+        // privateKey (OCTET STRING)
+        byte[] d = ReadDerTagAndContent(reader, 0x04);
+
+        // Default to P-256
+        ECParameters ecParams = new()
+        {
+            Curve = ECCurve.NamedCurves.nistP256,
+            D = d
+        };
+
+        // Try to read optional [0] parameters and [1] publicKey
+        while (ms.Position < ms.Length)
+        {
+            byte nextTag = reader.ReadByte();
+            int len = ReadDerLength(reader);
+
+            if ((nextTag & 0xA0) == 0xA0) // context-specific constructed
+            {
+                int tagNum = nextTag & 0x1F;
+                if (tagNum == 1 && len > 0) // [1] publicKey (BIT STRING)
+                {
+                    byte[] pubWrapper = reader.ReadBytes(len);
+                    // BIT STRING: first byte is unused bits count (should be 0)
+                    if (pubWrapper.Length > 1 && pubWrapper[0] == 0x03) // nested BIT STRING
+                    {
+                        using MemoryStream bsMs = new(pubWrapper);
+                        using BinaryReader bsReader = new(bsMs);
+                        bsReader.ReadByte(); // 0x03 tag
+                        int bsLen = ReadDerLength(bsReader);
+                        byte unusedBits = bsReader.ReadByte();
+                        byte[] qBytes = bsReader.ReadBytes(bsLen - 1);
+                        if (qBytes.Length > 0 && qBytes[0] == 0x04) // uncompressed point
+                        {
+                            int coordLen = (qBytes.Length - 1) / 2;
+                            ecParams.Q = new ECPoint
+                            {
+                                X = new byte[coordLen],
+                                Y = new byte[coordLen]
+                            };
+                            Buffer.BlockCopy(qBytes, 1, ecParams.Q.X, 0, coordLen);
+                            Buffer.BlockCopy(qBytes, 1 + coordLen, ecParams.Q.Y, 0, coordLen);
+                        }
+                    }
+                    else if (pubWrapper.Length > 1 && pubWrapper[0] == 0x00)
+                    {
+                        // Direct uncompressed point after unused bits byte
+                        byte[] qBytes = new byte[pubWrapper.Length - 1];
+                        Buffer.BlockCopy(pubWrapper, 1, qBytes, 0, qBytes.Length);
+                        if (qBytes.Length > 0 && qBytes[0] == 0x04)
+                        {
+                            int coordLen = (qBytes.Length - 1) / 2;
+                            ecParams.Q = new ECPoint
+                            {
+                                X = new byte[coordLen],
+                                Y = new byte[coordLen]
+                            };
+                            Buffer.BlockCopy(qBytes, 1, ecParams.Q.X, 0, coordLen);
+                            Buffer.BlockCopy(qBytes, 1 + coordLen, ecParams.Q.Y, 0, coordLen);
+                        }
+                    }
+                }
+                else
+                {
+                    reader.ReadBytes(len); // skip
+                }
+            }
+            else
+            {
+                reader.ReadBytes(len); // skip unknown
+            }
+        }
+
+        return ecParams;
+    }
+
+    private static int ReadDerLength(BinaryReader reader)
+    {
+        byte b = reader.ReadByte();
+        if (b < 0x80) return b;
+        int numBytes = b & 0x7F;
+        int length = 0;
+        for (int i = 0; i < numBytes; i++)
+            length = (length << 8) | reader.ReadByte();
+        return length;
+    }
+
+    private static byte[] ReadDerTagAndContent(BinaryReader reader, byte expectedTag)
+    {
+        byte tag = reader.ReadByte();
+        if (tag != expectedTag) throw new System.Security.Cryptography.CryptographicException($"Expected tag 0x{expectedTag:X2}, got 0x{tag:X2}");
+        int len = ReadDerLength(reader);
+        return reader.ReadBytes(len);
+    }
+#endif
 
     private static X509Certificate2 GetCertWithRsaKey(X509Certificate2 cert, string privateKey)
     {

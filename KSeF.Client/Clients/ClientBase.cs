@@ -16,7 +16,7 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
     protected virtual Task ExecuteAsync<TRequest>(string relativeEndpoint, TRequest body, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(body);
+        Guard.ThrowIfNull(body);
 
         string path = routeBuilder.Build(relativeEndpoint);
         RestRequest<TRequest> req = RestRequest
@@ -28,7 +28,7 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
     protected virtual Task ExecuteAsync<TRequest>(string relativeEndpoint, TRequest body, string accessToken, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(body);
+        Guard.ThrowIfNull(body);
 
         string path = routeBuilder.Build(relativeEndpoint);
         RestRequest<TRequest> request = RestRequest
@@ -41,7 +41,7 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
     protected virtual Task<TResponse> ExecuteAsync<TResponse, TRequest>(string relativeEndpoint, TRequest body, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(body);
+        Guard.ThrowIfNull(body);
 
         string path = routeBuilder.Build(relativeEndpoint);
         RestRequest<TRequest> req = RestRequest
@@ -53,7 +53,7 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
     protected virtual Task<TResponse> ExecuteAsync<TResponse, TRequest>(string relativeEndpoint, TRequest body, string accessToken, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(body);
+        Guard.ThrowIfNull(body);
 
         string path = routeBuilder.Build(relativeEndpoint);
         RestRequest<TRequest> req = RestRequest
@@ -113,7 +113,7 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
     protected virtual Task<TResponse> ExecuteAsync<TResponse, TRequest>(string relativeEndpoint, TRequest body, string accessToken, IDictionary<string, string> additionalHeaders, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(body);
+        Guard.ThrowIfNull(body);
 
         string path = routeBuilder.Build(relativeEndpoint);
         RestRequest<TRequest> req = RestRequest
@@ -134,7 +134,7 @@ public abstract class ClientBase(IRestClient restClient, IRouteBuilder routeBuil
 
     protected virtual Task<TResponse> ExecuteAsync<TResponse>(Uri absoluteUri, HttpMethod httpMethod, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(absoluteUri);
+        Guard.ThrowIfNull(absoluteUri);
 
         RestRequest req = RestRequest
             .New(absoluteUri.ToString(), httpMethod);

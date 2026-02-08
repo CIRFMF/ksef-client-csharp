@@ -435,11 +435,17 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
 			Assert.True(revokedPermissionStatus.RevokedDate.HasValue,
 				"Data wygaśnięcia uprawnienia (revokeDate) powinna zostać ustawiona po cofnięciu uprawnienia");
 
+#if NETFRAMEWORK
+            DateTime expectedDate = DateTime.Parse(revokeDate, CultureInfo.InvariantCulture);
+            DateTime actualDate = revokedPermissionStatus.RevokedDate.Value.ToUniversalTime().Date;
+            Assert.Equal(expectedDate, actualDate);
+#else
             DateOnly expectedDate = DateOnly.Parse(revokeDate, CultureInfo.InvariantCulture);
-            
+
             DateOnly actualDate = DateOnly.FromDateTime(revokedPermissionStatus.RevokedDate.Value.ToUniversalTime());
 
             Assert.Equal(expectedDate, actualDate);
+#endif
         }
 	}
 }

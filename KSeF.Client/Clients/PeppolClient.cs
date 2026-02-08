@@ -19,7 +19,7 @@ public class PeppolClient(IRestClient restClient, IRouteBuilder routeBuilder) : 
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new(Routes.Peppol.Query);
 

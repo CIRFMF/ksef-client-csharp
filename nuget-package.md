@@ -4,8 +4,11 @@
 Paczki nuget dostępne są pod adresem: https://github.com/orgs/CIRFMF/packages
 
 Opis paczek:
-* KSeF.Client - główna biblioteka klienta z logiką biznesową
-* KSeF.Client.Core - modele, interfejsy i wyjątki 
+* KSeF.Client - główna biblioteka klienta z logiką biznesową (`netstandard2.0` · `net8.0` · `net9.0` · `net10.0`)
+* KSeF.Client.Core - modele, interfejsy i wyjątki (`netstandard2.0`)
+* KSeF.Client.ClientFactory - fabryki klientów (`netstandard2.0` · `net8.0` · `net9.0` · `net10.0`)
+
+Dzięki wsparciu `netstandard2.0` paczki są w pełni kompatybilne z **.NET Framework 4.7.2+/4.8**.
 
 ### Wymagania wstępne
 
