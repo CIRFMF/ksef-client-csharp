@@ -255,8 +255,12 @@ public static class OnlineSessionUtils
             throw new ArgumentException("Template requires #iban#/#iban_plain#/#iban_masked# but 'iban' is null/empty.", nameof(iban));
         }
 
-        // daty: jeśli są tokeny – ustaw defaulty (Issue=today, Due=Issue+14)
-        DateTime issueDate = DateTime.Today;
+        // Daty: jeśli są tokeny – ustaw defaulty (Issue=dziś w strefie KSeF, Due=Issue+14).
+        // NAPRAWA: DateTime.Today zwracało datę w strefie lokalnej maszyny, co powodowało
+        // niespójności — ten sam test generował faktury z różnymi datami wystawienia
+        // w zależności od strefy czasowej runnera (CI w UTC vs. deweloper w CET/CEST).
+        // KSeF waliduje daty w polskiej strefie czasowej (Europe/Warsaw).
+        DateTime issueDate = KsefDateTimeHelper.GetWarsawToday();
         DateTime dueDate = issueDate.AddDays(14);
         if (needDue && dueDate < issueDate)
         {

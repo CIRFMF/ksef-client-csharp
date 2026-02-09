@@ -21,7 +21,7 @@ namespace KSeF.Client.Extensions
             }
 
 #if NETSTANDARD2_0
-            // EphemeralKeySet is not available on netstandard2.0
+            // EphemeralKeySet nie jest dostępny na netstandard2.0
             return X509KeyStorageFlags.Exportable;
 #else
             // Windows / Linux

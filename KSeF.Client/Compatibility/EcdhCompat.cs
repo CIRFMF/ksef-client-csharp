@@ -6,21 +6,21 @@ using System.Security.Cryptography;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Polyfill for <see cref="ECDiffieHellman"/> operations on netstandard2.0 / .NET Framework 4.8.
-/// <see cref="ECDiffieHellman"/> is available at RUNTIME on .NET Framework 4.8 (as ECDiffieHellmanCng)
-/// but is NOT part of the netstandard2.0 compile-time contract.
-/// This class uses reflection to access the runtime types.
+/// Polyfill dla operacji <see cref="ECDiffieHellman"/> na netstandard2.0 / .NET Framework 4.8.
+/// <see cref="ECDiffieHellman"/> jest dostępny w RUNTIME na .NET Framework 4.8 (jako ECDiffieHellmanCng),
+/// ale NIE jest częścią kontraktu kompilacji netstandard2.0.
+/// Ta klasa wykorzystuje refleksję do uzyskania dostępu do typów dostępnych w runtime.
 /// </summary>
 internal sealed class EcdhCompat : IDisposable
 {
     private const string EcPublicKeyOid = "1.2.840.10045.2.1";
     private const string NistP256Oid = "1.2.840.10045.3.1.7";
 
-    private readonly object _ecdh;        // ECDiffieHellman instance
+    private readonly object _ecdh;        // Instancja ECDiffieHellman
     private readonly Type _ecdhType;
     private bool _disposed;
 
-    // Cached reflection info
+    // Buforowane informacje refleksji
     private static Type s_ecdhType;
     private static MethodInfo s_createMethod;
     private static PropertyInfo s_publicKeyProp;
@@ -34,19 +34,19 @@ internal sealed class EcdhCompat : IDisposable
     }
 
     /// <summary>
-    /// Creates a new ECDiffieHellman instance with the P-256 curve.
+    /// Tworzy nową instancję ECDiffieHellman z krzywą P-256.
     /// </summary>
     public static EcdhCompat Create()
     {
         EnsureResolved();
         object instance = s_createMethod.Invoke(null, new object[] { ECCurve.NamedCurves.nistP256 });
         if (instance == null)
-            throw new PlatformNotSupportedException("ECDiffieHellman.Create(ECCurve) returned null.");
+            throw new PlatformNotSupportedException("ECDiffieHellman.Create(ECCurve) zwróciło null.");
         return new EcdhCompat(instance);
     }
 
     /// <summary>
-    /// Imports an EC public key from a PEM-encoded SPKI string.
+    /// Importuje klucz publiczny EC z ciągu SPKI zakodowanego w PEM.
     /// </summary>
     public void ImportFromPem(string pem)
     {
@@ -55,23 +55,23 @@ internal sealed class EcdhCompat : IDisposable
         byte[] der = PemHelper.DecodePem(pem, out string label);
 
         if (!string.Equals(label, "PUBLIC KEY", StringComparison.OrdinalIgnoreCase))
-            throw new CryptographicException($"Expected 'PUBLIC KEY' PEM block, got '{label}'.");
+            throw new CryptographicException($"Oczekiwano bloku PEM 'PUBLIC KEY', otrzymano '{label}'.");
 
         ECParameters parameters = DecodeSpkiToEcParameters(der);
         ImportParameters(parameters);
     }
 
     /// <summary>
-    /// Imports EC parameters into the underlying ECDiffieHellman instance.
+    /// Importuje parametry EC do bazowej instancji ECDiffieHellman.
     /// </summary>
     private void ImportParameters(ECParameters parameters)
     {
-        // ECDiffieHellmanCng doesn't have ImportParameters directly,
-        // but we can use ECDiffieHellman.Create() with parameters via a workaround:
-        // Create a new instance, then import via the Key property.
+        // ECDiffieHellmanCng nie ma bezpośrednio ImportParameters,
+        // ale możemy użyć ECDiffieHellman.Create() z parametrami jako obejście:
+        // Tworzymy nową instancję, potem importujemy przez właściwość Key.
 
-        // Actually, on .NET Framework 4.8, ECDiffieHellmanCng has ImportParameters
-        // inherited from ECDiffieHellman (added in .NET Framework 4.7)
+        // W rzeczywistości na .NET Framework 4.8, ECDiffieHellmanCng posiada ImportParameters
+        // odziedziczone z ECDiffieHellman (dodane w .NET Framework 4.7)
         MethodInfo importMethod = _ecdhType.GetMethod("ImportParameters",
             BindingFlags.Public | BindingFlags.Instance,
             null, new[] { typeof(ECParameters) }, null);
@@ -83,11 +83,11 @@ internal sealed class EcdhCompat : IDisposable
         }
 
         throw new PlatformNotSupportedException(
-            "ECDiffieHellman.ImportParameters is not available on this platform.");
+            "ECDiffieHellman.ImportParameters nie jest dostępne na tej platformie.");
     }
 
     /// <summary>
-    /// Derives a shared secret using the other party's public key.
+    /// Wyprowadza wspólny sekret przy użyciu klucza publicznego drugiej strony.
     /// </summary>
     public byte[] DeriveKeyMaterial(EcdhCompat otherPublicKey)
     {
@@ -97,17 +97,17 @@ internal sealed class EcdhCompat : IDisposable
     }
 
     /// <summary>
-    /// Gets the public key and exports it as SubjectPublicKeyInfo DER.
+    /// Pobiera klucz publiczny i eksportuje go jako SubjectPublicKeyInfo w formacie DER.
     /// </summary>
     public byte[] ExportSubjectPublicKeyInfo()
     {
-        // Export EC parameters and encode as SPKI
+        // Eksportuj parametry EC i zakoduj jako SPKI
         MethodInfo exportMethod = _ecdhType.GetMethod("ExportParameters",
             BindingFlags.Public | BindingFlags.Instance,
             null, new[] { typeof(bool) }, null);
 
         if (exportMethod == null)
-            throw new PlatformNotSupportedException("ECDiffieHellman.ExportParameters not available.");
+            throw new PlatformNotSupportedException("ECDiffieHellman.ExportParameters nie jest dostępne.");
 
         ECParameters parameters = (ECParameters)exportMethod.Invoke(_ecdh, new object[] { false });
         return EncodeEcPublicKeySpki(parameters);
@@ -117,12 +117,12 @@ internal sealed class EcdhCompat : IDisposable
     {
         if (s_resolved) return;
 
-        // Try to find ECDiffieHellman in loaded assemblies
+        // Spróbuj znaleźć ECDiffieHellman w załadowanych assembly
         s_ecdhType = typeof(ECDsa).Assembly.GetType("System.Security.Cryptography.ECDiffieHellman");
 
         if (s_ecdhType == null)
         {
-            // Search all loaded assemblies
+            // Szukaj we wszystkich załadowanych assembly
             foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 s_ecdhType = asm.GetType("System.Security.Cryptography.ECDiffieHellman");
@@ -132,14 +132,14 @@ internal sealed class EcdhCompat : IDisposable
 
         if (s_ecdhType == null)
             throw new PlatformNotSupportedException(
-                "ECDiffieHellman is not available on this platform. .NET Framework 4.7+ is required.");
+                "ECDiffieHellman nie jest dostępny na tej platformie. Wymagany jest .NET Framework 4.7+.");
 
         s_createMethod = s_ecdhType.GetMethod("Create",
             BindingFlags.Public | BindingFlags.Static,
             null, new[] { typeof(ECCurve) }, null);
 
         if (s_createMethod == null)
-            throw new PlatformNotSupportedException("ECDiffieHellman.Create(ECCurve) not found.");
+            throw new PlatformNotSupportedException("Nie znaleziono ECDiffieHellman.Create(ECCurve).");
 
         s_publicKeyProp = s_ecdhType.GetProperty("PublicKey",
             BindingFlags.Public | BindingFlags.Instance);
@@ -156,10 +156,10 @@ internal sealed class EcdhCompat : IDisposable
         s_resolved = true;
     }
 
-    #region ASN.1 SPKI encoding/decoding
+    #region Kodowanie/dekodowanie ASN.1 SPKI
 
     /// <summary>
-    /// Decodes a SubjectPublicKeyInfo (SPKI) DER structure to ECParameters.
+    /// Dekoduje strukturę DER SubjectPublicKeyInfo (SPKI) do <see cref="ECParameters"/>.
     /// </summary>
     private static ECParameters DecodeSpkiToEcParameters(byte[] spki)
     {
@@ -170,7 +170,7 @@ internal sealed class EcdhCompat : IDisposable
         AsnReader algId = sequence.ReadSequence();
         string algOid = algId.ReadObjectIdentifier();
         if (algOid != EcPublicKeyOid)
-            throw new CryptographicException($"Expected EC public key OID, got '{algOid}'.");
+            throw new CryptographicException($"Oczekiwano OID klucza publicznego EC, otrzymano '{algOid}'.");
         string curveOid = algId.ReadObjectIdentifier();
 
         ECCurve curve;
@@ -181,14 +181,14 @@ internal sealed class EcdhCompat : IDisposable
         else if (curveOid == "1.3.132.0.35")
             curve = ECCurve.NamedCurves.nistP521;
         else
-            throw new CryptographicException($"Unsupported EC curve OID: '{curveOid}'.");
+            throw new CryptographicException($"Nieobsługiwany OID krzywej EC: '{curveOid}'.");
 
         // SubjectPublicKey BIT STRING
         byte[] publicKeyBits = sequence.ReadBitString(out int unusedBits);
 
-        // Uncompressed point: 0x04 || X || Y
+        // Punkt nieskompresowany: 0x04 || X || Y
         if (publicKeyBits.Length == 0 || publicKeyBits[0] != 0x04)
-            throw new CryptographicException("Only uncompressed EC points are supported.");
+            throw new CryptographicException("Obsługiwane są tylko nieskompresowane punkty EC.");
 
         int coordLen = (publicKeyBits.Length - 1) / 2;
         byte[] x = new byte[coordLen];
@@ -204,7 +204,7 @@ internal sealed class EcdhCompat : IDisposable
     }
 
     /// <summary>
-    /// Encodes EC public key parameters as SubjectPublicKeyInfo (SPKI) DER.
+    /// Koduje parametry klucza publicznego EC jako SubjectPublicKeyInfo (SPKI) w formacie DER.
     /// </summary>
     private static byte[] EncodeEcPublicKeySpki(ECParameters parameters)
     {
@@ -214,7 +214,7 @@ internal sealed class EcdhCompat : IDisposable
         Buffer.BlockCopy(parameters.Q.X, 0, point, 1, coordLen);
         Buffer.BlockCopy(parameters.Q.Y, 0, point, 1 + coordLen, coordLen);
 
-        string curveOid = NistP256Oid; // default
+        string curveOid = NistP256Oid; // domyślnie
         if (parameters.Curve.Oid?.Value != null)
         {
             curveOid = parameters.Curve.Oid.Value;

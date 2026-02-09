@@ -97,13 +97,18 @@ internal sealed class SelfSignedCertificateForSealBuilderImpl
         string subjectDN = string.Join(", ", _subjectParts);
 
 #if NETSTANDARD2_0
+        // NAPRAWA: DateTimeOffset.UtcNow zamiast .Now — NotBefore i NotAfter muszą mieć
+        // spójne offsety (oba UTC), aby certyfikat nie zależał od strefy czasowej maszyny.
         return Compatibility.SelfSignedCertificateCompat.CreateSelfSignedRsa(
             subjectDN,
             DateTimeOffset.UtcNow.AddMinutes(-61),
-            DateTimeOffset.Now.AddYears(2));
+            DateTimeOffset.UtcNow.AddYears(2));
 #else
+        // NAPRAWA: DateTimeOffset.UtcNow zamiast .Now — spójność z NotBefore (UTC).
+        // Mieszanie .UtcNow (NotBefore) z .Now (NotAfter) powodowało zależność certyfikatu
+        // od strefy czasowej maszyny — różne offsety w jednym wywołaniu CreateSelfSigned.
         X509Certificate2 certificate = new CertificateRequest(subjectDN, RSA.Create(2048), HashAlgorithmName.SHA256, RSASignaturePadding.Pss)
-            .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.Now.AddYears(2));
+            .CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.UtcNow.AddYears(2));
 
         return certificate;
 #endif

@@ -155,8 +155,8 @@ public class CryptographyService : ICryptographyService, IDisposable
         using Aes aes = CreateConfiguredAes(key, iv);
         using ICryptoTransform encryptor = aes.CreateEncryptor();
 #if NETSTANDARD2_0
-        // CryptoStream(stream, transform, mode, leaveOpen) not available on netstandard2.0.
-        // Don't use 'using' — Dispose would close the output stream.
+        // CryptoStream(stream, transform, mode, leaveOpen) niedostępny na netstandard2.0.
+        // Nie używaj 'using' — Dispose zamknąłby strumień wyjściowy.
         CryptoStream cryptoStream = new(output, encryptor, CryptoStreamMode.Write);
         input.CopyTo(cryptoStream);
         cryptoStream.FlushFinalBlock();
@@ -249,7 +249,7 @@ public class CryptographyService : ICryptographyService, IDisposable
         }
 
 #if NETSTANDARD2_0
-        // RSACng supports both PSS and PKCS1 signing, and guarantees 2048-bit key size.
+        // RSACng obsługuje zarówno podpis PSS, jak i PKCS1, i gwarantuje rozmiar klucza 2048 bitów.
         using RSA rsa = new RSACng(2048);
 #else
         using RSA rsa = RSA.Create(2048);
@@ -392,7 +392,7 @@ public class CryptographyService : ICryptographyService, IDisposable
 #if NETSTANDARD2_0
         using RSA rsa = Compatibility.RsaCompat.CreateFromPemWithOaepSupport(publicKey);
 #else
-        RSA rsa = RSA.Create();
+        using RSA rsa = RSA.Create();
         rsa.ImportFromPem(publicKey);
 #endif
         return rsa.Encrypt(content, padding);
@@ -405,7 +405,7 @@ public class CryptographyService : ICryptographyService, IDisposable
 #if NETSTANDARD2_0
         using RSA rsa = Compatibility.RsaCompat.CreateFromPemWithOaepSupport(publicKey);
 #else
-        RSA rsa = RSA.Create();
+        using RSA rsa = RSA.Create();
         rsa.ImportFromPem(publicKey);
 #endif
         return rsa.Encrypt(content, RSAEncryptionPadding.OaepSHA256);

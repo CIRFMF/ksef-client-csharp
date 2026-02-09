@@ -86,7 +86,8 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         // Create full self-signed RSA cert with private key
         using RSA rsa = RSA.Create(2048);
         CertificateRequest certificateRequest = new("CN=TestRSA", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-        X509Certificate2 fullCert = certificateRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow zamiast Now — spójność z pozostałymi testami i eliminacja zależności od strefy maszyny
+        X509Certificate2 fullCert = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
         // Act
         string url = verificationLinkService.BuildCertificateVerificationUrl(nip, QRCodeContextIdentifierType.Nip, nip, invoiceHash, fullCert);
@@ -95,7 +96,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string[] segments = [.. new Uri(url)
             .Segments
             .Select(s => s.Trim('/'))];
-                
+
         Assert.Equal("certificate", segments[1]);
         Assert.Equal("Nip", segments[2]);
         Assert.Equal(nip, segments[3]);
@@ -113,8 +114,9 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string xml = "<x/>";
         string invoiceHash;
         string cnEntry = "CN=TestECDSA";
-        DateTimeOffset certificateValidNotBefore = DateTimeOffset.Now;
-        DateTimeOffset certificateValidNotAfter = DateTimeOffset.Now.AddYears(1);
+        // UtcNow zamiast Now — eliminacja zależności od strefy czasowej maszyny
+        DateTimeOffset certificateValidNotBefore = DateTimeOffset.UtcNow;
+        DateTimeOffset certificateValidNotAfter = DateTimeOffset.UtcNow.AddYears(1);
         byte[] hashBytes = ComputeSha256(Encoding.UTF8.GetBytes(xml));
         invoiceHash = Convert.ToBase64String(hashBytes);
 
@@ -125,8 +127,8 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
 
         // Act
 #if NETFRAMEWORK
-        // On .NET Framework, ExportPkcs8PrivateKeyPem() is not available.
-        // GetRSAPrivateKey() returns null for ECDSA cert, so the value is always null here.
+        // Na .NET Framework ExportPkcs8PrivateKeyPem() nie jest dostępne.
+        // GetRSAPrivateKey() zwraca null dla certyfikatu ECDSA, więc wartość jest tu zawsze null.
         string? rsaPrivateKeyPem = null;
 #else
         string? rsaPrivateKeyPem = fullCert.GetRSAPrivateKey()?.ExportPkcs8PrivateKeyPem();
@@ -158,7 +160,8 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         // Arrange: certyfikat z samym kluczem publicznym (bez prywatnego)
         using RSA rsa = RSA.Create(2048);
         CertificateRequest req = new("CN=PublicOnly", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow — spójność z resztą testów
+        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
         // Eksport tylko publicznego certyfikatu
         byte[] publicBytes = fullCert.Export(X509ContentType.Cert);
@@ -268,12 +271,13 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
 
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         CertificateRequest req = new("CN=TestECDSA", ecdsa, HashAlgorithmName.SHA256);
-        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+        // UtcNow — spójność z resztą testów
+        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
 
         // Act – jawnie przekazujemy prywatny klucz ECDSA
 #if NETFRAMEWORK
-        // ExportPkcs8PrivateKeyPem() is not available on .NET Framework 4.8.
-        // The cert already has the private key embedded, so passing null is safe.
+        // ExportPkcs8PrivateKeyPem() nie jest dostępne na .NET Framework 4.8.
+        // Certyfikat ma już osadzony klucz prywatny, więc przekazanie null jest bezpieczne.
         string? privateKeyPem = null;
 #else
         string? privateKeyPem = fullCert.GetECDsaPrivateKey()?.ExportPkcs8PrivateKeyPem();
@@ -297,7 +301,8 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         // Arrange – public-only ECC powinno rzucić
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         CertificateRequest req = new("CN=PublicOnly", ecdsa, HashAlgorithmName.SHA256);
-        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow — spójność z resztą testów
+        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
         byte[] publicBytes = fullCert.Export(X509ContentType.Cert);
         X509Certificate2 pubOnly = X509CertificateLoaderExtensions.LoadCertificate(publicBytes);
 

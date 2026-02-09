@@ -5,45 +5,45 @@ using System.Security.Cryptography;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Decrypts PKCS#8 EncryptedPrivateKeyInfo structures using PBES2 (PBKDF2 + AES-CBC).
-/// Provides functionality equivalent to <c>Pkcs8PrivateKeyInfo.DecryptAndDecode</c> (.NET Core 3.0+).
+/// Deszyfruje struktury PKCS#8 EncryptedPrivateKeyInfo przy użyciu PBES2 (PBKDF2 + AES-CBC).
+/// Zapewnia funkcjonalność równoważną z <c>Pkcs8PrivateKeyInfo.DecryptAndDecode</c> (.NET Core 3.0+).
 /// </summary>
 /// <remarks>
-/// Supports the following encryption schemes:
+/// Obsługuje następujące schematy szyfrowania:
 /// <list type="bullet">
-///   <item><description>PBES2 with PBKDF2 (HMAC-SHA1, HMAC-SHA256, HMAC-SHA384, HMAC-SHA512)</description></item>
-///   <item><description>AES-128-CBC, AES-192-CBC, AES-256-CBC encryption</description></item>
-///   <item><description>3DES-CBC encryption (for older key files)</description></item>
+///   <item><description>PBES2 z PBKDF2 (HMAC-SHA1, HMAC-SHA256, HMAC-SHA384, HMAC-SHA512)</description></item>
+///   <item><description>Szyfrowanie AES-128-CBC, AES-192-CBC, AES-256-CBC</description></item>
+///   <item><description>Szyfrowanie 3DES-CBC (dla starszych plików kluczy)</description></item>
 /// </list>
 /// </remarks>
 internal static class Pkcs8Decryptor
 {
-    // PBES2 OID
+    // OID PBES2
     private const string Pbes2Oid = "1.2.840.113549.1.5.13";
 
-    // PBKDF2 OID
+    // OID PBKDF2
     private const string Pbkdf2Oid = "1.2.840.113549.1.5.12";
 
-    // HMAC algorithm OIDs
+    // OID algorytmów HMAC
     private const string HmacSha1Oid = "1.2.840.113549.2.7";
     private const string HmacSha256Oid = "1.2.840.113549.2.9";
     private const string HmacSha384Oid = "1.2.840.113549.2.10";
     private const string HmacSha512Oid = "1.2.840.113549.2.11";
 
-    // Encryption algorithm OIDs
+    // OID algorytmów szyfrowania
     private const string Aes128CbcOid = "2.16.840.1.101.3.4.1.2";
     private const string Aes192CbcOid = "2.16.840.1.101.3.4.1.22";
     private const string Aes256CbcOid = "2.16.840.1.101.3.4.1.42";
     private const string DesEde3CbcOid = "1.2.840.113549.3.7";
 
     /// <summary>
-    /// Decrypts a PKCS#8 EncryptedPrivateKeyInfo and returns the inner PrivateKeyInfo DER bytes.
+    /// Deszyfruje PKCS#8 EncryptedPrivateKeyInfo i zwraca wewnętrzne bajty DER PrivateKeyInfo.
     /// </summary>
-    /// <param name="encryptedPkcs8">The DER-encoded EncryptedPrivateKeyInfo.</param>
-    /// <param name="password">The password used to decrypt.</param>
-    /// <returns>The decrypted PrivateKeyInfo DER bytes.</returns>
+    /// <param name="encryptedPkcs8">Zakodowana w DER struktura EncryptedPrivateKeyInfo.</param>
+    /// <param name="password">Hasło użyte do deszyfrowania.</param>
+    /// <returns>Odszyfrowane bajty DER PrivateKeyInfo.</returns>
     /// <exception cref="CryptographicException">
-    /// The encrypted data could not be decrypted, or the encryption scheme is not supported.
+    /// Nie udało się odszyfrować danych lub schemat szyfrowania nie jest obsługiwany.
     /// </exception>
     /// <remarks>
     /// <code>
@@ -58,7 +58,7 @@ internal static class Pkcs8Decryptor
         AsnReader reader = new AsnReader(encryptedPkcs8, AsnEncodingRules.DER);
         AsnReader sequence = reader.ReadSequence();
 
-        // Parse AlgorithmIdentifier
+        // Parsuj AlgorithmIdentifier
         AsnReader algIdSequence = sequence.ReadSequence();
         string encAlgOid = algIdSequence.ReadObjectIdentifier();
 
@@ -66,32 +66,32 @@ internal static class Pkcs8Decryptor
             throw new CryptographicException(
                 $"Nieobsługiwany schemat szyfrowania PKCS#8: '{encAlgOid}'. Obsługiwany jest tylko PBES2 ({Pbes2Oid}).");
 
-        // Parse PBES2 parameters
+        // Parsuj parametry PBES2
         AsnReader pbes2Params = algIdSequence.ReadSequence();
         ParsePbes2Parameters(pbes2Params,
             out byte[] salt, out int iterations, out string prfOid,
             out string encSchemeOid, out byte[] iv, out int keyLength);
 
-        // Read encrypted data
+        // Odczytaj zaszyfrowane dane
         byte[] encryptedData = sequence.ReadOctetString();
 
-        // Determine key length from encryption scheme if not specified in KDF
+        // Ustal długość klucza ze schematu szyfrowania, jeśli nie podano w KDF
         if (keyLength == 0)
         {
             keyLength = GetKeyLengthForScheme(encSchemeOid);
         }
 
-        // Derive key using PBKDF2
+        // Wyprowadź klucz za pomocą PBKDF2
         byte[] derivedKey = DeriveKey(password, salt, iterations, keyLength, prfOid);
 
-        // Decrypt
+        // Deszyfruj
         byte[] decrypted = DecryptData(derivedKey, iv, encryptedData, encSchemeOid);
 
-        // Validate that the result is a valid ASN.1 SEQUENCE (PrivateKeyInfo)
+        // Zweryfikuj, że wynik jest poprawną sekwencją ASN.1 SEQUENCE (PrivateKeyInfo)
         try
         {
             AsnReader validation = new AsnReader(decrypted, AsnEncodingRules.DER);
-            validation.ReadSequence(); // Should not throw if valid
+            validation.ReadSequence(); // Nie powinno rzucić wyjątku jeśli dane są poprawne
         }
         catch (AsnContentException ex)
         {
@@ -103,7 +103,7 @@ internal static class Pkcs8Decryptor
     }
 
     /// <summary>
-    /// Parses PBES2-params structure.
+    /// Parsuje strukturę PBES2-params.
     /// <code>
     /// PBES2-params ::= SEQUENCE {
     ///     keyDerivationFunc AlgorithmIdentifier {{ PBES2-KDFs }},
@@ -116,7 +116,7 @@ internal static class Pkcs8Decryptor
         out byte[] salt, out int iterations, out string prfOid,
         out string encSchemeOid, out byte[] iv, out int keyLength)
     {
-        // Key Derivation Function (PBKDF2)
+        // Funkcja wyprowadzania klucza (PBKDF2)
         AsnReader kdfSequence = pbes2Params.ReadSequence();
         string kdfOid = kdfSequence.ReadObjectIdentifier();
 
@@ -124,15 +124,15 @@ internal static class Pkcs8Decryptor
             throw new CryptographicException(
                 $"Nieobsługiwana funkcja wyprowadzania klucza: '{kdfOid}'. Obsługiwany jest tylko PBKDF2 ({Pbkdf2Oid}).");
 
-        // PBKDF2-params
+        // Parametry PBKDF2
         AsnReader pbkdf2Params = kdfSequence.ReadSequence();
         salt = pbkdf2Params.ReadOctetString();
 
-        // iterations is BigInteger but practically fits in int
+        // iterations jest BigInteger, ale praktycznie mieści się w int
         System.Numerics.BigInteger iterBig = pbkdf2Params.ReadInteger();
         iterations = (int)iterBig;
 
-        // Optional keyLength
+        // Opcjonalna długość klucza
         keyLength = 0;
         if (pbkdf2Params.HasData)
         {
@@ -144,7 +144,7 @@ internal static class Pkcs8Decryptor
             }
         }
 
-        // PRF algorithm (default HMAC-SHA1 if not present)
+        // Algorytm PRF (domyślnie HMAC-SHA1 jeśli nie podano)
         prfOid = HmacSha1Oid;
         if (pbkdf2Params.HasData)
         {
@@ -152,36 +152,36 @@ internal static class Pkcs8Decryptor
             prfOid = prfSequence.ReadObjectIdentifier();
         }
 
-        // Encryption Scheme
+        // Schemat szyfrowania
         AsnReader encSequence = pbes2Params.ReadSequence();
         encSchemeOid = encSequence.ReadObjectIdentifier();
         iv = encSequence.ReadOctetString();
     }
 
     /// <summary>
-    /// Derives a key using PBKDF2 with the specified PRF algorithm.
-    /// On netstandard2.0, <see cref="Rfc2898DeriveBytes"/> only supports HMAC-SHA1
-    /// natively (no <see cref="HashAlgorithmName"/> constructor). For other PRFs,
-    /// we implement PBKDF2 manually using the appropriate HMAC algorithm.
+    /// Wyprowadza klucz za pomocą PBKDF2 z podanym algorytmem PRF.
+    /// Na netstandard2.0 <see cref="Rfc2898DeriveBytes"/> natywnie obsługuje tylko HMAC-SHA1
+    /// (brak konstruktora z <see cref="HashAlgorithmName"/>). Dla innych PRF
+    /// implementujemy PBKDF2 ręcznie z odpowiednim algorytmem HMAC.
     /// </summary>
     private static byte[] DeriveKey(string password, byte[] salt, int iterations, int keyLength, string prfOid)
     {
-        // On netstandard2.0, Rfc2898DeriveBytes only has HMAC-SHA1 support.
-        // For SHA-1, use the built-in class. For others, implement manually.
+        // Na netstandard2.0 Rfc2898DeriveBytes obsługuje tylko HMAC-SHA1.
+        // Dla SHA-1 użyj wbudowanej klasy. Dla pozostałych — implementacja ręczna.
         if (prfOid == HmacSha1Oid)
         {
             using Rfc2898DeriveBytes pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations);
             return pbkdf2.GetBytes(keyLength);
         }
 
-        // Manual PBKDF2 implementation for non-SHA1 PRFs
+        // Ręczna implementacja PBKDF2 dla PRF innych niż SHA1
         byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
         return Pbkdf2Manual(passwordBytes, salt, iterations, keyLength, prfOid);
     }
 
     /// <summary>
-    /// Manual PBKDF2 implementation (RFC 2898) supporting arbitrary HMAC algorithms.
-    /// Used on netstandard2.0 where <see cref="Rfc2898DeriveBytes"/> only supports HMAC-SHA1.
+    /// Ręczna implementacja PBKDF2 (RFC 2898) obsługująca dowolne algorytmy HMAC.
+    /// Używana na netstandard2.0, gdzie <see cref="Rfc2898DeriveBytes"/> obsługuje tylko HMAC-SHA1.
     /// </summary>
     private static byte[] Pbkdf2Manual(byte[] password, byte[] salt, int iterations, int keyLength, string prfOid)
     {
@@ -204,7 +204,7 @@ internal static class Pkcs8Decryptor
     }
 
     /// <summary>
-    /// Computes a single PBKDF2 block: U_1 XOR U_2 XOR ... XOR U_c.
+    /// Oblicza pojedynczy blok PBKDF2: U_1 XOR U_2 XOR ... XOR U_c.
     /// </summary>
     private static byte[] Pbkdf2Block(HMAC hmac, byte[] salt, int iterations, int blockIndex)
     {
@@ -233,7 +233,7 @@ internal static class Pkcs8Decryptor
     }
 
     /// <summary>
-    /// Creates an HMAC instance for the specified PRF OID.
+    /// Tworzy instancję HMAC dla podanego OID algorytmu PRF.
     /// </summary>
     private static HMAC CreateHmac(string prfOid, byte[] key)
     {
@@ -249,7 +249,7 @@ internal static class Pkcs8Decryptor
     }
 
     /// <summary>
-    /// Decrypts data using the specified encryption scheme.
+    /// Deszyfruje dane przy użyciu podanego schematu szyfrowania.
     /// </summary>
     private static byte[] DecryptData(byte[] key, byte[] iv, byte[] encryptedData, string encSchemeOid)
     {
@@ -290,7 +290,7 @@ internal static class Pkcs8Decryptor
     }
 
     /// <summary>
-    /// Determines the required key length in bytes for a given encryption scheme OID.
+    /// Określa wymaganą długość klucza w bajtach dla danego OID schematu szyfrowania.
     /// </summary>
     private static int GetKeyLengthForScheme(string encSchemeOid)
     {

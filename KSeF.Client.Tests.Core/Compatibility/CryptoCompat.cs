@@ -4,8 +4,16 @@ using System.Security.Cryptography;
 
 namespace KSeF.Client.Tests.Core.Compatibility;
 
+/// <summary>
+/// Polyfill dla RSA.ImportRSAPrivateKey niedostępnego jako metoda instancyjna na .NET Framework 4.8.
+/// Ręcznie parsuje klucz prywatny RSA w formacie PKCS#1 DER i importuje przez <see cref="RSA.ImportParameters"/>.
+/// </summary>
 internal static class RsaExtensions
 {
+    /// <summary>
+    /// Importuje klucz prywatny RSA w formacie PKCS#1 DER.
+    /// Polyfill dla RSA.ImportRSAPrivateKey dostępnego od .NET Core 3.0.
+    /// </summary>
     public static void ImportRSAPrivateKey(this RSA rsa, byte[] source, out int bytesRead)
     {
         bytesRead = source.Length;
@@ -13,6 +21,9 @@ internal static class RsaExtensions
         rsa.ImportParameters(parameters);
     }
 
+    /// <summary>
+    /// Dekoduje klucz prywatny RSA z formatu PKCS#1 DER (RFC 8017).
+    /// </summary>
     private static RSAParameters DecodeRSAPrivateKey(byte[] pkcs1)
     {
         using System.IO.MemoryStream ms = new(pkcs1);

@@ -94,7 +94,8 @@ public class X509CertificateLoaderExtensionsTests
         using RSA rsa = RSA.Create();
         CertificateRequest req = new(
             "CN=Test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-        X509Certificate2 certWithKey = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow — eliminacja zależności od strefy czasowej maszyny
+        X509Certificate2 certWithKey = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
         string dummyPem = rsa.ExportPkcs8PrivateKeyPem();
 
@@ -264,8 +265,10 @@ public class X509CertificateLoaderExtensionsTests
             CertificateRequest req = new(
                 "CN=TestRSA", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
+            // UtcNow — spójność ze standardem UTC w testach i eliminacja
+            // zależności od strefy czasowej maszyny (CI vs. deweloper)
             using X509Certificate2 fullCert = req.CreateSelfSigned(
-                DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+                DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
             X509Certificate2 publicCert = X509CertificateLoaderExtensions.LoadCertificate(fullCert.Export(X509ContentType.Cert));
 
@@ -292,8 +295,9 @@ public class X509CertificateLoaderExtensionsTests
             CertificateRequest req = new(
                 "CN=TestECDSA", ecdsa, HashAlgorithmName.SHA256);
 
+            // UtcNow — spójność ze standardem UTC w testach
             using X509Certificate2 fullCert = req.CreateSelfSigned(
-                DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+                DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
             X509Certificate2 publicCert = X509CertificateLoaderExtensions.LoadCertificate(fullCert.Export(X509ContentType.Cert));
 

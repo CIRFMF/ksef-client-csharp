@@ -3,8 +3,8 @@
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Polyfill for <c>Random.Shared</c> property available since .NET 6.
-/// Uses <c>[ThreadStatic]</c> for thread-safe per-thread instances.
+/// Polyfill dla właściwości <c>Random.Shared</c> dostępnej od .NET 6.
+/// Używa <c>[ThreadStatic]</c> dla bezpiecznych wątkowo instancji per-wątek.
 /// </summary>
 internal static class RandomCompat
 {
@@ -12,7 +12,7 @@ internal static class RandomCompat
     private static Random? _shared;
 
     /// <summary>
-    /// Gets a thread-safe shared <see cref="Random"/> instance.
+    /// Pobiera bezpieczną wątkowo współdzieloną instancję <see cref="Random"/>.
     /// </summary>
     public static Random Shared => _shared ??= new Random();
 }

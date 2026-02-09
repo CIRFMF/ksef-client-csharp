@@ -44,7 +44,7 @@ internal static class CryptoCompat
             throw new CryptographicException("Invalid PKCS#1 RSA private key - expected SEQUENCE");
         ReadLength(reader);
 
-        ReadIntegerRaw(reader); // skip version
+        ReadIntegerRaw(reader); // pomiń wersję
 
         RSAParameters p = new()
         {
@@ -75,7 +75,7 @@ internal static class CryptoCompat
     #region ECDsa SEC1 decoding
 
     /// <summary>
-    /// OID mappings for named curves.
+    /// Mapowania OID dla nazwanych krzywych.
     /// </summary>
     private static readonly Dictionary<string, ECCurve> OidToCurve = new()
     {
@@ -89,29 +89,29 @@ internal static class CryptoCompat
         using MemoryStream ms = new(der);
         using BinaryReader reader = new(ms);
 
-        // SEQUENCE
+        // Główny SEQUENCE
         if (reader.ReadByte() != 0x30)
             throw new CryptographicException("Invalid SEC1 ECPrivateKey - expected SEQUENCE");
         ReadLength(reader);
 
-        // version INTEGER (1)
+        // wersja INTEGER (1)
         ReadIntegerRaw(reader);
 
-        // privateKey OCTET STRING
+        // klucz prywatny OCTET STRING
         byte[] privateKeyBytes = ReadOctetString(reader);
 
-        // Optional parameters [0] - curve OID
+        // Opcjonalne parametry [0] — OID krzywej
         ECCurve curve = default;
         bool hasCurve = false;
 
         if (ms.Position < ms.Length)
         {
             byte tag = reader.ReadByte();
-            if ((tag & 0xE0) == 0xA0) // context-specific tag [0]
+            if ((tag & 0xE0) == 0xA0) // tag kontekstowy [0]
             {
                 int len = ReadLength(reader);
-                // Read OID
-                if (reader.ReadByte() == 0x06) // OID tag
+                // Odczytaj OID
+                if (reader.ReadByte() == 0x06) // tag OID
                 {
                     int oidLen = ReadLength(reader);
                     byte[] oidBytes = reader.ReadBytes(oidLen);
@@ -127,32 +127,32 @@ internal static class CryptoCompat
 
         if (!hasCurve)
         {
-            // Default to P-256 if no curve OID is found
+            // Domyślnie P-256 jeśli nie znaleziono OID krzywej
             curve = ECCurve.NamedCurves.nistP256;
         }
 
-        // Determine key size from curve or private key bytes
+        // Określ rozmiar klucza z krzywej lub bajtów klucza prywatnego
         int keySize = GetKeySizeForCurve(curve);
         byte[] d = PadLeft(privateKeyBytes, keySize);
 
-        // Try to read optional public key [1]
+        // Spróbuj odczytać opcjonalny klucz publiczny [1]
         byte[]? qx = null;
         byte[]? qy = null;
 
         if (ms.Position < ms.Length)
         {
             byte tag = reader.ReadByte();
-            if ((tag & 0xE0) == 0xA0 && (tag & 0x1F) == 1) // context-specific tag [1]
+            if ((tag & 0xE0) == 0xA0 && (tag & 0x1F) == 1) // tag kontekstowy [1]
             {
                 int len = ReadLength(reader);
-                // BIT STRING
+                // BIT STRING — klucz publiczny
                 if (reader.ReadByte() == 0x03)
                 {
                     int bitLen = ReadLength(reader);
-                    reader.ReadByte(); // unused bits (should be 0)
+                    reader.ReadByte(); // nieużywane bity (powinno być 0)
                     byte[] pubKeyBytes = reader.ReadBytes(bitLen - 1);
 
-                    if (pubKeyBytes.Length > 0 && pubKeyBytes[0] == 0x04) // uncompressed point
+                    if (pubKeyBytes.Length > 0 && pubKeyBytes[0] == 0x04) // nieskompresowany punkt
                     {
                         int coordLen = (pubKeyBytes.Length - 1) / 2;
                         qx = new byte[coordLen];
@@ -176,16 +176,16 @@ internal static class CryptoCompat
         }
         else
         {
-            // Generate public key from private key by importing and re-exporting
+            // Wygeneruj klucz publiczny z prywatnego przez import i re-eksport
             using ECDsa tempEcdsa = ECDsa.Create();
-            // First set a dummy Q so ImportParameters doesn't fail
+            // Najpierw ustaw fikcyjne Q, żeby ImportParameters nie zwrócił błędu
             ecParams.Q = new ECPoint
             {
                 X = new byte[keySize],
                 Y = new byte[keySize]
             };
 
-            // Use a workaround: create from parameters with private key, then export to get Q
+            // Obejście: utwórz z parametrów z kluczem prywatnym, potem wyeksportuj żeby uzyskać Q
             try
             {
                 tempEcdsa.ImportParameters(ecParams);
@@ -194,7 +194,7 @@ internal static class CryptoCompat
             }
             catch
             {
-                // If import fails with dummy Q, leave Q as-is and let caller handle
+                // Jeśli import z fikcyjnym Q się nie powiedzie, zostaw Q jak jest
             }
         }
 
@@ -223,7 +223,7 @@ internal static class CryptoCompat
         if (oidBytes.Length == 0) return string.Empty;
 
         List<int> components = new();
-        // First byte encodes first two components
+        // Pierwszy bajt koduje dwa pierwsze komponenty
         components.Add(oidBytes[0] / 40);
         components.Add(oidBytes[0] % 40);
 
@@ -243,7 +243,7 @@ internal static class CryptoCompat
 
     private static byte[] ReadOctetString(BinaryReader reader)
     {
-        if (reader.ReadByte() != 0x04) // OCTET STRING tag
+        if (reader.ReadByte() != 0x04) // tag OCTET STRING
             throw new CryptographicException("Expected OCTET STRING tag");
         int length = ReadLength(reader);
         return reader.ReadBytes(length);

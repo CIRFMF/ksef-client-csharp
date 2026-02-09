@@ -5,35 +5,35 @@ using System.Security.Cryptography;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Polyfill for <see cref="AesGcm"/> which is not available on netstandard2.0 / .NET Framework 4.8.
-/// Uses Windows CNG (BCrypt) P/Invoke for authenticated AES-GCM encryption/decryption.
+/// Polyfill dla <see cref="AesGcm"/>, który nie jest dostępny na netstandard2.0 / .NET Framework 4.8.
+/// Wykorzystuje Windows CNG (BCrypt) przez P/Invoke do uwierzytelnionego szyfrowania/deszyfrowania AES-GCM.
 /// </summary>
 internal sealed class AesGcmCompat : IDisposable
 {
-    /// <summary>Maximum supported tag size in bytes (128-bit).</summary>
+    /// <summary>Maksymalny obsługiwany rozmiar tagu w bajtach (128-bitowy).</summary>
     public const int MaxTagSize = 16;
 
-    /// <summary>Maximum supported nonce size in bytes (96-bit).</summary>
+    /// <summary>Maksymalny obsługiwany rozmiar nonce w bajtach (96-bitowy).</summary>
     public const int MaxNonceSize = 12;
 
     private readonly byte[] _key;
 
     /// <summary>
-    /// Initializes a new instance with the specified key.
+    /// Inicjalizuje nową instancję z podanym kluczem.
     /// </summary>
-    /// <param name="key">The AES key (128, 192, or 256 bits).</param>
-    /// <param name="tagSizeInBytes">Expected tag size (ignored, kept for API compat).</param>
+    /// <param name="key">Klucz AES (128, 192 lub 256 bitów).</param>
+    /// <param name="tagSizeInBytes">Oczekiwany rozmiar tagu (ignorowany, zachowany dla kompatybilności API).</param>
     public AesGcmCompat(byte[] key, int tagSizeInBytes = MaxTagSize)
     {
         if (key == null) throw new ArgumentNullException(nameof(key));
         if (key.Length != 16 && key.Length != 24 && key.Length != 32)
-            throw new ArgumentException("Key must be 128, 192 or 256 bits.", nameof(key));
+            throw new ArgumentException("Klucz musi mieć 128, 192 lub 256 bitów.", nameof(key));
 
         _key = (byte[])key.Clone();
     }
 
     /// <summary>
-    /// Encrypts plaintext using AES-GCM via Windows CNG.
+    /// Szyfruje dane jawne przy użyciu AES-GCM przez Windows CNG.
     /// </summary>
     public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag)
     {
@@ -42,14 +42,14 @@ internal sealed class AesGcmCompat : IDisposable
         if (ciphertext == null) throw new ArgumentNullException(nameof(ciphertext));
         if (tag == null) throw new ArgumentNullException(nameof(tag));
         if (ciphertext.Length != plaintext.Length)
-            throw new ArgumentException("Ciphertext must be same length as plaintext.");
+            throw new ArgumentException("Szyfrogram musi mieć taką samą długość jak dane jawne.");
 
         CngEncrypt(_key, nonce, plaintext, ciphertext, tag);
     }
 
     public void Dispose()
     {
-        // Zero out key material
+        // Wyzeruj materiał klucza
         Array.Clear(_key, 0, _key.Length);
     }
 
@@ -112,7 +112,7 @@ internal sealed class AesGcmCompat : IDisposable
 
         try
         {
-            // Set chaining mode to GCM
+            // Ustaw tryb łańcuchowania na GCM
             byte[] gcmMode = System.Text.Encoding.Unicode.GetBytes("ChainingModeGCM\0");
             status = BCryptSetProperty(hAlg, "ChainingMode", gcmMode, gcmMode.Length, 0);
             ThrowIfFailed(status, "BCryptSetProperty(ChainingMode)");
@@ -168,7 +168,7 @@ internal sealed class AesGcmCompat : IDisposable
         if (status != STATUS_SUCCESS)
         {
             throw new CryptographicException(
-                $"CNG {operation} failed with NTSTATUS 0x{status:X8}.");
+                $"Operacja CNG {operation} zakończyła się niepowodzeniem z kodem NTSTATUS 0x{status:X8}.");
         }
     }
 

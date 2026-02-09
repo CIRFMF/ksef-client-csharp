@@ -2,18 +2,18 @@
 namespace System.Security.Cryptography;
 
 /// <summary>
-/// Polyfill for <c>DSASignatureFormat</c> enum available since .NET 5.
-/// Specifies the format of a digital signature.
+/// Polyfill dla enumeracji <c>DSASignatureFormat</c> dostępnej od .NET 5.
+/// Określa format podpisu cyfrowego.
 /// </summary>
 internal enum DSASignatureFormat
 {
     /// <summary>
-    /// The signature format from IEEE P1363 — fixed-size concatenation of r and s values.
+    /// Format podpisu wg IEEE P1363 — konkatenacja wartości r i s o stałym rozmiarze.
     /// </summary>
     IeeeP1363FixedFieldConcatenation = 0,
 
     /// <summary>
-    /// The signature format from RFC 3279 — DER-encoded ASN.1 sequence of r and s values.
+    /// Format podpisu wg RFC 3279 — sekwencja ASN.1 wartości r i s zakodowana w DER.
     /// </summary>
     Rfc3279DerSequence = 1
 }

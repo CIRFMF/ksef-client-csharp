@@ -6,13 +6,13 @@ using System.Security.Cryptography.X509Certificates;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Polyfill for <see cref="CertificateRequest"/> and <c>CreateSelfSigned</c>,
-/// which are not available on netstandard2.0 / .NET Framework 4.8.
-/// Builds a self-signed X.509 v3 certificate using raw ASN.1 encoding.
+/// Polyfill dla <see cref="CertificateRequest"/> i <c>CreateSelfSigned</c>,
+/// które nie są dostępne na netstandard2.0 / .NET Framework 4.8.
+/// Buduje samopodpisany certyfikat X.509 v3 przy użyciu surowego kodowania ASN.1.
 /// </summary>
 internal static class SelfSignedCertificateCompat
 {
-    // OIDs
+    // OID-y
     private const string Sha256WithRsaOid = "1.2.840.113549.1.1.11"; // sha256WithRSAEncryption
     private const string RsaSsaPssOid = "1.2.840.113549.1.1.10";     // id-RSASSA-PSS
     private const string Sha256Oid = "2.16.840.1.101.3.4.2.1";       // id-sha256
@@ -23,25 +23,25 @@ internal static class SelfSignedCertificateCompat
     private const string NistP256Oid = "1.2.840.10045.3.1.7";        // secp256r1
 
     /// <summary>
-    /// Creates a self-signed X.509 v3 certificate with an RSA key, using RSA-PSS signature.
+    /// Tworzy samopodpisany certyfikat X.509 v3 z kluczem RSA, przy użyciu podpisu RSA-PSS.
     /// </summary>
-    /// <param name="subjectDN">The distinguished name string (e.g., "2.5.4.3=CN, 2.5.4.6=PL").</param>
-    /// <param name="notBefore">Certificate validity start.</param>
-    /// <param name="notAfter">Certificate validity end.</param>
-    /// <returns>A self-signed <see cref="X509Certificate2"/> with private key.</returns>
+    /// <param name="subjectDN">Ciąg wyróżnionej nazwy (np. "2.5.4.3=CN, 2.5.4.6=PL").</param>
+    /// <param name="notBefore">Początek ważności certyfikatu.</param>
+    /// <param name="notAfter">Koniec ważności certyfikatu.</param>
+    /// <returns>Samopodpisany <see cref="X509Certificate2"/> z kluczem prywatnym.</returns>
     public static X509Certificate2 CreateSelfSignedRsa(
         string subjectDN,
         DateTimeOffset notBefore,
         DateTimeOffset notAfter)
     {
-        // RSACng supports PSS signing; RSACryptoServiceProvider (from RSA.Create()) does not.
+        // RSACng obsługuje podpisywanie PSS; RSACryptoServiceProvider (z RSA.Create()) nie obsługuje.
         RSACng rsa = new RSACng(2048);
         byte[] tbsCert = BuildTbsCertificate(subjectDN, rsa, notBefore, notAfter, isEcdsa: false);
         byte[] signature = rsa.SignData(tbsCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
         byte[] certDer = WrapSignedCertificate(tbsCert, signature, isEcdsa: false);
 
-        // CopyWithPrivateKey on .NET Framework may wrap the key as RSACryptoServiceProvider
-        // which doesn't support PSS. Export to PFX and reimport to preserve CNG key type.
+        // CopyWithPrivateKey na .NET Framework może opakować klucz jako RSACryptoServiceProvider,
+        // który nie obsługuje PSS. Eksportuj do PFX i reimportuj, aby zachować typ klucza CNG.
         X509Certificate2 pubCert = new X509Certificate2(certDer);
         X509Certificate2 certWithKey = pubCert.CopyWithPrivateKey(rsa);
         byte[] pfxBytes = certWithKey.Export(X509ContentType.Pfx, string.Empty);
@@ -51,12 +51,12 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Creates a self-signed X.509 v3 certificate with an ECDsa (P-256) key.
+    /// Tworzy samopodpisany certyfikat X.509 v3 z kluczem ECDsa (P-256).
     /// </summary>
-    /// <param name="subjectDN">The distinguished name string.</param>
-    /// <param name="notBefore">Certificate validity start.</param>
-    /// <param name="notAfter">Certificate validity end.</param>
-    /// <returns>A self-signed <see cref="X509Certificate2"/> with private key.</returns>
+    /// <param name="subjectDN">Ciąg wyróżnionej nazwy.</param>
+    /// <param name="notBefore">Początek ważności certyfikatu.</param>
+    /// <param name="notAfter">Koniec ważności certyfikatu.</param>
+    /// <returns>Samopodpisany <see cref="X509Certificate2"/> z kluczem prywatnym.</returns>
     public static X509Certificate2 CreateSelfSignedEcdsa(
         string subjectDN,
         DateTimeOffset notBefore,
@@ -64,8 +64,8 @@ internal static class SelfSignedCertificateCompat
     {
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         byte[] tbsCert = BuildTbsCertificate(subjectDN, ecdsa, notBefore, notAfter, isEcdsa: true);
-        // ECDsa.SignData on .NET Framework returns IEEE P1363 format (r||s).
-        // X.509 certificates require DER-encoded ECDSA signature.
+        // ECDsa.SignData na .NET Framework zwraca format IEEE P1363 (r||s).
+        // Certyfikaty X.509 wymagają podpisu ECDSA zakodowanego w DER.
         byte[] ieeeSignature = ecdsa.SignData(tbsCert, HashAlgorithmName.SHA256);
         byte[] derSignature = ConvertIeeeP1363ToDer(ieeeSignature);
         byte[] certDer = WrapSignedCertificate(tbsCert, derSignature, isEcdsa: true);
@@ -75,7 +75,7 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Builds the TBSCertificate ASN.1 structure (RFC 5280 §4.1.2).
+    /// Buduje strukturę ASN.1 TBSCertificate (RFC 5280 §4.1.2).
     /// </summary>
     private static byte[] BuildTbsCertificate(
         string subjectDN,
@@ -99,13 +99,13 @@ internal static class SelfSignedCertificateCompat
         {
             rng.GetBytes(serial);
         }
-        serial[0] &= 0x7F; // Ensure positive
+        serial[0] &= 0x7F; // Zapewnij wartość dodatnią
         writer.WriteInteger(serial);
 
         // signature AlgorithmIdentifier
         WriteSignatureAlgorithm(writer, isEcdsa);
 
-        // issuer Name (same as subject for self-signed)
+        // issuer Name (taki sam jak subject dla certyfikatu samopodpisanego)
         byte[] nameBytes = EncodeDistinguishedName(subjectDN);
         writer.WriteEncodedValue(nameBytes);
 
@@ -128,19 +128,19 @@ internal static class SelfSignedCertificateCompat
             WriteRsaPublicKeyInfo(writer, (RSA)key);
         }
 
-        writer.PopSequence(); // end TBSCertificate
+        writer.PopSequence(); // koniec TBSCertificate
         return writer.Encode();
     }
 
     /// <summary>
-    /// Wraps TBSCertificate + signature into the final Certificate ASN.1 structure.
+    /// Opakowuje TBSCertificate + podpis w finalną strukturę ASN.1 Certificate.
     /// </summary>
     private static byte[] WrapSignedCertificate(byte[] tbsCert, byte[] signature, bool isEcdsa)
     {
         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
         writer.PushSequence(); // Certificate
 
-        // tbsCertificate (already DER-encoded SEQUENCE)
+        // tbsCertificate (już zakodowany w DER jako SEQUENCE)
         writer.WriteEncodedValue(tbsCert);
 
         // signatureAlgorithm
@@ -154,7 +154,7 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Writes the AlgorithmIdentifier for the signature algorithm.
+    /// Zapisuje AlgorithmIdentifier dla algorytmu podpisu.
     /// </summary>
     private static void WriteSignatureAlgorithm(AsnWriter writer, bool isEcdsa)
     {
@@ -167,13 +167,13 @@ internal static class SelfSignedCertificateCompat
         }
         else
         {
-            // RSASSA-PSS with SHA-256, MGF1-SHA256, saltLength=32
+            // RSASSA-PSS z SHA-256, MGF1-SHA256, saltLength=32
             WriteRsaPssAlgorithmIdentifier(writer);
         }
     }
 
     /// <summary>
-    /// Writes the RSASSA-PSS AlgorithmIdentifier with SHA-256 parameters.
+    /// Zapisuje AlgorithmIdentifier RSASSA-PSS z parametrami SHA-256.
     /// <code>
     /// SEQUENCE {
     ///   OID id-RSASSA-PSS,
@@ -218,18 +218,18 @@ internal static class SelfSignedCertificateCompat
         writer.WriteInteger(32);
         writer.PopSequence(ctx2);
 
-        writer.PopSequence(); // end RSASSA-PSS-params
-        writer.PopSequence(); // end AlgorithmIdentifier
+        writer.PopSequence(); // koniec RSASSA-PSS-params
+        writer.PopSequence(); // koniec AlgorithmIdentifier
     }
 
     /// <summary>
-    /// Writes SubjectPublicKeyInfo for RSA.
+    /// Zapisuje SubjectPublicKeyInfo dla RSA.
     /// </summary>
     private static void WriteRsaPublicKeyInfo(AsnWriter writer, RSA rsa)
     {
         RSAParameters p = rsa.ExportParameters(false);
 
-        // Build the RSAPublicKey (inner BIT STRING content)
+        // Buduj RSAPublicKey (wewnętrzna zawartość BIT STRING)
         AsnWriter pubKeyWriter = new AsnWriter(AsnEncodingRules.DER);
         pubKeyWriter.PushSequence();
         pubKeyWriter.WriteIntegerUnsigned(p.Modulus);
@@ -253,14 +253,14 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Writes SubjectPublicKeyInfo for ECDsa (P-256).
+    /// Zapisuje SubjectPublicKeyInfo dla ECDsa (P-256).
     /// </summary>
     private static void WriteEcdsaPublicKeyInfo(AsnWriter writer, ECDsa ecdsa)
     {
         ECParameters p = ecdsa.ExportParameters(false);
         int coordLen = p.Q.X!.Length;
 
-        // Uncompressed point: 0x04 || X || Y
+        // Punkt nieskompresowany: 0x04 || X || Y
         byte[] point = new byte[1 + coordLen * 2];
         point[0] = 0x04;
         Buffer.BlockCopy(p.Q.X!, 0, point, 1, coordLen);
@@ -282,8 +282,8 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Encodes a comma-separated DN string into ASN.1 DER Name (RDNSequence).
-    /// Supports OID=Value format (e.g., "2.5.4.3=Test, 2.5.4.6=PL").
+    /// Koduje ciąg DN oddzielony przecinkami jako ASN.1 DER Name (RDNSequence).
+    /// Obsługuje format OID=Wartość (np. "2.5.4.3=Test, 2.5.4.6=PL").
     /// </summary>
     private static byte[] EncodeDistinguishedName(string dn)
     {
@@ -315,7 +315,7 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Converts an ECDSA signature from IEEE P1363 (r||s) to DER format (SEQUENCE { INTEGER r, INTEGER s }).
+    /// Konwertuje podpis ECDSA z formatu IEEE P1363 (r||s) do formatu DER (SEQUENCE { INTEGER r, INTEGER s }).
     /// </summary>
     private static byte[] ConvertIeeeP1363ToDer(byte[] ieeeSignature)
     {

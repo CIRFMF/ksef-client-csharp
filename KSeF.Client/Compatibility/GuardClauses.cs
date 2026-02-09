@@ -4,16 +4,16 @@ using System.Runtime.CompilerServices;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Unified guard clause methods for all TFMs.
-/// On netstandard2.0: full polyfill implementation.
-/// On net8.0+: inline forwarding to built-in <c>ArgumentNullException.ThrowIfNull()</c> etc.
+/// Zunifikowane metody klauzul strażnikowych dla wszystkich TFM.
+/// Na netstandard2.0: pełna implementacja polyfill.
+/// Na net8.0+: inline forwarding do wbudowanych <c>ArgumentNullException.ThrowIfNull()</c> itp.
 /// </summary>
 internal static class Guard
 {
 #if NETSTANDARD2_0
 
     /// <summary>
-    /// Throws <see cref="ArgumentNullException"/> if <paramref name="argument"/> is <c>null</c>.
+    /// Rzuca <see cref="ArgumentNullException"/> jeśli <paramref name="argument"/> jest <c>null</c>.
     /// </summary>
     public static void ThrowIfNull(
         object? argument,
@@ -24,7 +24,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Throws <see cref="ArgumentException"/> if <paramref name="argument"/> is <c>null</c>, empty, or whitespace.
+    /// Rzuca <see cref="ArgumentException"/> jeśli <paramref name="argument"/> jest <c>null</c>, pusty lub składa się z białych znaków.
     /// </summary>
     public static void ThrowIfNullOrWhiteSpace(
         string? argument,
@@ -33,11 +33,11 @@ internal static class Guard
         if (argument is null)
             throw new ArgumentNullException(paramName);
         if (string.IsNullOrWhiteSpace(argument))
-            throw new ArgumentException("The value cannot be an empty string or composed entirely of whitespace.", paramName);
+            throw new ArgumentException("Wartość nie może być pustym ciągiem znaków ani składać się wyłącznie z białych znaków.", paramName);
     }
 
     /// <summary>
-    /// Throws <see cref="ArgumentException"/> if <paramref name="argument"/> is <c>null</c> or empty.
+    /// Rzuca <see cref="ArgumentException"/> jeśli <paramref name="argument"/> jest <c>null</c> lub pusty.
     /// </summary>
     public static void ThrowIfNullOrEmpty(
         string? argument,
@@ -46,13 +46,13 @@ internal static class Guard
         if (argument is null)
             throw new ArgumentNullException(paramName);
         if (argument.Length == 0)
-            throw new ArgumentException("The value cannot be an empty string.", paramName);
+            throw new ArgumentException("Wartość nie może być pustym ciągiem znaków.", paramName);
     }
 
 #else
 
     /// <summary>
-    /// Forwards to <see cref="ArgumentNullException.ThrowIfNull(object?, string?)"/>.
+    /// Przekierowanie do <see cref="ArgumentNullException.ThrowIfNull(object?, string?)"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNull(
@@ -63,7 +63,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwards to <see cref="ArgumentException.ThrowIfNullOrWhiteSpace(string?, string?)"/>.
+    /// Przekierowanie do <see cref="ArgumentException.ThrowIfNullOrWhiteSpace(string?, string?)"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrWhiteSpace(
@@ -74,7 +74,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwards to <see cref="ArgumentException.ThrowIfNullOrEmpty(string?, string?)"/>.
+    /// Przekierowanie do <see cref="ArgumentException.ThrowIfNullOrEmpty(string?, string?)"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrEmpty(

@@ -127,7 +127,10 @@ public partial class BatchSessionE2ETests : TestBase
         Assert.Equal(ExpectedFailedInvoiceCount, statusResponse.FailedInvoiceCount);
         Assert.NotNull(statusResponse.Upo);
         Assert.NotNull(statusResponse.Upo.Pages);
-        Assert.True(statusResponse.Upo.Pages.First().DownloadUrlExpirationDate < DateTime.Now.AddDays(4));
+        // Porównanie z DateTime.UtcNow — data wygaśnięcia URL UPO z API jest w UTC.
+        // DateTime.Now zwraca czas lokalny maszyny, co może dawać fałszywe wyniki
+        // (np. +2h w CEST → asercja przepuszcza większy zakres niż zamierzony).
+        Assert.True(statusResponse.Upo.Pages.First().DownloadUrlExpirationDate < DateTime.UtcNow.AddDays(4));
         Assert.NotNull(statusResponse.Upo.Pages.First().DownloadUrl);
         Assert.False(string.IsNullOrWhiteSpace(statusResponse.Upo.Pages.First().ReferenceNumber));
         Assert.NotNull(statusResponse.ValidUntil);

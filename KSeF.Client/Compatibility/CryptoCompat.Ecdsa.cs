@@ -5,31 +5,31 @@ using System.Security.Cryptography;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Polyfill extension methods for <see cref="ECDsa"/> key import/export operations
-/// available since .NET 5 / .NET Core 3.0.
-/// Uses <see cref="System.Formats.Asn1"/> for ASN.1 DER encoding/decoding.
+/// Polyfillowe metody rozszerzające dla operacji importu/eksportu kluczy <see cref="ECDsa"/>
+/// dostępnych od .NET 5 / .NET Core 3.0.
+/// Używa <see cref="System.Formats.Asn1"/> do kodowania/dekodowania ASN.1 DER.
 /// </summary>
 internal static class EcdsaCompat
 {
-    /// <summary>OID for EC public key algorithm (1.2.840.10045.2.1).</summary>
+    /// <summary>OID algorytmu klucza publicznego EC (1.2.840.10045.2.1).</summary>
     private const string EcPublicKeyOid = "1.2.840.10045.2.1";
 
-    /// <summary>OID for NIST P-256 curve (1.2.840.10045.3.1.7).</summary>
+    /// <summary>OID krzywej NIST P-256 (1.2.840.10045.3.1.7).</summary>
     private const string NistP256Oid = "1.2.840.10045.3.1.7";
 
-    /// <summary>OID for NIST P-384 curve (1.3.132.0.34).</summary>
+    /// <summary>OID krzywej NIST P-384 (1.3.132.0.34).</summary>
     private const string NistP384Oid = "1.3.132.0.34";
 
-    /// <summary>OID for NIST P-521 curve (1.3.132.0.35).</summary>
+    /// <summary>OID krzywej NIST P-521 (1.3.132.0.35).</summary>
     private const string NistP521Oid = "1.3.132.0.35";
 
     /// <summary>
-    /// Imports an ECDsa key from a PEM-encoded string.
-    /// Polyfill for <c>ECDsa.ImportFromPem(ReadOnlySpan&lt;char&gt;)</c> available since .NET 5.
-    /// Supports: EC PRIVATE KEY (SEC1), PRIVATE KEY (PKCS#8), PUBLIC KEY (SPKI).
+    /// Importuje klucz ECDsa z ciągu zakodowanego w PEM.
+    /// Polyfill dla <c>ECDsa.ImportFromPem(ReadOnlySpan&lt;char&gt;)</c> dostępnego od .NET 5.
+    /// Obsługuje: EC PRIVATE KEY (SEC1), PRIVATE KEY (PKCS#8), PUBLIC KEY (SPKI).
     /// </summary>
-    /// <param name="ecdsa">The ECDsa instance to import into.</param>
-    /// <param name="input">The PEM-encoded key.</param>
+    /// <param name="ecdsa">Instancja ECDsa, do której importowany jest klucz.</param>
+    /// <param name="input">Klucz zakodowany w PEM.</param>
     public static void ImportFromPem(this ECDsa ecdsa, string input)
     {
         if (input is null)
@@ -58,12 +58,12 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Imports an ECDsa key from an encrypted PEM-encoded string.
-    /// Polyfill for <c>ECDsa.ImportFromEncryptedPem(ReadOnlySpan&lt;char&gt;, ReadOnlySpan&lt;char&gt;)</c> available since .NET 5.
+    /// Importuje klucz ECDsa z zaszyfrowanego ciągu zakodowanego w PEM.
+    /// Polyfill dla <c>ECDsa.ImportFromEncryptedPem(ReadOnlySpan&lt;char&gt;, ReadOnlySpan&lt;char&gt;)</c> dostępnego od .NET 5.
     /// </summary>
-    /// <param name="ecdsa">The ECDsa instance to import into.</param>
-    /// <param name="input">The PEM-encoded encrypted key.</param>
-    /// <param name="password">The password to decrypt the key.</param>
+    /// <param name="ecdsa">Instancja ECDsa, do której importowany jest klucz.</param>
+    /// <param name="input">Zaszyfrowany klucz zakodowany w PEM.</param>
+    /// <param name="password">Hasło do odszyfrowania klucza.</param>
     public static void ImportFromEncryptedPem(this ECDsa ecdsa, string input, string password)
     {
         if (input is null)
@@ -80,11 +80,11 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Exports the EC private key in SEC1 ECPrivateKey DER format.
-    /// Polyfill for <c>ECDsa.ExportECPrivateKey()</c> available since .NET Core 3.0.
+    /// Eksportuje klucz prywatny EC w formacie SEC1 ECPrivateKey DER.
+    /// Polyfill dla <c>ECDsa.ExportECPrivateKey()</c> dostępnego od .NET Core 3.0.
     /// </summary>
-    /// <param name="ecdsa">The ECDsa instance whose key is to be exported.</param>
-    /// <returns>A byte array containing the SEC1 DER-encoded private key.</returns>
+    /// <param name="ecdsa">Instancja ECDsa, której klucz ma być wyeksportowany.</param>
+    /// <returns>Tablica bajtów zawierająca klucz prywatny zakodowany w SEC1 DER.</returns>
     public static byte[] ExportECPrivateKey(this ECDsa ecdsa)
     {
         ECParameters parameters = ecdsa.ExportParameters(true);
@@ -92,11 +92,11 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Exports the ECDsa public key in SubjectPublicKeyInfo (SPKI) DER format.
-    /// Polyfill for <c>ECDsa.ExportSubjectPublicKeyInfo()</c> available since .NET Core 3.0.
+    /// Eksportuje klucz publiczny ECDsa w formacie SubjectPublicKeyInfo (SPKI) DER.
+    /// Polyfill dla <c>ECDsa.ExportSubjectPublicKeyInfo()</c> dostępnego od .NET Core 3.0.
     /// </summary>
-    /// <param name="ecdsa">The ECDsa instance whose key is to be exported.</param>
-    /// <returns>A byte array containing the SPKI DER-encoded public key.</returns>
+    /// <param name="ecdsa">Instancja ECDsa, której klucz ma być wyeksportowany.</param>
+    /// <returns>Tablica bajtów zawierająca klucz publiczny zakodowany w SPKI DER.</returns>
     public static byte[] ExportSubjectPublicKeyInfo(this ECDsa ecdsa)
     {
         ECParameters parameters = ecdsa.ExportParameters(false);
@@ -104,12 +104,12 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Imports a PKCS#8 PrivateKeyInfo from a DER-encoded byte array.
-    /// Polyfill for <c>ECDsa.ImportPkcs8PrivateKey(ReadOnlySpan&lt;byte&gt;, out int)</c> available since .NET Core 3.0.
+    /// Importuje klucz prywatny PKCS#8 PrivateKeyInfo z tablicy bajtów zakodowanej w DER.
+    /// Polyfill dla <c>ECDsa.ImportPkcs8PrivateKey(ReadOnlySpan&lt;byte&gt;, out int)</c> dostępnego od .NET Core 3.0.
     /// </summary>
-    /// <param name="ecdsa">The ECDsa instance to import into.</param>
-    /// <param name="source">The DER-encoded PKCS#8 private key data.</param>
-    /// <param name="bytesRead">The number of bytes consumed from <paramref name="source"/>.</param>
+    /// <param name="ecdsa">Instancja ECDsa, do której importowany jest klucz.</param>
+    /// <param name="source">Dane klucza prywatnego PKCS#8 zakodowane w DER.</param>
+    /// <param name="bytesRead">Liczba bajtów odczytanych z <paramref name="source"/>.</param>
     public static void ImportPkcs8PrivateKey(this ECDsa ecdsa, ReadOnlySpan<byte> source, out int bytesRead)
     {
         byte[] sourceArray = source.ToArray();
@@ -120,7 +120,7 @@ internal static class EcdsaCompat
     #region SEC1 ECPrivateKey ASN.1
 
     /// <summary>
-    /// Decodes a SEC1 ECPrivateKey and imports it.
+    /// Dekoduje SEC1 ECPrivateKey i importuje go.
     /// <code>
     /// ECPrivateKey ::= SEQUENCE {
     ///     version        INTEGER { ecPrivkeyVer1(1) },
@@ -135,10 +135,10 @@ internal static class EcdsaCompat
         AsnReader reader = new AsnReader(der, AsnEncodingRules.DER);
         AsnReader sequence = reader.ReadSequence();
 
-        sequence.ReadInteger(); // version (1)
+        sequence.ReadInteger(); // wersja (1)
         byte[] privateKeyBytes = sequence.ReadOctetString();
 
-        // Read optional parameters [0] - contains curve OID
+        // Odczytaj opcjonalne parametry [0] — zawierają OID krzywej
         ECCurve curve = default;
         if (sequence.HasData && sequence.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
         {
@@ -147,7 +147,7 @@ internal static class EcdsaCompat
             curve = CurveFromOid(curveOid);
         }
 
-        // Read optional public key [1]
+        // Odczytaj opcjonalny klucz publiczny [1]
         byte[] publicKeyBits = null;
         if (sequence.HasData && sequence.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
         {
@@ -160,7 +160,7 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Encodes EC parameters as SEC1 ECPrivateKey DER.
+    /// Koduje parametry EC jako SEC1 ECPrivateKey DER.
     /// </summary>
     private static byte[] EncodeEcPrivateKey(ECParameters parameters)
     {
@@ -170,16 +170,16 @@ internal static class EcdsaCompat
         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
         writer.PushSequence();
 
-        writer.WriteInteger(1); // version = ecPrivkeyVer1
+        writer.WriteInteger(1); // wersja = ecPrivkeyVer1
         writer.WriteOctetString(parameters.D);
 
-        // Parameters [0]
+        // Parametry [0]
         Asn1Tag contextTag0 = new Asn1Tag(TagClass.ContextSpecific, 0, true);
         writer.PushSequence(contextTag0);
         writer.WriteObjectIdentifier(curveOid);
         writer.PopSequence(contextTag0);
 
-        // PublicKey [1]
+        // Klucz publiczny [1]
         Asn1Tag contextTag1 = new Asn1Tag(TagClass.ContextSpecific, 1, true);
         writer.PushSequence(contextTag1);
         writer.WriteBitString(uncompressedPoint);
@@ -191,17 +191,17 @@ internal static class EcdsaCompat
 
     #endregion
 
-    #region SubjectPublicKeyInfo (SPKI) for EC
+    #region SubjectPublicKeyInfo (SPKI) dla EC
 
     /// <summary>
-    /// Decodes a SubjectPublicKeyInfo (SPKI) structure containing an EC public key.
+    /// Dekoduje strukturę SubjectPublicKeyInfo (SPKI) zawierającą klucz publiczny EC.
     /// </summary>
     private static void ImportSubjectPublicKeyInfo(ECDsa ecdsa, byte[] der)
     {
         AsnReader reader = new AsnReader(der, AsnEncodingRules.DER);
         AsnReader spkiSequence = reader.ReadSequence();
 
-        // AlgorithmIdentifier
+        // Identyfikator algorytmu
         AsnReader algId = spkiSequence.ReadSequence();
         string oid = algId.ReadObjectIdentifier();
         if (oid != EcPublicKeyOid)
@@ -210,7 +210,7 @@ internal static class EcdsaCompat
         string curveOid = algId.ReadObjectIdentifier();
         ECCurve curve = CurveFromOid(curveOid);
 
-        // SubjectPublicKey BIT STRING → uncompressed EC point (04 || X || Y)
+        // SubjectPublicKey BIT STRING → nieskompresowany punkt EC (04 || X || Y)
         byte[] publicKeyBits = spkiSequence.ReadBitString(out _);
 
         ECParameters parameters = new ECParameters
@@ -223,7 +223,7 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Encodes EC public key parameters as SubjectPublicKeyInfo (SPKI) DER.
+    /// Koduje parametry klucza publicznego EC jako SubjectPublicKeyInfo (SPKI) DER.
     /// </summary>
     internal static byte[] EncodeSubjectPublicKeyInfo(ECParameters parameters)
     {
@@ -233,13 +233,13 @@ internal static class EcdsaCompat
         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
         writer.PushSequence();
 
-        // AlgorithmIdentifier
+        // Identyfikator algorytmu
         writer.PushSequence();
         writer.WriteObjectIdentifier(EcPublicKeyOid);
         writer.WriteObjectIdentifier(curveOid);
         writer.PopSequence();
 
-        // SubjectPublicKey as BIT STRING
+        // SubjectPublicKey jako BIT STRING
         writer.WriteBitString(uncompressedPoint);
 
         writer.PopSequence();
@@ -248,15 +248,15 @@ internal static class EcdsaCompat
 
     #endregion
 
-    #region PKCS#8 PrivateKeyInfo for EC
+    #region PKCS#8 PrivateKeyInfo dla EC
 
     /// <summary>
-    /// Decodes a PKCS#8 PrivateKeyInfo structure and imports the EC key.
+    /// Dekoduje strukturę PKCS#8 PrivateKeyInfo i importuje klucz EC.
     /// <code>
     /// PrivateKeyInfo ::= SEQUENCE {
     ///     version                   INTEGER,
     ///     privateKeyAlgorithm       AlgorithmIdentifier,
-    ///     privateKey                OCTET STRING  -- contains SEC1 ECPrivateKey
+    ///     privateKey                OCTET STRING  -- zawiera SEC1 ECPrivateKey
     /// }
     /// </code>
     /// </summary>
@@ -265,9 +265,9 @@ internal static class EcdsaCompat
         AsnReader reader = new AsnReader(der, AsnEncodingRules.DER);
         AsnReader sequence = reader.ReadSequence();
 
-        sequence.ReadInteger(); // version (0)
+        sequence.ReadInteger(); // wersja (0)
 
-        // AlgorithmIdentifier: EC OID + curve OID
+        // AlgorithmIdentifier: OID EC + OID krzywej
         AsnReader algId = sequence.ReadSequence();
         string oid = algId.ReadObjectIdentifier();
         if (oid != EcPublicKeyOid)
@@ -276,26 +276,26 @@ internal static class EcdsaCompat
         string curveOid = algId.ReadObjectIdentifier();
         ECCurve curve = CurveFromOid(curveOid);
 
-        // PrivateKey OCTET STRING → contains SEC1 ECPrivateKey (but without curve parameters)
+        // PrivateKey OCTET STRING → zawiera SEC1 ECPrivateKey (bez parametrów krzywej)
         byte[] ecPrivateKeyDer = sequence.ReadOctetString();
 
-        // Parse the inner SEC1 ECPrivateKey
+        // Parsuj wewnętrzny SEC1 ECPrivateKey
         AsnReader ecReader = new AsnReader(ecPrivateKeyDer, AsnEncodingRules.DER);
         AsnReader ecSequence = ecReader.ReadSequence();
 
-        ecSequence.ReadInteger(); // version (1)
+        ecSequence.ReadInteger(); // wersja (1)
         byte[] privateKeyBytes = ecSequence.ReadOctetString();
 
-        // The public key may be in the SEC1 structure
+        // Klucz publiczny może znajdować się w strukturze SEC1
         byte[] publicKeyBits = null;
 
-        // Skip optional parameters [0] if present
+        // Pomiń opcjonalne parametry [0] jeśli obecne
         if (ecSequence.HasData && ecSequence.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
         {
-            ecSequence.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0)); // discard
+            ecSequence.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0)); // odrzuć
         }
 
-        // Read optional public key [1] if present
+        // Odczytaj opcjonalny klucz publiczny [1] jeśli obecny
         if (ecSequence.HasData && ecSequence.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
         {
             AsnReader pubKeyReader = ecSequence.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
@@ -308,11 +308,11 @@ internal static class EcdsaCompat
 
     #endregion
 
-    #region EC Helpers
+    #region Pomocniki EC
 
     /// <summary>
-    /// Builds <see cref="ECParameters"/> from raw key bytes and an optional uncompressed public key point.
-    /// If the public key is not provided, derives it from the private key using a temporary ECDsa instance.
+    /// Buduje <see cref="ECParameters"/> z surowych bajtów klucza i opcjonalnego nieskompresowanego punktu klucza publicznego.
+    /// Jeśli klucz publiczny nie jest podany, wyprowadza go z klucza prywatnego za pomocą tymczasowej instancji ECDsa.
     /// </summary>
     private static ECParameters BuildEcParameters(byte[] privateKeyBytes, byte[] publicKeyBits, ECCurve curve)
     {
@@ -328,9 +328,9 @@ internal static class EcdsaCompat
         }
         else
         {
-            // Derive public key from private key by importing and re-exporting
+            // Wyprowadź klucz publiczny z prywatnego przez import i reeksport
             using ECDsa temp = ECDsa.Create(curve);
-            // Import the private key with a dummy Q, then export to get real Q
+            // Importuj klucz prywatny z fikcyjnym Q, potem eksportuj aby uzyskać prawdziwy Q
             int coordSize = GetCoordSize(curve);
             parameters.Q = new ECPoint
             {
@@ -346,7 +346,7 @@ internal static class EcdsaCompat
             }
             catch
             {
-                // Fallback: create with curve and import differently
+                // Awaryjnie: nie udało się odtworzyć klucza publicznego
                 throw new CryptographicException(
                     "Nie udało się odtworzyć klucza publicznego EC z klucza prywatnego.");
             }
@@ -356,7 +356,7 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Parses an uncompressed EC point (0x04 || X || Y) into an <see cref="ECPoint"/>.
+    /// Parsuje nieskompresowany punkt EC (0x04 || X || Y) do <see cref="ECPoint"/>.
     /// </summary>
     internal static ECPoint ParseUncompressedPoint(byte[] point, ECCurve curve)
     {
@@ -377,7 +377,7 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Builds an uncompressed EC point (0x04 || X || Y) from an <see cref="ECPoint"/>.
+    /// Buduje nieskompresowany punkt EC (0x04 || X || Y) z <see cref="ECPoint"/>.
     /// </summary>
     internal static byte[] BuildUncompressedPoint(ECPoint q)
     {
@@ -389,7 +389,7 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Returns the coordinate size in bytes for the given curve.
+    /// Zwraca rozmiar współrzędnej w bajtach dla podanej krzywej.
     /// </summary>
     internal static int GetCoordSize(ECCurve curve)
     {
@@ -399,12 +399,12 @@ internal static class EcdsaCompat
             NistP256Oid => 32,
             NistP384Oid => 48,
             NistP521Oid => 66,
-            _ => 32 // default to P-256
+            _ => 32 // domyślnie P-256
         };
     }
 
     /// <summary>
-    /// Converts a curve OID string to an <see cref="ECCurve"/>.
+    /// Konwertuje ciąg OID krzywej na <see cref="ECCurve"/>.
     /// </summary>
     internal static ECCurve CurveFromOid(string oid)
     {
@@ -418,7 +418,7 @@ internal static class EcdsaCompat
     }
 
     /// <summary>
-    /// Converts an <see cref="ECCurve"/> to its OID string.
+    /// Konwertuje <see cref="ECCurve"/> na ciąg OID.
     /// </summary>
     internal static string CurveToOid(ECCurve curve)
     {
@@ -426,7 +426,7 @@ internal static class EcdsaCompat
         if (!string.IsNullOrEmpty(oid))
             return oid;
 
-        // Try matching by friendly name
+        // Spróbuj dopasować po przyjaznej nazwie
         string name = curve.Oid?.FriendlyName;
         return name switch
         {

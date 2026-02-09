@@ -80,7 +80,7 @@ internal static class Guard
     }
 #else
     /// <summary>
-    /// Forwarding do wbudowanej metody <see cref="ArgumentNullException.ThrowIfNull"/>.
+    /// Przekierowanie do wbudowanej metody <see cref="ArgumentNullException.ThrowIfNull"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNull(
@@ -91,7 +91,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwarding do wbudowanej metody <see cref="ArgumentException.ThrowIfNullOrWhiteSpace"/>.
+    /// Przekierowanie do wbudowanej metody <see cref="ArgumentException.ThrowIfNullOrWhiteSpace"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrWhiteSpace(
@@ -102,7 +102,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwarding do wbudowanej metody <see cref="ArgumentException.ThrowIfNullOrEmpty"/>.
+    /// Przekierowanie do wbudowanej metody <see cref="ArgumentException.ThrowIfNullOrEmpty"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNullOrEmpty(
@@ -113,7 +113,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwarding do wbudowanej metody <see cref="ArgumentOutOfRangeException.ThrowIfNegativeOrZero"/>.
+    /// Przekierowanie do wbudowanej metody <see cref="ArgumentOutOfRangeException.ThrowIfNegativeOrZero"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfNegativeOrZero(
@@ -124,7 +124,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwarding do wbudowanej metody <see cref="ArgumentOutOfRangeException.ThrowIfLessThan{T}"/>.
+    /// Przekierowanie do wbudowanej metody <see cref="ArgumentOutOfRangeException.ThrowIfLessThan{T}"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfLessThan<T>(
@@ -136,7 +136,7 @@ internal static class Guard
     }
 
     /// <summary>
-    /// Forwarding do wbudowanej metody <see cref="ArgumentOutOfRangeException.ThrowIfLessThanOrEqual{T}"/>.
+    /// Przekierowanie do wbudowanej metody <see cref="ArgumentOutOfRangeException.ThrowIfLessThanOrEqual{T}"/>.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfLessThanOrEqual<T>(

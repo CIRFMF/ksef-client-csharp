@@ -74,7 +74,7 @@ namespace KSeF.Client.Validation
         public static Regex PeppolId { get; }
 
 #if NETSTANDARD2_0
-        // netstandard2.0: [GeneratedRegex] source generator unavailable — use compiled Regex instances.
+        // netstandard2.0: generator źródłowy [GeneratedRegex] niedostępny — użyto skompilowanych instancji Regex.
         private static Regex ReferenceNumberRegex() => new Regex(ReferenceNumberPattern, RegexOptions.Compiled);
         private static Regex KsefNumberRegex() => new Regex(KsefNumberPattern, RegexOptions.Compiled);
         private static Regex KsefNumberV36Regex() => new Regex(KsefNumberV36Pattern, RegexOptions.Compiled);

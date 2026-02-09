@@ -33,20 +33,20 @@ internal static class RsaExtensions
     /// </summary>
     private static RSAParameters DecodeRSAPrivateKey(byte[] pkcs1)
     {
-        // PKCS#1 RSAPrivateKey ::= SEQUENCE {
+        // Struktura PKCS#1 RSAPrivateKey ::= SEQUENCE {
         //   version INTEGER, modulus INTEGER, publicExponent INTEGER,
         //   privateExponent INTEGER, prime1 INTEGER, prime2 INTEGER,
         //   exponent1 INTEGER, exponent2 INTEGER, coefficient INTEGER }
         using System.IO.MemoryStream ms = new(pkcs1);
         using System.IO.BinaryReader reader = new(ms);
 
-        // Outer SEQUENCE
+        // Zewnętrzny SEQUENCE
         if (reader.ReadByte() != 0x30)
             throw new CryptographicException("Invalid PKCS#1 RSA private key - expected SEQUENCE");
         ReadLength(reader);
 
-        // version
-        ReadIntegerRaw(reader); // skip version
+        // wersja
+        ReadIntegerRaw(reader); // pomiń wersję
 
         RSAParameters p = new()
         {
@@ -60,7 +60,7 @@ internal static class RsaExtensions
             InverseQ = ReadUnsignedInteger(reader)
         };
 
-        // Ensure D, DP, DQ, InverseQ, P, Q are padded to match Modulus length (or half)
+        // Upewnij się, że D, DP, DQ, InverseQ, P, Q są wyrównane do długości Modulus (lub połowy)
         int modulusLen = p.Modulus!.Length;
         int halfLen = (modulusLen + 1) / 2;
         p.D = PadLeft(p.D!, modulusLen);
@@ -103,7 +103,7 @@ internal static class RsaExtensions
     private static byte[] ReadUnsignedInteger(System.IO.BinaryReader reader)
     {
         byte[] raw = ReadIntegerRaw(reader);
-        // Strip leading zero padding (sign byte)
+        // Usuń wiodący bajt zerowy (bajt znaku)
         if (raw.Length > 1 && raw[0] == 0x00)
         {
             byte[] trimmed = new byte[raw.Length - 1];

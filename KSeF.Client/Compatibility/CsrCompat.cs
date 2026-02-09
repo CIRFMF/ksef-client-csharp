@@ -5,9 +5,9 @@ using System.Security.Cryptography;
 namespace KSeF.Client.Compatibility;
 
 /// <summary>
-/// Polyfill for <c>CertificateRequest.CreateSigningRequest()</c>
-/// which is not available on netstandard2.0 / .NET Framework 4.8.
-/// Builds a PKCS#10 CertificationRequest using raw ASN.1 encoding (RFC 2986).
+/// Polyfill dla <c>CertificateRequest.CreateSigningRequest()</c>,
+/// który nie jest dostępny na netstandard2.0 / .NET Framework 4.8.
+/// Buduje żądanie certyfikacji PKCS#10 przy użyciu surowego kodowania ASN.1 (RFC 2986).
 /// </summary>
 internal static class CsrCompat
 {
@@ -20,18 +20,18 @@ internal static class CsrCompat
     private const string NistP256Oid = "1.2.840.10045.3.1.7";
 
     /// <summary>
-    /// Creates a PKCS#10 CSR with an RSA key signed using RSA-PSS with SHA-256.
+    /// Tworzy żądanie certyfikacji PKCS#10 (CSR) z kluczem RSA, podpisane przy użyciu RSA-PSS z SHA-256.
     /// </summary>
-    /// <param name="subjectDerBytes">DER-encoded X.500 Name (subject).</param>
-    /// <param name="rsa">The RSA key pair.</param>
-    /// <param name="padding">RSA signature padding (PSS or PKCS#1).</param>
-    /// <returns>DER-encoded PKCS#10 CertificationRequest.</returns>
+    /// <param name="subjectDerBytes">Zakodowana w DER nazwa X.500 (podmiot).</param>
+    /// <param name="rsa">Para kluczy RSA.</param>
+    /// <param name="padding">Wypełnienie podpisu RSA (PSS lub PKCS#1).</param>
+    /// <returns>Zakodowane w DER żądanie certyfikacji PKCS#10.</returns>
     public static byte[] CreateSigningRequestRsa(byte[] subjectDerBytes, RSA rsa, RSASignaturePadding padding)
     {
         bool usePss = padding == RSASignaturePadding.Pss;
         byte[] certRequestInfo = BuildCertificationRequestInfo(subjectDerBytes, rsa, isEcdsa: false);
 
-        // Sign with RSACng if PSS is needed
+        // Podpisz za pomocą RSACng jeśli wymagany jest PSS
         byte[] signature;
         if (usePss)
         {
@@ -51,23 +51,23 @@ internal static class CsrCompat
     }
 
     /// <summary>
-    /// Creates a PKCS#10 CSR with an ECDsa key signed using ECDSA with SHA-256.
+    /// Tworzy żądanie certyfikacji PKCS#10 (CSR) z kluczem ECDsa, podpisane przy użyciu ECDSA z SHA-256.
     /// </summary>
-    /// <param name="subjectDerBytes">DER-encoded X.500 Name (subject).</param>
-    /// <param name="ecdsa">The ECDsa key pair.</param>
-    /// <returns>DER-encoded PKCS#10 CertificationRequest.</returns>
+    /// <param name="subjectDerBytes">Zakodowana w DER nazwa X.500 (podmiot).</param>
+    /// <param name="ecdsa">Para kluczy ECDsa.</param>
+    /// <returns>Zakodowane w DER żądanie certyfikacji PKCS#10.</returns>
     public static byte[] CreateSigningRequestEcdsa(byte[] subjectDerBytes, ECDsa ecdsa)
     {
         byte[] certRequestInfo = BuildCertificationRequestInfo(subjectDerBytes, ecdsa, isEcdsa: true);
-        // ECDsa.SignData on .NET Framework returns IEEE P1363 format (r||s).
-        // PKCS#10 CSR requires DER-encoded ECDSA signature (SEQUENCE { INTEGER r, INTEGER s }).
+        // ECDsa.SignData na .NET Framework zwraca format IEEE P1363 (r||s).
+        // PKCS#10 CSR wymaga podpisu ECDSA zakodowanego w DER (SEQUENCE { INTEGER r, INTEGER s }).
         byte[] ieeeSignature = ecdsa.SignData(certRequestInfo, HashAlgorithmName.SHA256);
         byte[] derSignature = ConvertIeeeP1363ToDer(ieeeSignature);
         return WrapCsr(certRequestInfo, derSignature, isEcdsa: true, usePss: false);
     }
 
     /// <summary>
-    /// Builds the CertificationRequestInfo ASN.1 structure (RFC 2986 §4.1).
+    /// Buduje strukturę ASN.1 CertificationRequestInfo (RFC 2986 §4.1).
     /// <code>
     /// CertificationRequestInfo ::= SEQUENCE {
     ///     version       INTEGER { v1(0) },
@@ -85,7 +85,7 @@ internal static class CsrCompat
         // version INTEGER (0 = v1)
         writer.WriteInteger(0);
 
-        // subject Name (already DER-encoded)
+        // subject Name (już zakodowane w DER)
         writer.WriteEncodedValue(subjectDerBytes);
 
         // subjectPKInfo SubjectPublicKeyInfo
@@ -98,7 +98,7 @@ internal static class CsrCompat
             WriteRsaPublicKeyInfo(writer, (RSA)key);
         }
 
-        // attributes [0] IMPLICIT SET OF Attribute (empty)
+        // attributes [0] IMPLICIT SET OF Attribute (pusty)
         Asn1Tag ctx0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
         writer.PushSetOf(ctx0);
         writer.PopSetOf(ctx0);
@@ -108,7 +108,7 @@ internal static class CsrCompat
     }
 
     /// <summary>
-    /// Wraps CertificationRequestInfo + signature into the final CertificationRequest.
+    /// Opakowuje CertificationRequestInfo + podpis w finalną strukturę CertificationRequest.
     /// </summary>
     private static byte[] WrapCsr(byte[] certRequestInfo, byte[] signature, bool isEcdsa, bool usePss)
     {
@@ -217,7 +217,7 @@ internal static class CsrCompat
     }
 
     /// <summary>
-    /// Converts an ECDSA signature from IEEE P1363 (r||s) to DER format (SEQUENCE { INTEGER r, INTEGER s }).
+    /// Konwertuje podpis ECDSA z formatu IEEE P1363 (r||s) do formatu DER (SEQUENCE { INTEGER r, INTEGER s }).
     /// </summary>
     private static byte[] ConvertIeeeP1363ToDer(byte[] ieeeSignature)
     {
