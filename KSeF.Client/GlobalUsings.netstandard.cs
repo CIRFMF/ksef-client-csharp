@@ -1,6 +1,6 @@
-// Guard class (Compatibility) is available globally on ALL TFMs:
-// On netstandard2.0: provides polyfill implementations
-// On net8.0+: provides inline forwarding to built-in methods
+// Klasa Guard (Compatibility) jest dostępna globalnie na wszystkich TFM:
+// Na netstandard2.0: zapewnia implementacje polyfill
+// Na net8.0+: zapewnia inline przekierowanie do wbudowanych metod
 global using KSeF.Client.Compatibility;
 
 #if NETSTANDARD2_0

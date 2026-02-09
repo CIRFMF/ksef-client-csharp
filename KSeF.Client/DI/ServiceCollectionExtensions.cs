@@ -41,6 +41,9 @@ public static class ServiceCollectionExtensions
         services
             .AddHttpClient<IRestClient, RestClient>(http =>
             {
+                // Domyślny timeout HttpClient (100s) jest zbyt krótki dla operacji wsadowych
+                // wysyłających paczki do 100 MB na część (limit API KSeF).
+                http.Timeout = TimeSpan.FromMinutes(5);
                 http.BaseAddress = new Uri(options.BaseUrl);
                 if (options.CustomHeaders != null && options.CustomHeaders.Count > 0)
                 {
