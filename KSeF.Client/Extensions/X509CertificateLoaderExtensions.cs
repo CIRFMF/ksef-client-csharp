@@ -115,13 +115,10 @@ namespace KSeF.Client.Extensions
             string oid = publicCert.PublicKey.Oid?.Value
                 ?? throw new NotSupportedException("Certyfikat nie zawiera klucza publicznego OID.");
 
-#if NETSTANDARD2_0
-            bool isEncrypted = privateKeyPem.Contains("ENCRYPTED PRIVATE KEY");
-#else
+            // Na netstandard2.0 polyfill StringCompat.Contains zapewnia tę samą sygnaturę co .NET 8+.
             bool isEncrypted = privateKeyPem.Contains(
                 "ENCRYPTED PRIVATE KEY",
                 StringComparison.OrdinalIgnoreCase);
-#endif
 
             if (isEncrypted && string.IsNullOrEmpty(password))
             {

@@ -128,11 +128,15 @@ internal static class Pkcs8Decryptor
         AsnReader pbkdf2Params = kdfSequence.ReadSequence();
         salt = pbkdf2Params.ReadOctetString();
 
-        // iterations jest BigInteger, ale praktycznie mieści się w int
+        // Walidacja zakresu iteracji — ochrona przed overflow i absurdalnymi wartościami
+        // w złośliwie spreparowanych strukturach ASN.1 (DoS przez nadmierną liczbę iteracji PBKDF2).
         System.Numerics.BigInteger iterBig = pbkdf2Params.ReadInteger();
+        if (iterBig <= 0 || iterBig > 10_000_000)
+            throw new CryptographicException(
+                $"Liczba iteracji PBKDF2 ({iterBig}) jest poza dopuszczalnym zakresem (1–10 000 000).");
         iterations = (int)iterBig;
 
-        // Opcjonalna długość klucza
+        // Opcjonalna długość klucza — walidacja zakresu (maks. 256 bajtów = 2048 bitów)
         keyLength = 0;
         if (pbkdf2Params.HasData)
         {
@@ -140,6 +144,9 @@ internal static class Pkcs8Decryptor
             if (nextTag.TagValue == (int)UniversalTagNumber.Integer && nextTag.TagClass == TagClass.Universal)
             {
                 System.Numerics.BigInteger keyLenBig = pbkdf2Params.ReadInteger();
+                if (keyLenBig < 0 || keyLenBig > 256)
+                    throw new CryptographicException(
+                        $"Długość klucza ({keyLenBig}) jest poza dopuszczalnym zakresem (0–256 bajtów).");
                 keyLength = (int)keyLenBig;
             }
         }

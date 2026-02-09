@@ -11,6 +11,11 @@ namespace KSeF.Client.Compatibility;
 /// które nie są częścią kontraktu kompilacji netstandard2.0, ale SĄ dostępne w runtime
 /// na .NET Framework 4.7.2+ przez <c>RSACertificateExtensions</c> / <c>ECDsaCertificateExtensions</c>.
 /// </summary>
+/// <remarks>
+/// Cache refleksji jest zabezpieczony barierami pamięciowymi (<see cref="Volatile"/>),
+/// aby zapewnić poprawność na architekturach z weak memory model (np. ARM).
+/// Na x86/x64 (TSO) bariery są no-op, więc nie wpływają na wydajność.
+/// </remarks>
 internal static class CertificateCompat
 {
     private static MethodInfo? _rsaCopyMethod;
@@ -24,10 +29,10 @@ internal static class CertificateCompat
     /// </summary>
     public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 cert, RSA rsa)
     {
-        if (!_rsaResolved)
+        if (!Volatile.Read(ref _rsaResolved))
         {
             _rsaCopyMethod = ResolveMethod("RSACertificateExtensions", typeof(RSA));
-            _rsaResolved = true;
+            Volatile.Write(ref _rsaResolved, true);
         }
 
         if (_rsaCopyMethod != null)
@@ -46,10 +51,10 @@ internal static class CertificateCompat
     /// </summary>
     public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 cert, ECDsa ecdsa)
     {
-        if (!_ecdsaResolved)
+        if (!Volatile.Read(ref _ecdsaResolved))
         {
             _ecdsaCopyMethod = ResolveMethod("ECDsaCertificateExtensions", typeof(ECDsa));
-            _ecdsaResolved = true;
+            Volatile.Write(ref _ecdsaResolved, true);
         }
 
         if (_ecdsaCopyMethod != null)

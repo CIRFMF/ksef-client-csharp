@@ -11,6 +11,10 @@ namespace KSeF.Client.Compatibility;
 /// ale NIE jest częścią kontraktu kompilacji netstandard2.0.
 /// Ta klasa wykorzystuje refleksję do uzyskania dostępu do typów dostępnych w runtime.
 /// </summary>
+/// <remarks>
+/// Cache refleksji jest zabezpieczony barierami pamięciowymi (<see cref="Volatile"/>),
+/// aby zapewnić poprawność na architekturach z weak memory model (np. ARM).
+/// </remarks>
 internal sealed class EcdhCompat : IDisposable
 {
     private const string EcPublicKeyOid = "1.2.840.10045.2.1";
@@ -115,7 +119,7 @@ internal sealed class EcdhCompat : IDisposable
 
     private static void EnsureResolved()
     {
-        if (s_resolved) return;
+        if (Volatile.Read(ref s_resolved)) return;
 
         // Spróbuj znaleźć ECDiffieHellman w załadowanych assembly
         s_ecdhType = typeof(ECDsa).Assembly.GetType("System.Security.Cryptography.ECDiffieHellman");
@@ -153,7 +157,7 @@ internal sealed class EcdhCompat : IDisposable
                 null, new[] { pubKeyType }, null);
         }
 
-        s_resolved = true;
+        Volatile.Write(ref s_resolved, true);
     }
 
     #region Kodowanie/dekodowanie ASN.1 SPKI
