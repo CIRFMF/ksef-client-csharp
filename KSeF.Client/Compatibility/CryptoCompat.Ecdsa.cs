@@ -390,7 +390,9 @@ internal static class EcdsaCompat
 
     /// <summary>
     /// Zwraca rozmiar współrzędnej w bajtach dla podanej krzywej.
+    /// Obsługuje NIST P-256 (32B), P-384 (48B) i P-521 (66B).
     /// </summary>
+    /// <exception cref="CryptographicException">Nieznany OID krzywej — fail-fast zamiast cichej korupcji danych.</exception>
     internal static int GetCoordSize(ECCurve curve)
     {
         string oid = curve.Oid?.Value;
@@ -399,7 +401,8 @@ internal static class EcdsaCompat
             NistP256Oid => 32,
             NistP384Oid => 48,
             NistP521Oid => 66,
-            _ => 32 // domyślnie P-256
+            _ => throw new CryptographicException(
+                $"Nie można określić rozmiaru współrzędnej dla krzywej EC o OID '{oid}'.")
         };
     }
 

@@ -34,8 +34,10 @@ internal static class SelfSignedCertificateCompat
         DateTimeOffset notBefore,
         DateTimeOffset notAfter)
     {
+        PlatformGuard.EnsureWindowsCng();
         // RSACng obsługuje podpisywanie PSS; RSACryptoServiceProvider (z RSA.Create()) nie obsługuje.
-        RSACng rsa = new RSACng(2048);
+        // Deklaracja using zapewnia zwolnienie CNG handle po zakończeniu metody.
+        using RSACng rsa = new RSACng(2048);
         byte[] tbsCert = BuildTbsCertificate(subjectDN, rsa, notBefore, notAfter, isEcdsa: false);
         byte[] signature = rsa.SignData(tbsCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
         byte[] certDer = WrapSignedCertificate(tbsCert, signature, isEcdsa: false);
@@ -62,6 +64,7 @@ internal static class SelfSignedCertificateCompat
         DateTimeOffset notBefore,
         DateTimeOffset notAfter)
     {
+        PlatformGuard.EnsureWindowsCng();
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         byte[] tbsCert = BuildTbsCertificate(subjectDN, ecdsa, notBefore, notAfter, isEcdsa: true);
         // ECDsa.SignData na .NET Framework zwraca format IEEE P1363 (r||s).
@@ -173,18 +176,22 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Zapisuje AlgorithmIdentifier RSASSA-PSS z parametrami SHA-256.
+    /// Zapisuje AlgorithmIdentifier RSASSA-PSS z parametrami SHA-256 (RFC 4055 §2.1).
     /// <code>
     /// SEQUENCE {
     ///   OID id-RSASSA-PSS,
     ///   SEQUENCE {              -- RSASSA-PSS-params
-    ///     [0] SEQUENCE { OID sha256 },
-    ///     [1] SEQUENCE { OID id-mgf1, SEQUENCE { OID sha256 } },
+    ///     [0] SEQUENCE { OID sha256, NULL },
+    ///     [1] SEQUENCE { OID id-mgf1, SEQUENCE { OID sha256, NULL } },
     ///     [2] INTEGER 32
     ///   }
     /// }
     /// </code>
     /// </summary>
+    /// <remarks>
+    /// Per RFC 4055 §2.1: AlgorithmIdentifier dla SHA-256 wewnątrz RSASSA-PSS-params
+    /// MUSI zawierać NULL jako parametr algorytmu haszowania.
+    /// </remarks>
     private static void WriteRsaPssAlgorithmIdentifier(AsnWriter writer)
     {
         writer.PushSequence();
@@ -193,21 +200,23 @@ internal static class SelfSignedCertificateCompat
         // RSASSA-PSS-params
         writer.PushSequence();
 
-        // [0] hashAlgorithm
+        // [0] hashAlgorithm — AlgorithmIdentifier { sha256, NULL } per RFC 4055 §2.1
         Asn1Tag ctx0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
         writer.PushSequence(ctx0);
         writer.PushSequence();
         writer.WriteObjectIdentifier(Sha256Oid);
+        writer.WriteNull();
         writer.PopSequence();
         writer.PopSequence(ctx0);
 
-        // [1] maskGenAlgorithm
+        // [1] maskGenAlgorithm — SEQUENCE { id-mgf1, AlgorithmIdentifier { sha256, NULL } }
         Asn1Tag ctx1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
         writer.PushSequence(ctx1);
         writer.PushSequence();
         writer.WriteObjectIdentifier(MgfSha256Oid);
         writer.PushSequence();
         writer.WriteObjectIdentifier(Sha256Oid);
+        writer.WriteNull();
         writer.PopSequence();
         writer.PopSequence();
         writer.PopSequence(ctx1);
@@ -253,11 +262,13 @@ internal static class SelfSignedCertificateCompat
     }
 
     /// <summary>
-    /// Zapisuje SubjectPublicKeyInfo dla ECDsa (P-256).
+    /// Zapisuje SubjectPublicKeyInfo dla ECDsa.
+    /// OID krzywej jest wyznaczany dynamicznie z parametrów klucza (defense-in-depth).
     /// </summary>
     private static void WriteEcdsaPublicKeyInfo(AsnWriter writer, ECDsa ecdsa)
     {
         ECParameters p = ecdsa.ExportParameters(false);
+        string curveOid = EcdsaCompat.CurveToOid(p.Curve);
         int coordLen = p.Q.X!.Length;
 
         // Punkt nieskompresowany: 0x04 || X || Y
@@ -272,7 +283,7 @@ internal static class SelfSignedCertificateCompat
         // algorithm AlgorithmIdentifier { id-ecPublicKey, namedCurve OID }
         writer.PushSequence();
         writer.WriteObjectIdentifier(EcPublicKeyOid);
-        writer.WriteObjectIdentifier(NistP256Oid);
+        writer.WriteObjectIdentifier(curveOid);
         writer.PopSequence();
 
         // subjectPublicKey BIT STRING

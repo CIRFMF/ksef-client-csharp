@@ -28,6 +28,7 @@ internal static class CsrCompat
     /// <returns>Zakodowane w DER żądanie certyfikacji PKCS#10.</returns>
     public static byte[] CreateSigningRequestRsa(byte[] subjectDerBytes, RSA rsa, RSASignaturePadding padding)
     {
+        PlatformGuard.EnsureWindowsCng();
         bool usePss = padding == RSASignaturePadding.Pss;
         byte[] certRequestInfo = BuildCertificationRequestInfo(subjectDerBytes, rsa, isEcdsa: false);
 
@@ -58,6 +59,7 @@ internal static class CsrCompat
     /// <returns>Zakodowane w DER żądanie certyfikacji PKCS#10.</returns>
     public static byte[] CreateSigningRequestEcdsa(byte[] subjectDerBytes, ECDsa ecdsa)
     {
+        PlatformGuard.EnsureWindowsCng();
         byte[] certRequestInfo = BuildCertificationRequestInfo(subjectDerBytes, ecdsa, isEcdsa: true);
         // ECDsa.SignData na .NET Framework zwraca format IEEE P1363 (r||s).
         // PKCS#10 CSR wymaga podpisu ECDSA zakodowanego w DER (SEQUENCE { INTEGER r, INTEGER s }).
@@ -164,9 +166,14 @@ internal static class CsrCompat
         writer.PopSequence();
     }
 
+    /// <summary>
+    /// Zapisuje SubjectPublicKeyInfo dla ECDsa.
+    /// OID krzywej jest wyznaczany dynamicznie z parametrów klucza (defense-in-depth).
+    /// </summary>
     private static void WriteEcdsaPublicKeyInfo(AsnWriter writer, ECDsa ecdsa)
     {
         ECParameters p = ecdsa.ExportParameters(false);
+        string curveOid = EcdsaCompat.CurveToOid(p.Curve);
         int coordLen = p.Q.X.Length;
 
         byte[] point = new byte[1 + coordLen * 2];
@@ -177,12 +184,19 @@ internal static class CsrCompat
         writer.PushSequence();
         writer.PushSequence();
         writer.WriteObjectIdentifier(EcPublicKeyOid);
-        writer.WriteObjectIdentifier(NistP256Oid);
+        writer.WriteObjectIdentifier(curveOid);
         writer.PopSequence();
         writer.WriteBitString(point);
         writer.PopSequence();
     }
 
+    /// <summary>
+    /// Zapisuje AlgorithmIdentifier RSASSA-PSS z parametrami SHA-256 (RFC 4055 §2.1).
+    /// </summary>
+    /// <remarks>
+    /// Per RFC 4055 §2.1: AlgorithmIdentifier dla SHA-256 wewnątrz RSASSA-PSS-params
+    /// MUSI zawierać NULL jako parametr algorytmu haszowania.
+    /// </remarks>
     private static void WriteRsaPssAlgorithmIdentifier(AsnWriter writer)
     {
         writer.PushSequence();
@@ -190,19 +204,23 @@ internal static class CsrCompat
 
         writer.PushSequence();
 
+        // [0] hashAlgorithm — AlgorithmIdentifier { sha256, NULL } per RFC 4055 §2.1
         Asn1Tag ctx0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
         writer.PushSequence(ctx0);
         writer.PushSequence();
         writer.WriteObjectIdentifier(Sha256Oid);
+        writer.WriteNull();
         writer.PopSequence();
         writer.PopSequence(ctx0);
 
+        // [1] maskGenAlgorithm — SEQUENCE { id-mgf1, AlgorithmIdentifier { sha256, NULL } }
         Asn1Tag ctx1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
         writer.PushSequence(ctx1);
         writer.PushSequence();
         writer.WriteObjectIdentifier(MgfSha256Oid);
         writer.PushSequence();
         writer.WriteObjectIdentifier(Sha256Oid);
+        writer.WriteNull();
         writer.PopSequence();
         writer.PopSequence();
         writer.PopSequence(ctx1);

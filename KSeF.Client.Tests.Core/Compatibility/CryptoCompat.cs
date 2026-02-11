@@ -1,15 +1,89 @@
 #nullable enable
 #if NETFRAMEWORK
+using System.Formats.Asn1;
 using System.Security.Cryptography;
 
 namespace KSeF.Client.Tests.Core.Compatibility;
 
 /// <summary>
-/// Polyfill dla RSA.ImportRSAPrivateKey niedostępnego jako metoda instancyjna na .NET Framework 4.8.
-/// Ręcznie parsuje klucz prywatny RSA w formacie PKCS#1 DER i importuje przez <see cref="RSA.ImportParameters"/>.
+/// Polyfille metod <see cref="RSA"/> niedostępnych na .NET Framework 4.8:
+/// import (<c>ImportRSAPrivateKey</c>) oraz eksport (<c>ExportRSAPrivateKey</c>,
+/// <c>ExportSubjectPublicKeyInfo</c>, <c>ExportPkcs8PrivateKey</c>).
 /// </summary>
 internal static class RsaExtensions
 {
+    private const string RsaEncryptionOid = "1.2.840.113549.1.1.1";
+
+    /// <summary>
+    /// Eksportuje klucz prywatny RSA w formacie PKCS#1 DER (RFC 8017 A.1.2).
+    /// Polyfill dla <c>RSA.ExportRSAPrivateKey()</c> dostępnego od .NET Core 3.0.
+    /// </summary>
+    public static byte[] ExportRSAPrivateKey(this RSA rsa)
+    {
+        RSAParameters p = rsa.ExportParameters(true);
+        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+        writer.PushSequence();
+        writer.WriteInteger(0); // version
+        writer.WriteIntegerUnsigned(p.Modulus);
+        writer.WriteIntegerUnsigned(p.Exponent);
+        writer.WriteIntegerUnsigned(p.D);
+        writer.WriteIntegerUnsigned(p.P);
+        writer.WriteIntegerUnsigned(p.Q);
+        writer.WriteIntegerUnsigned(p.DP);
+        writer.WriteIntegerUnsigned(p.DQ);
+        writer.WriteIntegerUnsigned(p.InverseQ);
+        writer.PopSequence();
+        return writer.Encode();
+    }
+
+    /// <summary>
+    /// Eksportuje klucz publiczny RSA w formacie SubjectPublicKeyInfo DER (RFC 5280).
+    /// Polyfill dla <c>RSA.ExportSubjectPublicKeyInfo()</c> dostępnego od .NET Core 3.0.
+    /// </summary>
+    public static byte[] ExportSubjectPublicKeyInfo(this RSA rsa)
+    {
+        RSAParameters p = rsa.ExportParameters(false);
+        // Kodowanie PKCS#1 RSAPublicKey DER
+        AsnWriter pubKeyWriter = new AsnWriter(AsnEncodingRules.DER);
+        pubKeyWriter.PushSequence();
+        pubKeyWriter.WriteIntegerUnsigned(p.Modulus);
+        pubKeyWriter.WriteIntegerUnsigned(p.Exponent);
+        pubKeyWriter.PopSequence();
+        byte[] pubKeyDer = pubKeyWriter.Encode();
+
+        // Opakowywanie w SubjectPublicKeyInfo
+        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+        writer.PushSequence();
+        writer.PushSequence();
+        writer.WriteObjectIdentifier(RsaEncryptionOid);
+        writer.WriteNull();
+        writer.PopSequence();
+        writer.WriteBitString(pubKeyDer);
+        writer.PopSequence();
+        return writer.Encode();
+    }
+
+    /// <summary>
+    /// Eksportuje klucz prywatny RSA w formacie PKCS#8 PrivateKeyInfo DER (RFC 5958).
+    /// Opakowuje PKCS#1 RSAPrivateKey w strukturę PKCS#8:
+    /// <c>SEQUENCE { INTEGER 0, AlgorithmIdentifier { rsaEncryption, NULL }, OCTET STRING { PKCS#1 DER } }</c>.
+    /// Polyfill dla <c>RSA.ExportPkcs8PrivateKey()</c> dostępnego od .NET Core 3.0.
+    /// </summary>
+    public static byte[] ExportPkcs8PrivateKey(this RSA rsa)
+    {
+        byte[] pkcs1Der = rsa.ExportRSAPrivateKey();
+        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+        writer.PushSequence();
+        writer.WriteInteger(0); // version
+        writer.PushSequence();
+        writer.WriteObjectIdentifier(RsaEncryptionOid);
+        writer.WriteNull();
+        writer.PopSequence();
+        writer.WriteOctetString(pkcs1Der);
+        writer.PopSequence();
+        return writer.Encode();
+    }
+
     /// <summary>
     /// Importuje klucz prywatny RSA w formacie PKCS#1 DER.
     /// Polyfill dla RSA.ImportRSAPrivateKey dostępnego od .NET Core 3.0.

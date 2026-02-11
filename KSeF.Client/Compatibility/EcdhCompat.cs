@@ -119,6 +119,7 @@ internal sealed class EcdhCompat : IDisposable
 
     private static void EnsureResolved()
     {
+        PlatformGuard.EnsureWindowsCng();
         if (Volatile.Read(ref s_resolved)) return;
 
         // Spróbuj znaleźć ECDiffieHellman w załadowanych assembly
@@ -156,6 +157,18 @@ internal sealed class EcdhCompat : IDisposable
                 BindingFlags.Public | BindingFlags.Instance,
                 null, new[] { pubKeyType }, null);
         }
+
+        // Defense-in-depth: walidacja wymaganych elementów refleksji przed oznaczeniem jako resolved.
+        // Bez tych kontroli `DeriveKeyMaterial()` na linii 100 rzuciłoby kryptyczne NullReferenceException.
+        if (s_publicKeyProp == null)
+            throw new PlatformNotSupportedException(
+                "Nie znaleziono właściwości ECDiffieHellman.PublicKey. " +
+                "Wymagany jest .NET Framework 4.7+ na Windows.");
+
+        if (s_deriveKeyMaterialMethod == null)
+            throw new PlatformNotSupportedException(
+                "Nie znaleziono metody ECDiffieHellman.DeriveKeyMaterial. " +
+                "Wymagany jest .NET Framework 4.7+ na Windows.");
 
         Volatile.Write(ref s_resolved, true);
     }
@@ -210,6 +223,11 @@ internal sealed class EcdhCompat : IDisposable
     /// <summary>
     /// Koduje parametry klucza publicznego EC jako SubjectPublicKeyInfo (SPKI) w formacie DER.
     /// </summary>
+    /// <remarks>
+    /// OID krzywej jest wyznaczany z parametrów: ścieżka główna używa <c>Oid.Value</c> (zawsze wypełniony
+    /// na .NET FW 4.7.2+ z CNG), fallback na <c>Oid.FriendlyName</c> z precyzyjnym dopasowaniem
+    /// nazw CNG (nistP256, ECDSA_P256, ECDH_P256 itp.).
+    /// </remarks>
     private static byte[] EncodeEcPublicKeySpki(ECParameters parameters)
     {
         int coordLen = parameters.Q.X.Length;
@@ -218,20 +236,29 @@ internal sealed class EcdhCompat : IDisposable
         Buffer.BlockCopy(parameters.Q.X, 0, point, 1, coordLen);
         Buffer.BlockCopy(parameters.Q.Y, 0, point, 1 + coordLen, coordLen);
 
-        string curveOid = NistP256Oid; // domyślnie
+        // Ścieżka główna: Oid.Value jest wypełniony na .NET FW 4.7.2+ z CNG
+        string curveOid;
         if (parameters.Curve.Oid?.Value != null)
         {
             curveOid = parameters.Curve.Oid.Value;
         }
         else if (parameters.Curve.Oid?.FriendlyName != null)
         {
+            // Fallback: precyzyjne dopasowanie nazw CNG (zamiast fragile Contains)
             string friendly = parameters.Curve.Oid.FriendlyName;
-            if (friendly.Contains("256") || friendly.Contains("P256"))
-                curveOid = NistP256Oid;
-            else if (friendly.Contains("384") || friendly.Contains("P384"))
-                curveOid = "1.3.132.0.34";
-            else if (friendly.Contains("521") || friendly.Contains("P521"))
-                curveOid = "1.3.132.0.35";
+            curveOid = friendly switch
+            {
+                "nistP256" or "ECDSA_P256" or "ECDH_P256" => NistP256Oid,
+                "nistP384" or "ECDSA_P384" or "ECDH_P384" => "1.3.132.0.34",
+                "nistP521" or "ECDSA_P521" or "ECDH_P521" => "1.3.132.0.35",
+                _ => throw new CryptographicException(
+                    $"Nie można określić OID dla krzywej EC ECDH o nazwie '{friendly}'.")
+            };
+        }
+        else
+        {
+            throw new CryptographicException(
+                "Nie można określić OID krzywej EC — brak Oid.Value i Oid.FriendlyName w parametrach.");
         }
 
         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

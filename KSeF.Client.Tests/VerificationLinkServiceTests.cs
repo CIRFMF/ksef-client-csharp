@@ -276,9 +276,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
 
         // Act – jawnie przekazujemy prywatny klucz ECDSA
 #if NETFRAMEWORK
-        // ExportPkcs8PrivateKeyPem() nie jest dostępne na .NET Framework 4.8.
-        // Certyfikat ma już osadzony klucz prywatny, więc przekazanie null jest bezpieczne.
-        string? privateKeyPem = null;
+        string? privateKeyPem = fullCert.GetECDsaPrivateKey()?.ExportPkcs8PrivateKeyPemCompat();
 #else
         string? privateKeyPem = fullCert.GetECDsaPrivateKey()?.ExportPkcs8PrivateKeyPem();
 #endif

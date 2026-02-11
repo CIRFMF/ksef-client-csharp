@@ -390,6 +390,7 @@ internal static class RsaCompat
     /// <returns>Instancja RSA obsługująca OAEP-SHA256.</returns>
     public static RSA CreateFromPemWithOaepSupport(string pem)
     {
+        PlatformGuard.EnsureWindowsCng();
         // Parsuj PEM, aby uzyskać RSAParameters za pomocą tymczasowej instancji RSA
         using (RSA temp = RSA.Create())
         {

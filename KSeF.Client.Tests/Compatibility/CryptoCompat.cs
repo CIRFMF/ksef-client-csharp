@@ -1,16 +1,115 @@
 #nullable enable
 #if NETFRAMEWORK
+using System.Formats.Asn1;
 using System.IO;
 using System.Security.Cryptography;
 
 namespace KSeF.Client.Tests.Compatibility;
 
 /// <summary>
-/// Polyfill dla RSA.ImportRSAPrivateKey i ECDsa.ImportECPrivateKey
-/// niedostepnych jako metody instancyjne na .NET Framework 4.8.
+/// Polyfille metod kryptograficznych niedostępnych na .NET Framework 4.8:
+/// import (<c>ImportRSAPrivateKey</c>, <c>ImportECPrivateKey</c>) oraz eksport
+/// (<c>ExportPkcs8PrivateKeyPemCompat</c> dla ECDsa).
 /// </summary>
 internal static class CryptoCompat
 {
+    private const string EcPublicKeyOid = "1.2.840.10045.2.1";
+
+    /// <summary>
+    /// Eksportuje klucz prywatny ECDsa w formacie PKCS#8 PrivateKeyInfo zakodowanym jako PEM.
+    /// Buduje strukturę: SEC1 ECPrivateKey DER → opakowuje w PKCS#8 → koduje Base64 z nagłówkami PEM.
+    /// Polyfill dla <c>ECDsa.ExportPkcs8PrivateKeyPem()</c> dostępnego od .NET 7.
+    /// </summary>
+    public static string ExportPkcs8PrivateKeyPemCompat(this ECDsa ecdsa)
+    {
+        ECParameters p = ecdsa.ExportParameters(true);
+
+        string curveOid = GetCurveOid(p.Curve);
+        int coordLen = p.D!.Length;
+
+        // 1. Budowanie SEC1 ECPrivateKey DER (RFC 5915)
+        // ECPrivateKey ::= SEQUENCE {
+        //   version INTEGER { ecPrivkeyVer1(1) },
+        //   privateKey OCTET STRING,
+        //   parameters [0] ECParameters OPTIONAL,
+        //   publicKey  [1] BIT STRING OPTIONAL
+        // }
+        AsnWriter sec1Writer = new AsnWriter(AsnEncodingRules.DER);
+        sec1Writer.PushSequence();
+        sec1Writer.WriteInteger(1); // version ecPrivkeyVer1
+
+        sec1Writer.WriteOctetString(p.D);
+
+        // [0] EXPLICIT parametry — OID krzywej
+        Asn1Tag ctx0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
+        sec1Writer.PushSequence(ctx0);
+        sec1Writer.WriteObjectIdentifier(curveOid);
+        sec1Writer.PopSequence(ctx0);
+
+        // [1] EXPLICIT klucz publiczny — nieskompresowany punkt EC
+        if (p.Q.X != null && p.Q.Y != null)
+        {
+            byte[] point = new byte[1 + coordLen * 2];
+            point[0] = 0x04;
+            Buffer.BlockCopy(p.Q.X, 0, point, 1, coordLen);
+            Buffer.BlockCopy(p.Q.Y, 0, point, 1 + coordLen, coordLen);
+
+            Asn1Tag ctx1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
+            sec1Writer.PushSequence(ctx1);
+            sec1Writer.WriteBitString(point);
+            sec1Writer.PopSequence(ctx1);
+        }
+
+        sec1Writer.PopSequence();
+        byte[] sec1Der = sec1Writer.Encode();
+
+        // 2. Opakowywanie SEC1 w PKCS#8 PrivateKeyInfo (RFC 5958)
+        // PrivateKeyInfo ::= SEQUENCE {
+        //   version INTEGER (0),
+        //   privateKeyAlgorithm AlgorithmIdentifier { ecPublicKey, curveOid },
+        //   privateKey OCTET STRING { SEC1 DER }
+        // }
+        AsnWriter pkcs8Writer = new AsnWriter(AsnEncodingRules.DER);
+        pkcs8Writer.PushSequence();
+        pkcs8Writer.WriteInteger(0); // version
+        pkcs8Writer.PushSequence();
+        pkcs8Writer.WriteObjectIdentifier(EcPublicKeyOid);
+        pkcs8Writer.WriteObjectIdentifier(curveOid);
+        pkcs8Writer.PopSequence();
+        pkcs8Writer.WriteOctetString(sec1Der);
+        pkcs8Writer.PopSequence();
+        byte[] pkcs8Der = pkcs8Writer.Encode();
+
+        // 3. Kodowanie PEM
+        return "-----BEGIN PRIVATE KEY-----\n" +
+               Convert.ToBase64String(pkcs8Der, Base64FormattingOptions.InsertLineBreaks) +
+               "\n-----END PRIVATE KEY-----";
+    }
+
+    /// <summary>
+    /// Wyznacza OID krzywej EC z <see cref="ECCurve"/>.
+    /// </summary>
+    private static string GetCurveOid(ECCurve curve)
+    {
+        if (curve.Oid?.Value != null)
+            return curve.Oid.Value;
+
+        if (curve.Oid?.FriendlyName != null)
+        {
+            return curve.Oid.FriendlyName switch
+            {
+                "nistP256" or "ECDSA_P256" or "ECDH_P256" => "1.2.840.10045.3.1.7",
+                "nistP384" or "ECDSA_P384" or "ECDH_P384" => "1.3.132.0.34",
+                "nistP521" or "ECDSA_P521" or "ECDH_P521" => "1.3.132.0.35",
+                _ => throw new CryptographicException(
+                    $"Nie można określić OID dla krzywej EC o nazwie '{curve.Oid.FriendlyName}'.")
+            };
+        }
+
+        throw new CryptographicException(
+            "Nie można określić OID krzywej EC — brak Oid.Value i Oid.FriendlyName.");
+    }
+
     /// <summary>
     /// Importuje klucz prywatny RSA w formacie PKCS#1 DER.
     /// Polyfill dla RSA.ImportRSAPrivateKey dostepnego od .NET Core 3.0.

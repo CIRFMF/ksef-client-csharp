@@ -117,7 +117,7 @@
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/CIRFMF/ksef-client-csharp</RepositoryUrl>
 		<PackageProjectUrl>https://github.com/CIRFMF/ksef-client-csharp</PackageProjectUrl>
-		<PackageDescription>A .NET library that simplifies integration with the Polish National e-Invoicing System (KSeF)</PackageDescription>
+		<PackageDescription>A .NET library that simplifies integration with the Polish National e-Invoicing System (KSeF). The netstandard2.0 target requires .NET Framework 4.7.2+ on Windows. For cross-platform support (Linux, macOS), use the net8.0/net9.0/net10.0 targets.</PackageDescription>
 		<PackageTags>ksef; e-invoicing; polish; dotnet; integration; invoices</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>

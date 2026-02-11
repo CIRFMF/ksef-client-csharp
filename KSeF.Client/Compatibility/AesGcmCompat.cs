@@ -25,6 +25,7 @@ internal sealed class AesGcmCompat : IDisposable
     /// <param name="tagSizeInBytes">Oczekiwany rozmiar tagu (ignorowany, zachowany dla kompatybilności API).</param>
     public AesGcmCompat(byte[] key, int tagSizeInBytes = MaxTagSize)
     {
+        PlatformGuard.EnsureWindowsCng();
         if (key == null) throw new ArgumentNullException(nameof(key));
         if (key.Length != 16 && key.Length != 24 && key.Length != 32)
             throw new ArgumentException("Klucz musi mieć 128, 192 lub 256 bitów.", nameof(key));

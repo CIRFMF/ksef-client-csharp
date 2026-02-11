@@ -29,6 +29,7 @@ internal static class CertificateCompat
     /// </summary>
     public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 cert, RSA rsa)
     {
+        PlatformGuard.EnsureWindowsCng();
         if (!Volatile.Read(ref _rsaResolved))
         {
             _rsaCopyMethod = ResolveMethod("RSACertificateExtensions", typeof(RSA));
@@ -42,7 +43,7 @@ internal static class CertificateCompat
 
         throw new PlatformNotSupportedException(
             "CopyWithPrivateKey(RSA) nie jest dostępne na tej platformie. " +
-            "Wymagany jest .NET Framework 4.7.2+ lub .NET Core 2.0+.");
+            "Wymagany jest .NET Framework 4.7.2+ na Windows.");
     }
 
     /// <summary>
@@ -51,6 +52,7 @@ internal static class CertificateCompat
     /// </summary>
     public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 cert, ECDsa ecdsa)
     {
+        PlatformGuard.EnsureWindowsCng();
         if (!Volatile.Read(ref _ecdsaResolved))
         {
             _ecdsaCopyMethod = ResolveMethod("ECDsaCertificateExtensions", typeof(ECDsa));
@@ -64,7 +66,7 @@ internal static class CertificateCompat
 
         throw new PlatformNotSupportedException(
             "CopyWithPrivateKey(ECDsa) nie jest dostępne na tej platformie. " +
-            "Wymagany jest .NET Framework 4.7.2+ lub .NET Core 2.0+.");
+            "Wymagany jest .NET Framework 4.7.2+ na Windows.");
     }
 
     private static MethodInfo? ResolveMethod(string className, Type keyType)
