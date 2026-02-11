@@ -35,21 +35,29 @@ internal static class SelfSignedCertificateCompat
         DateTimeOffset notAfter)
     {
         PlatformGuard.EnsureWindowsCng();
-        // RSACng obsługuje podpisywanie PSS; RSACryptoServiceProvider (z RSA.Create()) nie obsługuje.
-        // Deklaracja using zapewnia zwolnienie CNG handle po zakończeniu metody.
-        using RSACng rsa = new RSACng(2048);
+
+        // Tworzenie klucza CNG z jawną flagą AllowPlaintextExport,
+        // aby ExportParameters(true) działało i mogliśmy zbudować PFX.
+        CngKeyCreationParameters keyParams = new CngKeyCreationParameters
+        {
+            ExportPolicy = CngExportPolicies.AllowExport | CngExportPolicies.AllowPlaintextExport,
+            KeyUsage = CngKeyUsages.AllUsages,
+        };
+        keyParams.Parameters.Add(new CngProperty("Length", BitConverter.GetBytes(2048), CngPropertyOptions.None));
+        using CngKey cngKey = CngKey.Create(CngAlgorithm.Rsa, null, keyParams);
+        using RSACng rsa = new RSACng(cngKey);
+
         byte[] tbsCert = BuildTbsCertificate(subjectDN, rsa, notBefore, notAfter, isEcdsa: false);
         byte[] signature = rsa.SignData(tbsCert, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
         byte[] certDer = WrapSignedCertificate(tbsCert, signature, isEcdsa: false);
 
-        // CopyWithPrivateKey na .NET Framework może opakować klucz jako RSACryptoServiceProvider,
-        // który nie obsługuje PSS. Eksportuj do PFX i reimportuj, aby zachować typ klucza CNG.
-        X509Certificate2 pubCert = new X509Certificate2(certDer);
-        X509Certificate2 certWithKey = pubCert.CopyWithPrivateKey(rsa);
-        byte[] pfxBytes = certWithKey.Export(X509ContentType.Pfx, string.Empty);
-        pubCert.Dispose();
-        certWithKey.Dispose();
-        return new X509Certificate2(pfxBytes, string.Empty, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+        // Eksportuj klucz do PKCS#8 TERAZ, póki CNG key jest exportowalny.
+        // Po CopyWithPrivateKey/PFX reimporcie .NET Framework gubi export policy.
+        byte[] pkcs8Key = ExportRsaPrivateKeyPkcs8(rsa.ExportParameters(true));
+
+        // Buduj PFX ręcznie z ASN.1 (certDer + pkcs8Key) i reimportuj z Exportable.
+        byte[] pfxBytes = BuildPfx(certDer, pkcs8Key);
+        return new X509Certificate2(pfxBytes, string.Empty, X509KeyStorageFlags.Exportable);
     }
 
     /// <summary>
@@ -73,8 +81,9 @@ internal static class SelfSignedCertificateCompat
         byte[] derSignature = ConvertIeeeP1363ToDer(ieeeSignature);
         byte[] certDer = WrapSignedCertificate(tbsCert, derSignature, isEcdsa: true);
 
-        X509Certificate2 pubCert = new X509Certificate2(certDer);
-        return pubCert.CopyWithPrivateKey(ecdsa);
+        byte[] pkcs8Key = ExportEcPrivateKeyPkcs8(ecdsa.ExportParameters(true));
+        byte[] pfxBytes = BuildPfx(certDer, pkcs8Key);
+        return new X509Certificate2(pfxBytes, string.Empty, X509KeyStorageFlags.Exportable);
     }
 
     /// <summary>
@@ -103,6 +112,7 @@ internal static class SelfSignedCertificateCompat
             rng.GetBytes(serial);
         }
         serial[0] &= 0x7F; // Zapewnij wartość dodatnią
+        serial[0] |= 0x01; // Zapewnij brak leading zeroes (pierwszy bajt niezerowy)
         writer.WriteInteger(serial);
 
         // signature AlgorithmIdentifier
@@ -351,6 +361,157 @@ internal static class SelfSignedCertificateCompat
         byte[] trimmed = new byte[data.Length - start];
         Buffer.BlockCopy(data, start, trimmed, 0, trimmed.Length);
         return trimmed;
+    }
+
+    // ─── PFX (PKCS#12) builder ───────────────────────────────────────────
+
+    private const string IdData       = "1.2.840.113549.1.7.1";
+    private const string KeyBagOid    = "1.2.840.113549.1.12.10.1.1";
+    private const string CertBagOid   = "1.2.840.113549.1.12.10.1.3";
+    private const string X509CertOid  = "1.2.840.113549.1.9.22.1";
+
+    /// <summary>
+    /// Buduje plik PKCS#12/PFX zawierający certyfikat i klucz prywatny PKCS#8.
+    /// Omija CopyWithPrivateKey + PFX reimport, który na .NET Framework 4.8
+    /// gubi export policy klucza CNG.
+    /// </summary>
+    private static byte[] BuildPfx(byte[] certDer, byte[] pkcs8PrivateKey)
+    {
+        // SafeBag: keyBag
+        AsnWriter keyBagWriter = new AsnWriter(AsnEncodingRules.DER);
+        keyBagWriter.PushSequence();
+        keyBagWriter.WriteObjectIdentifier(KeyBagOid);
+        Asn1Tag ctx0 = new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true);
+        keyBagWriter.PushSequence(ctx0);
+        keyBagWriter.WriteEncodedValue(pkcs8PrivateKey);
+        keyBagWriter.PopSequence(ctx0);
+        keyBagWriter.PopSequence();
+        byte[] keyBag = keyBagWriter.Encode();
+
+        // SafeBag: certBag
+        AsnWriter certBagWriter = new AsnWriter(AsnEncodingRules.DER);
+        certBagWriter.PushSequence();
+        certBagWriter.WriteObjectIdentifier(CertBagOid);
+        certBagWriter.PushSequence(ctx0);
+        // CertBag ::= SEQUENCE { certId, certValue [0] OCTET STRING }
+        certBagWriter.PushSequence();
+        certBagWriter.WriteObjectIdentifier(X509CertOid);
+        certBagWriter.PushSequence(ctx0);
+        certBagWriter.WriteOctetString(certDer);
+        certBagWriter.PopSequence(ctx0);
+        certBagWriter.PopSequence();
+        certBagWriter.PopSequence(ctx0);
+        certBagWriter.PopSequence();
+        byte[] certBag = certBagWriter.Encode();
+
+        // SafeContents = SEQUENCE OF SafeBag
+        AsnWriter safeContentsWriter = new AsnWriter(AsnEncodingRules.DER);
+        safeContentsWriter.PushSequence();
+        safeContentsWriter.WriteEncodedValue(keyBag);
+        safeContentsWriter.WriteEncodedValue(certBag);
+        safeContentsWriter.PopSequence();
+        byte[] safeContents = safeContentsWriter.Encode();
+
+        // ContentInfo wrapping SafeContents
+        AsnWriter ciWriter = new AsnWriter(AsnEncodingRules.DER);
+        ciWriter.PushSequence();
+        ciWriter.WriteObjectIdentifier(IdData);
+        ciWriter.PushSequence(ctx0);
+        ciWriter.WriteOctetString(safeContents);
+        ciWriter.PopSequence(ctx0);
+        ciWriter.PopSequence();
+        byte[] contentInfo = ciWriter.Encode();
+
+        // AuthenticatedSafe = SEQUENCE OF ContentInfo
+        AsnWriter authSafeWriter = new AsnWriter(AsnEncodingRules.DER);
+        authSafeWriter.PushSequence();
+        authSafeWriter.WriteEncodedValue(contentInfo);
+        authSafeWriter.PopSequence();
+        byte[] authSafe = authSafeWriter.Encode();
+
+        // PFX = SEQUENCE { version 3, authSafe ContentInfo }
+        AsnWriter pfxWriter = new AsnWriter(AsnEncodingRules.DER);
+        pfxWriter.PushSequence();
+        pfxWriter.WriteInteger(3);
+        pfxWriter.PushSequence();
+        pfxWriter.WriteObjectIdentifier(IdData);
+        pfxWriter.PushSequence(ctx0);
+        pfxWriter.WriteOctetString(authSafe);
+        pfxWriter.PopSequence(ctx0);
+        pfxWriter.PopSequence();
+        pfxWriter.PopSequence();
+        return pfxWriter.Encode();
+    }
+
+    /// <summary>
+    /// Eksportuje klucz prywatny RSA do formatu PKCS#8 PrivateKeyInfo DER.
+    /// </summary>
+    private static byte[] ExportRsaPrivateKeyPkcs8(RSAParameters p)
+    {
+        // PKCS#1 RSAPrivateKey
+        AsnWriter pkcs1 = new AsnWriter(AsnEncodingRules.DER);
+        pkcs1.PushSequence();
+        pkcs1.WriteInteger(0);
+        pkcs1.WriteIntegerUnsigned(p.Modulus);
+        pkcs1.WriteIntegerUnsigned(p.Exponent);
+        pkcs1.WriteIntegerUnsigned(p.D);
+        pkcs1.WriteIntegerUnsigned(p.P);
+        pkcs1.WriteIntegerUnsigned(p.Q);
+        pkcs1.WriteIntegerUnsigned(p.DP);
+        pkcs1.WriteIntegerUnsigned(p.DQ);
+        pkcs1.WriteIntegerUnsigned(p.InverseQ);
+        pkcs1.PopSequence();
+        byte[] pkcs1Der = pkcs1.Encode();
+
+        // PKCS#8 PrivateKeyInfo
+        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+        writer.PushSequence();
+        writer.WriteInteger(0);
+        writer.PushSequence();
+        writer.WriteObjectIdentifier(RsaEncryptionOid);
+        writer.WriteNull();
+        writer.PopSequence();
+        writer.WriteOctetString(pkcs1Der);
+        writer.PopSequence();
+        return writer.Encode();
+    }
+
+    /// <summary>
+    /// Eksportuje klucz prywatny ECDsa do formatu PKCS#8 PrivateKeyInfo DER.
+    /// </summary>
+    private static byte[] ExportEcPrivateKeyPkcs8(ECParameters p)
+    {
+        string curveOid = NistP256Oid;
+        int coordLen = p.Q.X!.Length;
+
+        // ECPrivateKey (RFC 5915)
+        AsnWriter ecKey = new AsnWriter(AsnEncodingRules.DER);
+        ecKey.PushSequence();
+        ecKey.WriteInteger(1); // version
+        ecKey.WriteOctetString(p.D);
+        // [1] publicKey BIT STRING
+        byte[] point = new byte[1 + coordLen * 2];
+        point[0] = 0x04;
+        Buffer.BlockCopy(p.Q.X, 0, point, 1, coordLen);
+        Buffer.BlockCopy(p.Q.Y!, 0, point, 1 + coordLen, coordLen);
+        Asn1Tag ctx1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
+        ecKey.PushSequence(ctx1);
+        ecKey.WriteBitString(point);
+        ecKey.PopSequence(ctx1);
+        ecKey.PopSequence();
+        byte[] ecKeyDer = ecKey.Encode();
+
+        // PKCS#8 PrivateKeyInfo
+        AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+        writer.PushSequence();
+        writer.WriteInteger(0);
+        writer.PushSequence();
+        writer.WriteObjectIdentifier(EcPublicKeyOid);
+        writer.WriteObjectIdentifier(curveOid);
+        writer.PopSequence();
+        writer.WriteOctetString(ecKeyDer);
+        writer.PopSequence();
+        return writer.Encode();
     }
 }
 #endif
