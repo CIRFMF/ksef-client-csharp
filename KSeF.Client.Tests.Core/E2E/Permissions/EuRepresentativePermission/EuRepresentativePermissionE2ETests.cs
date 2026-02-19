@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.EuEntityPermissions;
 using KSeF.Client.Api.Builders.EUEntityRepresentativePermissions;
 using KSeF.Client.Core.Models;

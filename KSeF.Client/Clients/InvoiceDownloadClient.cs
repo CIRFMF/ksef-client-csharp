@@ -15,8 +15,8 @@ public class InvoiceDownloadClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<string> GetInvoiceAsync(string ksefNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(ksefNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(ksefNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Invoices.ByKsefNumber(Uri.EscapeDataString(ksefNumber));
 
@@ -37,8 +37,8 @@ public class InvoiceDownloadClient(IRestClient restClient, IRouteBuilder routeBu
         SortOrder sortOrder = SortOrder.Asc,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new StringBuilder(Routes.Invoices.QueryMetadata).Append("?sortOrder=").Append(sortOrder);
         PaginationHelper.AppendPagination(pageOffset, pageSize, urlBuilder);
@@ -66,8 +66,8 @@ public class InvoiceDownloadClient(IRestClient restClient, IRouteBuilder routeBu
         string accessToken,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Invoices.Exports;
 
@@ -86,8 +86,8 @@ public class InvoiceDownloadClient(IRestClient restClient, IRouteBuilder routeBu
         string accessToken,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(referenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(referenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Invoices.ExportByReference(Uri.EscapeDataString(referenceNumber));
 

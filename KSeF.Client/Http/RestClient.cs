@@ -69,7 +69,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
         Dictionary<string, string> additionalHeaders = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(method);
+        Guard.ThrowIfNull(method);
         if (string.IsNullOrWhiteSpace(url))
         {
             throw new ArgumentException("Adres URL nie może być pusty.", nameof(url));
@@ -116,13 +116,13 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
         IDictionary<string, string> additionalHeaders = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(method);
+        Guard.ThrowIfNull(method);
         if (string.IsNullOrWhiteSpace(url))
         {
             throw new ArgumentException("Adres URL nie może być pusty.", nameof(url));
         }
 
-        ArgumentNullException.ThrowIfNull(content);
+        Guard.ThrowIfNull(content);
 
         using HttpRequestMessage httpRequestMessage = new(method, url)
         {
@@ -161,7 +161,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
         string contentType = RestContentTypeExtensions.DefaultContentType,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(method);
+        Guard.ThrowIfNull(method);
         if (string.IsNullOrWhiteSpace(url))
         {
             throw new ArgumentException("Adres URL nie może być pusty.", nameof(url));
@@ -181,7 +181,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
     /// <inheritdoc />
     public async Task<TResponse> SendAsync<TResponse>(RestRequest request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        Guard.ThrowIfNull(request);
 
         using HttpRequestMessage httpRequestMessage = request.ToHttpRequestMessage(httpClient);
         using CancellationTokenSource cancellationTokenSource = CreateTimeoutCancellationTokenSource(request.Timeout, cancellationToken);
@@ -208,7 +208,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
     /// <inheritdoc />
     public async Task<TResponse> SendAsync<TResponse, TRequest>(RestRequest<TRequest> request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        Guard.ThrowIfNull(request);
 
         using HttpRequestMessage httpRequestMessage = request.ToHttpRequestMessage(httpClient, DefaultContentType);
         using CancellationTokenSource cancellationTokenSource = CreateTimeoutCancellationTokenSource(request.Timeout, cancellationToken);
@@ -238,7 +238,12 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             if (typeof(T) == typeof(string))
             {
+
+#if NETSTANDARD2_0
+                string responseText = await httpResponseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+#else
                 string responseText = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#endif
                 return (T)(object)(responseText ?? string.Empty);
             }
 
@@ -250,7 +255,11 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
                 throw new KsefApiException($"Nieoczekiwany typ treści '{mediaType ?? "nieznany"}' dla {typeof(T).Name}.", httpResponseMessage.StatusCode);
             }
 
+#if NETSTANDARD2_0
+            using Stream responseStream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+#else
             using Stream responseStream = await httpResponseMessage.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#endif
             return await JsonUtil.DeserializeAsync<T>(responseStream).ConfigureAwait(false);
         }
 
@@ -290,7 +299,11 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             if (typeof(T) == typeof(string))
             {
+#if NETSTANDARD2_0
+                string responseText = await httpResponseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+#else
                 string responseText = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+#endif
                 return new RestResponse<T>((T)(object)(responseText ?? string.Empty), headers);
             }
 
@@ -302,7 +315,11 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
                 throw new KsefApiException($"Nieoczekiwany typ treści '{mediaType ?? "nieznany"}' dla {typeof(T).Name}.", httpResponseMessage.StatusCode);
             }
 
+#if NETSTANDARD2_0
+            using Stream responseStream = await httpResponseMessage.Content.ReadAsStreamAsync().ConfigureAwait(false);
+#else
             using Stream responseStream = await httpResponseMessage.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+#endif
             T body = await JsonUtil.DeserializeAsync<T>(responseStream).ConfigureAwait(false);
             return new RestResponse<T>(body, headers);
         }
@@ -322,7 +339,12 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
             case System.Net.HttpStatusCode.NotFound:
                 throw new KsefApiException("Not found", response.StatusCode);
 
+
+#if NETSTANDARD2_0
+            case (System.Net.HttpStatusCode)429:
+#else
             case System.Net.HttpStatusCode.TooManyRequests:
+#endif
                 await HandleTooManyRequestsAsync(response, cancellationToken).ConfigureAwait(false);
                 return;
 
@@ -409,7 +431,11 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             string responseBody = responseMessage.Content is null
                 ? null
+#if NETSTANDARD2_0
+                : await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+#else
                 : await responseMessage.Content.ReadAsStringAsync(innerCancellationToken).ConfigureAwait(false);
+#endif
 
             if (!string.IsNullOrEmpty(responseBody) && IsJsonContent(responseMessage))
             {
@@ -429,7 +455,11 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
         {
             string responseBody = responseMessage.Content is null
                 ? null
+#if NETSTANDARD2_0
+                : await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
+#else
                 : await responseMessage.Content.ReadAsStringAsync(innerCancellationToken).ConfigureAwait(false);
+#endif
 
             if (string.IsNullOrEmpty(responseBody))
             {

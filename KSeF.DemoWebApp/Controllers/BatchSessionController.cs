@@ -105,7 +105,6 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
         {
             batchFileInfoBuilder = batchFileInfoBuilder.AddBatchFilePart(
                 ordinalNumber: i + 1,
-                fileName: $"faktura_part{i + 1}.zip.aes",
                 fileSize: encryptedParts[i].Metadata.FileSize,
                 fileHash: encryptedParts[i].Metadata.HashSHA);
         }

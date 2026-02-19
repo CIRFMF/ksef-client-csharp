@@ -447,8 +447,9 @@ public class CertificatesE2ETests : TestBase
 		Assert.NotNull(ksefApiException);
 		Assert.Equal(ExpectedCertificatesLimitExceededExceptionMessage, ksefApiException.Message);
 
-		// Cleanup, odwoływanie tylko tych certyfikatów które stworzyliśmy
-		if (certificates.Count > 0)
+        // TODO for this nip we should remove all created certs after test run
+        // Cleanup, odwoływanie tylko tych certyfikatów które stworzyliśmy
+        if (certificates.Count > 0)
 		{
 			foreach (CertificateEnrollmentStatusResponse certificate in certificates)
 			{

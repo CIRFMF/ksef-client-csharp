@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.AuthorizationEntityPermissions;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Models;
@@ -593,4 +594,3 @@ public partial class PeppolPefE2ETests : TestBase
         return upo;
     }
 }
-

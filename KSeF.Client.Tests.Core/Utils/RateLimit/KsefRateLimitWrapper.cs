@@ -1,3 +1,4 @@
+#nullable enable
 using System.Collections.Concurrent;
 
 using KSeF.Client.Core.Exceptions;

@@ -78,7 +78,7 @@ public class SignatureE2ETests : TestBase
 
         // Act
         SignatureResponse authOperationInfo = await AuthorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
+            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken: CancellationToken.None);
 
         // Assert
         Assert.NotNull(authOperationInfo);

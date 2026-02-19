@@ -143,7 +143,11 @@ public class BatchSessionStreamE2ETests : TestBase
             {
                 System.IO.Compression.ZipArchiveEntry entry = archive.CreateEntry(FileName, System.IO.Compression.CompressionLevel.Optimal);
                 using Stream entryStream = entry.Open();
+#if NETFRAMEWORK
+                await entryStream.WriteAsync(Content, 0, Content.Length, CancellationToken).ConfigureAwait(false);
+#else
                 await entryStream.WriteAsync(Content, CancellationToken).ConfigureAwait(false);
+#endif
             }
         }
         zipStream.Position = 0;
@@ -195,7 +199,6 @@ public class BatchSessionStreamE2ETests : TestBase
         {
             builder = builder.AddBatchFilePart(
                 ordinalNumber: p.OrdinalNumber,
-                fileName: $"part_{p.OrdinalNumber}.zip.aes",
                 fileSize: p.Metadata.FileSize,
                 fileHash: p.Metadata.HashSHA);
         }

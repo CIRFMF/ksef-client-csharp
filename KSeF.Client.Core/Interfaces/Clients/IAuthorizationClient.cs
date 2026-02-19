@@ -17,14 +17,18 @@ namespace KSeF.Client.Core.Interfaces.Clients
         /// <returns><see cref="AuthenticationChallengeResponse"/></returns>
         Task<AuthenticationChallengeResponse> GetAuthChallengeAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Rozpoczyna operację uwierzytelniania za pomocą podpisanego dokumentu XML (XAdES).
-        /// </summary>
-        /// <param name="signedXML">Podpisany XML.</param>
-        /// <param name="verifyCertificateChain">Czy sprawdzić łańcuch certyfikatów.</param>
-        /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns><see cref="SignatureResponse"/></returns>
-        Task<SignatureResponse> SubmitXadesAuthRequestAsync(string signedXML, bool verifyCertificateChain = false, CancellationToken cancellationToken = default);
+		/// <summary>
+		/// Rozpoczyna operację uwierzytelniania za pomocą podpisanego dokumentu XML (XAdES).
+		/// </summary>
+		/// <param name="signedXML">Podpisany XML.</param>
+		/// <param name="verifyCertificateChain">Czy sprawdzić łańcuch certyfikatów.</param>
+		/// <param name="enforceXadesCompliance">
+		/// Jeśli true, dodaje nagłówek X-KSeF-Feature: enforce-xades-compliance,
+		/// umożliwiając wcześniejsze włączenie nowych wymagań walidacji XAdES na środowiskach DEMO oraz PROD.
+		/// </param>
+		/// <param name="cancellationToken">Cancellation token.</param>
+		/// <returns><see cref="SignatureResponse"/></returns>
+		Task<SignatureResponse> SubmitXadesAuthRequestAsync(string signedXML, bool verifyCertificateChain = false, bool enforceXadesCompliance = false, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Rozpoczyna operację uwierzytelniania z wykorzystaniem wcześniej wygenerowanego tokena KSeF.

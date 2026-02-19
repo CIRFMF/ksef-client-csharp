@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Api.Builders.Auth;
 using KSeF.Client.Core.Models;
@@ -42,7 +43,7 @@ public static class AuthenticationUtils
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await authorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+            .SubmitXadesAuthRequestAsync(signedXml, false, true, CancellationToken.None).ConfigureAwait(false);
 
         AuthStatus finalStatus = await WaitForAuthCompletionAsync(authorizationClient, authOperationInfo).ConfigureAwait(false);
         EnsureSuccess(finalStatus);
@@ -84,7 +85,7 @@ public static class AuthenticationUtils
 
 
         SignatureResponse authOperationInfo = await authorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken: CancellationToken.None).ConfigureAwait(false);
 
         AuthStatus finalStatus = await WaitForAuthCompletionAsync(authorizationClient, authOperationInfo).ConfigureAwait(false);
         EnsureSuccess(finalStatus);
@@ -121,7 +122,7 @@ public static class AuthenticationUtils
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await authorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken: CancellationToken.None).ConfigureAwait(false);
 
         AuthStatus finalStatus = await WaitForAuthCompletionAsync(authorizationClient, authOperationInfo).ConfigureAwait(false);
         EnsureSuccess(finalStatus);
@@ -156,7 +157,7 @@ public static class AuthenticationUtils
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await authorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken: CancellationToken.None).ConfigureAwait(false);
 
         AuthStatus finalStatus = await WaitForAuthCompletionAsync(authorizationClient, authOperationInfo).ConfigureAwait(false);
         EnsureSuccess(finalStatus);
@@ -188,7 +189,7 @@ public static class AuthenticationUtils
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await authorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken: CancellationToken.None).ConfigureAwait(false);
 
         AuthStatus finalStatus = await WaitForAuthCompletionAsync(authorizationClient, authOperationInfo).ConfigureAwait(false);
         EnsureSuccess(finalStatus);

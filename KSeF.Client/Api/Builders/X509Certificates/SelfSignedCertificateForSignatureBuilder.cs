@@ -163,22 +163,45 @@ internal sealed class SelfSignedCertificateForSignatureBuilderImpl
     public X509Certificate2 Build()
     {
         _subjectParts.Add("2.5.4.6=PL");
+        string subjectDN = string.Join(", ", _subjectParts);
 
-        X500DistinguishedName subjectName = new(string.Join(", ", _subjectParts));
+#if NETSTANDARD2_0
+        // NAPRAWA: DateTimeOffset.UtcNow zamiast .Now — NotBefore i NotAfter muszą mieć
+        // spójne offsety (oba UTC), aby certyfikat nie zależał od strefy czasowej maszyny.
+        if (_encryptionType == EncryptionMethodEnum.ECDsa)
+        {
+            return Compatibility.SelfSignedCertificateCompat.CreateSelfSignedEcdsa(
+                subjectDN,
+                DateTimeOffset.UtcNow.AddMinutes(-61),
+                DateTimeOffset.UtcNow.AddYears(2));
+        }
+        else
+        {
+            return Compatibility.SelfSignedCertificateCompat.CreateSelfSignedRsa(
+                subjectDN,
+                DateTimeOffset.UtcNow.AddMinutes(-61),
+                DateTimeOffset.UtcNow.AddYears(2));
+        }
+#else
+        X500DistinguishedName subjectName = new(subjectDN);
 
+        // NAPRAWA: DateTimeOffset.UtcNow zamiast .Now — spójność z NotBefore (UTC).
+        // Mieszanie .UtcNow (NotBefore) z .Now (NotAfter) powodowało zależność certyfikatu
+        // od strefy czasowej maszyny — różne offsety w jednym wywołaniu CreateSelfSigned.
         CertificateRequest request;
         if (_encryptionType == EncryptionMethodEnum.ECDsa)
         {
             using ECDsa ecdsa = ECDsa.Create(); // P-256
             request = new CertificateRequest(subjectName, ecdsa, HashAlgorithmName.SHA256);
-            return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.Now.AddYears(2));
+            return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.UtcNow.AddYears(2));
         }
         else
         {
             using RSA rsa = RSA.Create(2048);
             request = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-            return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.Now.AddYears(2));
+            return request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-61), DateTimeOffset.UtcNow.AddYears(2));
         }
+#endif
     }
 }
 

@@ -1,7 +1,14 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿#if !NETSTANDARD2_0
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Security.Cryptography;
 
 namespace KSeF.Client.Extensions;
+
+/// <summary>
+/// Opis podpisu ECDSA z SHA-256 dla <see cref="System.Security.Cryptography.Xml.SignedXml"/>.
+/// Umożliwia używanie kluczy ECDSA P-256 do podpisów XAdES.
+/// </summary>
 public class Ecdsa256SignatureDescription : SignatureDescription
 {
     public Ecdsa256SignatureDescription()
@@ -9,10 +16,14 @@ public class Ecdsa256SignatureDescription : SignatureDescription
         KeyAlgorithm = typeof(ECDsa).AssemblyQualifiedName;
     }
 
+#if !NETSTANDARD2_0
     [RequiresUnreferencedCode("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
+#endif
     public override HashAlgorithm CreateDigest() => SHA256.Create();
-    
+
+#if !NETSTANDARD2_0
     [RequiresUnreferencedCode("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
+#endif
     public override AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)
     {
         if (key is not ECDsa ecdsa)
@@ -23,7 +34,9 @@ public class Ecdsa256SignatureDescription : SignatureDescription
         return new ECDsaSignatureFormatter(ecdsa);
     }
 
+#if !NETSTANDARD2_0
     [RequiresUnreferencedCode("CreateDeformatter is not trim compatible because the algorithm implementation referenced by DeformatterAlgorithm might be removed.")]
+#endif
     public override AsymmetricSignatureDeformatter CreateDeformatter(AsymmetricAlgorithm key)
     {
         if (key is not ECDsa ecdsa)
@@ -35,6 +48,9 @@ public class Ecdsa256SignatureDescription : SignatureDescription
     }
 }
 
+/// <summary>
+/// Formatter podpisu ECDSA — tworzy podpis cyfrowy z użyciem klucza ECDsa.
+/// </summary>
 public class ECDsaSignatureFormatter(ECDsa key) : AsymmetricSignatureFormatter
 {
     private ECDsa ecdsaKey = key;
@@ -54,6 +70,9 @@ public class ECDsaSignatureFormatter(ECDsa key) : AsymmetricSignatureFormatter
     }
 }
 
+/// <summary>
+/// Deformatter podpisu ECDSA — weryfikuje podpis cyfrowy z użyciem klucza ECDsa.
+/// </summary>
 public class ECDsaSignatureDeformatter(ECDsa ecdsaKey) : AsymmetricSignatureDeformatter
 {
     public override void SetKey(AsymmetricAlgorithm key) => ecdsaKey = key as ECDsa;

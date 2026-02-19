@@ -31,8 +31,8 @@ public class SignatureService
     /// </returns>
     public static string Sign(string xml, X509Certificate2 certificate)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(xml);
-        ArgumentNullException.ThrowIfNull(certificate);
+        Guard.ThrowIfNullOrWhiteSpace(xml);
+        Guard.ThrowIfNull(certificate);
 
         XmlDocument xmlDocument = new() { PreserveWhitespace = true };
         xmlDocument.LoadXml(xml);
@@ -61,8 +61,8 @@ public class SignatureService
     /// </returns>
     public static XmlDocument Sign(XmlDocument xmlDocument, X509Certificate2 certificate)
     {
-        ArgumentNullException.ThrowIfNull(xmlDocument);
-        ArgumentNullException.ThrowIfNull(certificate);
+        Guard.ThrowIfNull(xmlDocument);
+        Guard.ThrowIfNull(certificate);
 
         if (xmlDocument.DocumentElement == null)
         {
@@ -146,7 +146,11 @@ public class SignatureService
     private static XmlNodeList BuildQualifyingProperties(string signatureId, string signedPropertiesId,
         X509Certificate2 signingCertificate, DateTimeOffset signingTime)
     {
+#if NETSTANDARD2_0
+        string certificateDigest = Convert.ToBase64String(HashCompat.SHA256HashData(signingCertificate.RawData));
+#else
         string certificateDigest = Convert.ToBase64String(signingCertificate.GetCertHash(HashAlgorithmName.SHA256));
+#endif
         string certificateIssuerName = signingCertificate.Issuer;
         string certificateSerialNumber = new BigInteger(signingCertificate.GetSerialNumber()).ToString(CultureInfo.InvariantCulture);
 

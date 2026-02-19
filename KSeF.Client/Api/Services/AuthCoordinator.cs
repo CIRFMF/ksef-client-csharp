@@ -112,7 +112,7 @@ public class AuthCoordinator(
 
         // 5)// Przesłanie podpisanego XML do systemu KSeF
         SignatureResponse authSubmission = await authorizationClient
-            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken).ConfigureAwait(false);
+            .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         // 6) Odpytanie o gotowość tokenu
         await WaitForAuthCompletionAsync(authSubmission, cancellationToken).ConfigureAwait(false);

@@ -79,17 +79,23 @@
         /// </summary>
         public const int RevokedCertificate = 460;
 
-        /// <summary>
-        /// Kod 460 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędu certyfikatu. 
-        /// Niepoprawny certyfikat.
-        /// </summary>
-        public const int InvalidCertFormat = 460;
+		/// <summary>
+		/// Kod 460 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędu certyfikatu. 
+		/// Certyfikat zawieszony
+		/// </summary>
+		public const int CertificateSuspended = 460;
 
-        /// <summary>
-        /// Kod 470 — Uwierzytelnienie zakończone niepowodzeniem. 
-        /// Próba wykorzystania metod autoryzacyjnych osoby zmarłej.
-        /// </summary>
-        public const int DeceasedUserAuthAttempt = 470;
+		/// <summary>
+		/// Kod 460 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędu certyfikatu. 
+		/// Niepoprawny certyfikat.
+		/// </summary>
+		public const int InvalidCertFormat = 460;
+
+		/// <summary>
+		/// Kod 470 — Uwierzytelnienie zakończone niepowodzeniem. 
+		/// Próba wykorzystania metod autoryzacyjnych osoby zmarłej.
+		/// </summary>
+		public const int DeceasedUserAuthAttempt = 470;
 
         /// <summary>
         /// Kod 500 — Nieznany błąd.

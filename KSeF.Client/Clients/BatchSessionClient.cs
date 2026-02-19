@@ -13,8 +13,8 @@ public class BatchSessionClient(IRestClient restClient, IRouteBuilder routeBuild
     /// <inheritdoc />
     public Task<OpenBatchSessionResponse> OpenBatchSessionAsync(OpenBatchSessionRequest requestPayload, string accessToken, string upoVersion, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OpenBatchSessionResponse, OpenBatchSessionRequest>(
             Routes.Sessions.Batch.Open,
@@ -29,8 +29,8 @@ public class BatchSessionClient(IRestClient restClient, IRouteBuilder routeBuild
     /// <inheritdoc />
     public Task CloseBatchSessionAsync(string batchSessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(batchSessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(batchSessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Sessions.Batch.Close(Uri.EscapeDataString(batchSessionReferenceNumber));
         return ExecuteAsync(endpoint, HttpMethod.Post, accessToken, cancellationToken);

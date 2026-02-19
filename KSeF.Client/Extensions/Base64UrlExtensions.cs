@@ -10,7 +10,7 @@ namespace KSeF.Client.Extensions;
     {
         if (string.IsNullOrWhiteSpace(base64String))
         {
-            throw new FormatException("invoiceHash is empty.");
+            throw new FormatException("invoiceHash jest pusty.");
         }
 
         base64String = base64String.Trim();
@@ -33,7 +33,7 @@ namespace KSeF.Client.Extensions;
         }
         else if (mod != 0)
         {
-            throw new FormatException("Invalid Base64/Base64Url length.");
+            throw new FormatException("Nieprawidłowa długość Base64/Base64Url.");
         }
 
         return Convert.FromBase64String(base64String);

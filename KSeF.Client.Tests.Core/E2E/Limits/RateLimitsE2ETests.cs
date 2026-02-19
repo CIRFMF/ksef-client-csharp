@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.RateLimits;
 using KSeF.Client.Tests.Utils;

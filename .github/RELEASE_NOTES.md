@@ -1,3 +1,23 @@
+## Rejestr zmian: Wersja 2.1.1
+### Nowe
+- Dodano parametr `enforceXadesCompliance` w metodzie `SubmitXadesAuthRequestAsync`, umożliwiający wcześniejsze włączenie nowych wymagań walidacji XAdES na środowiskach DEMO i PROD poprzez nagłówek `X-KSeF-Feature: enforce-xades-compliance`.
+- Dodano wsparcie dla .NET Standard 2.0 dla Windows oraz .NET Framework 4.8, dzięki zaangażowaniu Kontrybutora [@marcinborecki](https://github.com/CIRFMF/ksef-client-csharp/commits?author=marcinborecki)
+
+## Rejestr zmian: Wersja 2.1.0
+### Nowe
+- `AuthStatus`, `AuthenticationListItem`: Wprowadzono nowy model `AuthenticationMethodInfo` opisujący metodę uwierzytelniania
+- Dodano obsługę dwóch nowych endpointów:
+  - POST `/testdata/context/block`: blokuje możliwość uwierzytelniania dla wskazanego kontekstu. Uwierzytelnianie zakończy się błędem 480.
+  - POST `/testdata/context/unblock`: odblokowuje możliwość uwierzytelniania dla bieżącego kontekstu.
+- `AuthStatus`, `AuthenticationListItem`: Wprowadzono nowy model `AuthenticationMethodInfo` opisujący metodę uwierzytelniania.
+
+### Zmodyfikowane
+- `AuthStatus`, `AuthenticationListItem`: Pole `AuthenticationMethod` oznaczono jako **Obsolete** (planowane wycofanie: 2026-11-16).
+- Metody `AddBatchFilePart` oraz `AddBatchFileParts` z parametrem `fileName` oznaczono jako przestarzałe (Obsolete) i zostaną usunięte w niedalekiej przyszłości. Zaleca się używanie przyciążeń bez parametru `fileName`
+- `KsefNumberValidator` zwraca teraz komunikat informujący o błędzie w przypadku nieprawidłowej sumy kontrolnej
+- `DateRange`: Zmieniono typ pól `From` i `To` z DateTime na DateTimeOffset w celu poprawnej obsługi stref czasowych i offsetów zgodnie ze specyfikacją API KSeF (format ISO 8601 z offsetem/UTC/lokalny Europe/Warsaw)
+	- Zmiana typu DateRange.From i DateRange.To z DateTime na DateTimeOffset może wpłynąć na Twoje rozwiązania. Jeśli korzystasz z DateRange do filtrowania faktur, sprawdź czy Twój kod poprawnie tworzy DateTimeOffset
+
 ## Rejestr zmian: Wersja 2.0.1
 ### Nowe
 - Dodano obsługę wartości `InternalId` w `PersonalPermissionContextIdentifierType` oraz `PersonalPermissionsContextIdentifierType` umożliwiającą filtrowanie uprawnień osobistych według identyfikatora wewnętrznego.

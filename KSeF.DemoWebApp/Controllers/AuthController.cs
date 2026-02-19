@@ -90,7 +90,7 @@ public class AuthController(IAuthCoordinator authCoordinator,
         string signedXml = SignatureService.Sign(unsignedXml, x509.CopyWithPrivateKey(rsa));
 
         SignatureResponse authSubmission = await authorizationClient
-           .SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken).ConfigureAwait(false);
+           .SubmitXadesAuthRequestAsync(signedXml, false, false, cancellationToken).ConfigureAwait(false);
 
         AuthStatus authStatus;
         DateTime startTime = DateTime.UtcNow;
@@ -148,7 +148,7 @@ public class AuthController(IAuthCoordinator authCoordinator,
                 .Build();
 
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
-        SignatureResponse signatureResponse = await authorizationClient.SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+        SignatureResponse signatureResponse = await authorizationClient.SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
 
         AuthStatus authStatus;
         DateTime startTime = DateTime.UtcNow;
@@ -253,7 +253,7 @@ public static class AuthSessionStepByStepHelper
 
         // Przesłanie podpisanego XML do systemu KSeF
         SignatureResponse authOperationInfo = await authorizationClient.
-            SubmitXadesAuthRequestAsync(signedXml, false, cancellationToken).ConfigureAwait(false);
+            SubmitXadesAuthRequestAsync(signedXml, false, false, cancellationToken).ConfigureAwait(false);
 
         AuthStatus authorizationStatus;
         int maxRetry = 5;

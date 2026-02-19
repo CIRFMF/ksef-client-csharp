@@ -76,7 +76,11 @@ public static class JsonUtil
                 if (input.CanSeek)
                 {
                     input.Seek(0, SeekOrigin.Begin);
+#if NETSTANDARD2_0
+                    using StreamReader reader = new(input, Encoding.UTF8, true, 1024, true);
+#else
                     using StreamReader reader = new(input, leaveOpen: true);
+#endif
                     jsonFragment = await reader.ReadToEndAsync().ConfigureAwait(false);
                 }
             }
@@ -101,6 +105,10 @@ public static class JsonUtil
             return input;
         }
 
+#if NETSTANDARD2_0
+        return string.Concat(input.Substring(0, maxLen), "...");
+#else
         return string.Concat(input.AsSpan(0, maxLen), "...");
+#endif
     }
 }

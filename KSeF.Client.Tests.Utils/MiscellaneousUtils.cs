@@ -1,3 +1,4 @@
+#nullable enable
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,7 +20,11 @@ public static partial class MiscellaneousUtils
     /// </summary>
     public static string GetRandomNip(string prefixTwoNumbers = "")
     {
+#if NETFRAMEWORK
+        Random rng = Random;
+#else
         Random rng = Random.Shared;
+#endif
 
         while (true) // losuj aż checksum != 10 i regex-constraint spełniony
         {
@@ -560,6 +565,15 @@ public static partial class MiscellaneousUtils
         static string RandomDigits(int len)
         {
             StringBuilder sb = new(len);
+#if NETFRAMEWORK
+            byte[] buf = new byte[1];
+            using RandomNumberGenerator rng = RandomNumberGenerator.Create();
+            for (int i = 0; i < len; i++)
+            {
+                rng.GetBytes(buf);
+                sb.Append((buf[0] % 10).ToString(CultureInfo.InvariantCulture));
+            }
+#else
             Span<byte> buf = stackalloc byte[1];
             for (int i = 0; i < len; i++)
             {
@@ -567,6 +581,7 @@ public static partial class MiscellaneousUtils
                 RandomNumberGenerator.Fill(buf);
                 sb.Append((buf[0] % 10).ToString(CultureInfo.InvariantCulture));
             }
+#endif
             return sb.ToString();
         }
 
@@ -590,7 +605,11 @@ public static partial class MiscellaneousUtils
             while (start < numeric.Length)
             {
                 int take = Math.Min(chunkSize, numeric.Length - start);
+#if NETFRAMEWORK
+                string part = string.Concat(rem.ToString(CultureInfo.InvariantCulture), numeric.Substring(start, take));
+#else
                 string part = string.Concat(rem.ToString(CultureInfo.InvariantCulture), numeric.AsSpan(start, take));
+#endif
                 rem = (int)(ulong.Parse(part, CultureInfo.InvariantCulture) % 97UL);
                 start += take;
             }
@@ -598,6 +617,21 @@ public static partial class MiscellaneousUtils
         }
     }
 
+#if NETFRAMEWORK
+    // net48: [GeneratedRegex] source generator niedostępny — użyj compiled Regex.
+    private static Regex MyRegex() => new(@"^U\d{8}$", RegexOptions.Compiled);
+    private static Regex AtPattern() => new(@"^U\d{8}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex NlPattern() => new(@"^\d{9}B\d{2}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex CyPattern() => new(@"^\d{8}[A-Z]$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex IePattern() => new(@"^(\d{7}[A-Z]{1,2}|\d[A-Z]\d{5}[A-Z])$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex FrPattern() => new(@"^[0-9A-HJ-NP-Z]{2}\d{9}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex EsPattern() => new(@"^[A-Z]\d{7}[A-Z0-9]$|^\d{8}[A-Z]$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex Digits12() => new(@"^\d{12}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex Digits8() => new(@"^\d{8}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex Digits9() => new(@"^\d{9}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex Digits10() => new(@"^\d{10}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+    private static Regex Digits11() => new(@"^\d{11}$", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+#else
     [GeneratedRegex(@"^U\d{8}$")]
     private static partial Regex MyRegex();
 
@@ -633,5 +667,6 @@ public static partial class MiscellaneousUtils
 
     [GeneratedRegex(@"^\d{11}$", RegexOptions.CultureInvariant | RegexOptions.Compiled)]
     private static partial Regex Digits11();
+#endif
 
 }

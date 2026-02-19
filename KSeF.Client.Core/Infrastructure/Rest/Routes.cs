@@ -75,6 +75,18 @@
             /// Przywrócenie domyślnych produkcyjnych limitów API.
             /// </summary>
             public const string ProductionRateLimits = Prefix + "/rate-limits/production";
+
+            /// <summary>
+            /// Zablokowanie kontekstu testowego w środowisku DEMO.
+            /// Wywołanie: POST /testdata/context/block
+            /// </summary>
+            public const string BlockContext = Prefix + "/testdata/context/block";
+
+            /// <summary>
+            /// Odblokowanie kontekstu testowego w środowisku DEMO.
+            /// Wywołanie: POST /testdata/context/unblock
+            /// </summary>
+            public const string UnblockContext = Prefix + "/testdata/context/unblock";
         }
 
         /// <summary>

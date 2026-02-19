@@ -26,13 +26,17 @@ public static class SessionsFilterExtensions
             return;
         }
 
-        ArgumentNullException.ThrowIfNull(builder);
+        Guard.ThrowIfNull(builder);
 
         void Add(string name, string value)
         {
             if (!string.IsNullOrEmpty(value))
             {
+#if NETSTANDARD2_0
+                builder.Append(FormattableString.Invariant($"&{name}={Uri.EscapeDataString(value)}"));
+#else
                 builder.Append(CultureInfo.InvariantCulture,$"&{name}={Uri.EscapeDataString(value)}");
+#endif
             }
         }
 

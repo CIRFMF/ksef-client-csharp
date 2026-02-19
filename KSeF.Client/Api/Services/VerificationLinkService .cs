@@ -83,7 +83,11 @@ namespace KSeF.Client.Api.Services
         {
             // 1. SHA-256
             byte[] sha;
+#if NETSTANDARD2_0
+            sha = HashCompat.SHA256HashData(Encoding.UTF8.GetBytes(pathToSign));
+#else
             sha = SHA256.HashData(Encoding.UTF8.GetBytes(pathToSign));
+#endif
 
             if (!string.IsNullOrEmpty(privateKey))
             {
@@ -127,7 +131,11 @@ namespace KSeF.Client.Api.Services
             }
             else if (cert.GetECDsaPrivateKey() is ECDsa ecdsa)
             {
+#if NETSTANDARD2_0
+                signature = ecdsa.SignHash(sha);
+#else
                 signature = ecdsa.SignHash(sha, dSASignatureFormat);
+#endif
             }
             else
             {

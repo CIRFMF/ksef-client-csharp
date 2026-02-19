@@ -51,6 +51,10 @@ public static class ServiceCollectionExtensions
                 }
                 http.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
+
+                // Domyślny timeout HttpClient (100s) jest zbyt krótki dla operacji wsadowych
+                // wysyłających paczki do 100 MB na część (limit API KSeF).
+                http.Timeout = TimeSpan.FromMinutes(5);
             })
             .ConfigurePrimaryHttpMessageHandler(() =>
             {
@@ -113,8 +117,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddLighthouseClient(this IServiceCollection services,
         Action<LighthouseClientOptions> configure)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configure);
+        Guard.ThrowIfNull(services);
+        Guard.ThrowIfNull(configure);
 
         LighthouseClientOptions options = new();
         configure(options);
@@ -184,7 +188,7 @@ public static class ServiceCollectionExtensions
         Func<CancellationToken, Task<ICollection<PemCertificateInfo>>> pemCertificatesFetcher,
         CryptographyServiceWarmupMode warmupMode = CryptographyServiceWarmupMode.Blocking)
     {
-        ArgumentNullException.ThrowIfNull(pemCertificatesFetcher);
+        Guard.ThrowIfNull(pemCertificatesFetcher);
 
         AddCryptographyClient(services, warmupMode);
 

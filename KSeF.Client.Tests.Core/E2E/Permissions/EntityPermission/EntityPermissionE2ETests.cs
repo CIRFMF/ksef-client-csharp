@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.EntityPermissions;
 using KSeF.Client.Core.Models.Permissions.Entity;
 using KSeF.Client.Core.Models.Permissions;
@@ -55,11 +56,19 @@ public partial class EntityPermissionE2ETests : TestBase
                     && result.Permissions.Any(x =>
                         x.Description == PermissionDescription &&
                         x.CanDelegate == true &&
+#if NETFRAMEWORK
+                        EnumPolyfills.Parse<EntityStandardPermissionType>(x.PermissionScope.ToString()) == EntityStandardPermissionType.InvoiceRead)
+#else
                         Enum.Parse<EntityStandardPermissionType>(x.PermissionScope.ToString()) == EntityStandardPermissionType.InvoiceRead)
+#endif
                     && result.Permissions.Any(x =>
                         x.Description == PermissionDescription &&
                         x.CanDelegate == false &&
+#if NETFRAMEWORK
+                        EnumPolyfills.Parse<EntityStandardPermissionType>(x.PermissionScope.ToString()) == EntityStandardPermissionType.InvoiceWrite),
+#else
                         Enum.Parse<EntityStandardPermissionType>(x.PermissionScope.ToString()) == EntityStandardPermissionType.InvoiceWrite),
+#endif
                 cancellationToken: CancellationToken);
 
         Assert.NotNull(searchAfterGrant);

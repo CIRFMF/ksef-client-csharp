@@ -35,7 +35,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<AuthenticationListResponse> GetActiveSessions(string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
@@ -54,7 +54,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task RevokeCurrentSessionAsync(string token, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(token);
+        Guard.ThrowIfNullOrWhiteSpace(token);
 
         await restClient.SendAsync(HttpMethod.Delete,
                                    "/v2/auth/sessions/current",
@@ -66,8 +66,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task RevokeSessionAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         await restClient.SendAsync(HttpMethod.Delete,
                                    $"/v2/auth/sessions/{Uri.EscapeDataString(sessionReferenceNumber)}",
@@ -88,9 +88,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
-    public async Task<SignatureResponse> SubmitXadesAuthRequestAsync(string signedXML, bool verifyCertificateChain = false, CancellationToken cancellationToken = default)
+    public async Task<SignatureResponse> SubmitXadesAuthRequestAsync(string signedXML, bool verifyCertificateChain = false, bool enforceXadesCompliance = false, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(signedXML);
+        Guard.ThrowIfNullOrWhiteSpace(signedXML);
 
         string url = $"/v2/auth/xades-signature?verifyCertificateChain={verifyCertificateChain.ToString().ToLower(CultureInfo.CurrentCulture)}";
 
@@ -99,13 +99,15 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                                                                      signedXML,
                                                                      default,
                                                                      RestClient.XmlContentType,
-                                                                     cancellationToken: cancellationToken).ConfigureAwait(false);
+			                                                         enforceXadesCompliance ?
+				                                                        new Dictionary<string, string> { { "X-KSeF-Feature", "enforce-xades-compliance" } } : null,
+																	 cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public async Task<SignatureResponse> SubmitKsefTokenAuthRequestAsync(AuthenticationKsefTokenRequest requestPayload, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNull(requestPayload);
 
         return await restClient.SendAsync<SignatureResponse, AuthenticationKsefTokenRequest>(HttpMethod.Post,
                                                                      "/v2/auth/ksef-token",
@@ -118,7 +120,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(authenticationToken);
+        Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
 
         return await restClient.SendAsync<AuthStatus, string>(HttpMethod.Get,
                                                                    $"/v2/auth/{Uri.EscapeDataString(authOperationReferenceNumber)}",
@@ -131,7 +133,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<AuthenticationOperationStatusResponse> GetAccessTokenAsync(string authenticationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(authenticationToken);
+        Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
 
         return await restClient.SendAsync<AuthenticationOperationStatusResponse, string>(HttpMethod.Post,
                                                                                $"/v2/auth/token/redeem",
@@ -144,7 +146,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<RefreshTokenResponse> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(refreshToken);
+        Guard.ThrowIfNullOrWhiteSpace(refreshToken);
 
         return await restClient.SendAsync<RefreshTokenResponse, string>(HttpMethod.Post,
                                                                         $"/v2/auth/token/refresh",
@@ -157,8 +159,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OpenOnlineSessionResponse, OpenOnlineSessionRequest>(HttpMethod.Post,
                                                                                                "/v2/sessions/online",
@@ -173,9 +175,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<SendInvoiceResponse> SendOnlineSessionInvoiceAsync(SendInvoiceRequest requestPayload, string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<SendInvoiceResponse, SendInvoiceRequest>(HttpMethod.Post,
                                                                                     $"/v2/sessions/online/{Uri.EscapeDataString(sessionReferenceNumber)}/invoices",
@@ -188,8 +190,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task CloseOnlineSessionAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         await restClient.SendAsync(HttpMethod.Post,
                                    $"/v2/sessions/online/{sessionReferenceNumber}/close",
@@ -201,8 +203,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OpenBatchSessionResponse> OpenBatchSessionAsync(OpenBatchSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OpenBatchSessionResponse, OpenBatchSessionRequest>(HttpMethod.Post, 
                                                                                              "/v2/sessions/batch", 
@@ -218,8 +220,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task CloseBatchSessionAsync(string batchSessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(batchSessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(batchSessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         await restClient.SendAsync<object>(HttpMethod.Post,
                                            $"/v2/sessions/batch/{Uri.EscapeDataString(batchSessionReferenceNumber)}/close",
@@ -228,11 +230,15 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<SessionsListResponse> GetSessionsAsync(SessionType sessionType, string accessToken, int? pageSize, string continuationToken, SessionsFilter sessionsFilter = null, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
+#if NETSTANDARD2_0
+        urlBuilder.Append(FormattableString.Invariant($"/v2/sessions?sessionType={sessionType}"));
+#else
         urlBuilder.Append(CultureInfo.InvariantCulture, $"/v2/sessions?sessionType={sessionType}");
+#endif
 
         // use helper
         PaginationHelper.AppendPagination(null, pageSize, urlBuilder);
@@ -257,8 +263,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<SessionStatusResponse> GetSessionStatusAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<SessionStatusResponse, object>(HttpMethod.Get,
                                                                               $"/v2/sessions/{Uri.EscapeDataString(sessionReferenceNumber)}",
@@ -271,8 +277,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<SessionInvoicesResponse> GetSessionInvoicesAsync(string sessionReferenceNumber, string accessToken, int? pageSize = null, string continuationToken = null, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
@@ -294,9 +300,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<SessionInvoice> GetSessionInvoiceAsync(string sessionReferenceNumber, string invoiceReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(invoiceReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
         urlBuilder.Append("/v2/sessions/");
@@ -312,8 +318,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<SessionInvoicesResponse> GetSessionFailedInvoicesAsync(string sessionReferenceNumber, string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
@@ -335,9 +341,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<string> GetSessionInvoiceUpoByKsefNumberAsync(string sessionReferenceNumber, string ksefNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ksefNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(ksefNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
@@ -356,9 +362,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<string> GetSessionInvoiceUpoByReferenceNumberAsync(string sessionReferenceNumber, string invoiceReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(invoiceReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(invoiceReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
@@ -376,9 +382,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<string> GetSessionUpoAsync(string sessionReferenceNumber, string upoReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(upoReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(upoReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
         urlBuilder.Append("/v2/sessions/");
@@ -394,8 +400,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<string> GetInvoiceAsync(string ksefNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(ksefNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(ksefNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
         urlBuilder.Append("/v2/invoices/ksef/");
@@ -409,8 +415,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<PagedInvoiceResponse> QueryInvoiceMetadataAsync(InvoiceQueryFilters requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, SortOrder sortOrder = SortOrder.Asc, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new($"/v2/invoices/query/metadata?sortOrder={sortOrder}");
 
@@ -428,8 +434,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<PermissionsOperationStatusResponse> OperationsStatusAsync(string operationReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(operationReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(operationReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new();
 
@@ -447,8 +453,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OperationResponse> RevokeCommonPermissionAsync(string permissionId, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(permissionId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(permissionId);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, string>(HttpMethod.Delete,
                                                              $"/v2/permissions/common/grants/{Uri.EscapeDataString(permissionId)}",
@@ -461,8 +467,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OperationResponse> RevokeAuthorizationsPermissionAsync(string permissionId, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(permissionId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(permissionId);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, string>(HttpMethod.Delete,
                                                              $"/v2/permissions/authorizations/grants/{Uri.EscapeDataString(permissionId)}",
@@ -475,7 +481,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<PermissionsAttachmentAllowedResponse> GetAttachmentPermissionStatusAsync(string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<PermissionsAttachmentAllowedResponse, string>(HttpMethod.Get,
                                                              "/v2/permissions/attachments/status",
@@ -493,8 +499,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
               int? pageSize = null,
               CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/personal/grants");
 
@@ -517,8 +523,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
               int? pageSize = null,
               CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/persons/grants");
 
@@ -542,8 +548,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                int? pageSize = null,
                CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/subunits/grants");
 
@@ -566,7 +572,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
              int? pageSize = null,
              CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/entities/roles");
 
@@ -590,8 +596,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
            int? pageSize,
            CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/subordinate-entities/roles");
 
@@ -615,8 +621,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                    int? pageSize,
                    CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/authorizations/grants");
 
@@ -640,8 +646,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
            int? pageSize = null,
            CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/permissions/query/eu-entities/grants");
 
@@ -660,8 +666,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OperationResponse> GrantsPermissionPersonAsync(GrantPermissionsPersonRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, GrantPermissionsPersonRequest>(HttpMethod.Post,
                                                                                       "/v2/permissions/persons/grants",
@@ -674,8 +680,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OperationResponse> GrantsPermissionEntityAsync(GrantPermissionsEntityRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse,
             GrantPermissionsEntityRequest>(HttpMethod.Post,
@@ -689,8 +695,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<OperationResponse> GrantsAuthorizationPermissionAsync(GrantPermissionsAuthorizationRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, GrantPermissionsAuthorizationRequest>(HttpMethod.Post,
                                  "/v2/permissions/authorizations/grants",
@@ -704,8 +710,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     public async Task<OperationResponse> GrantsPermissionIndirectEntityAsync(
         GrantPermissionsIndirectEntityRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, GrantPermissionsIndirectEntityRequest>(HttpMethod.Post,
                                                                                        "/v2/permissions/indirect/grants",
@@ -720,8 +726,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     public async Task<OperationResponse> GrantsPermissionSubUnitAsync(
         GrantPermissionsSubunitRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse,
             GrantPermissionsSubunitRequest>(HttpMethod.Post,
@@ -736,8 +742,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     public async Task<OperationResponse> GrantsPermissionEUEntityAsync(
        GrantPermissionsEuEntityRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, GrantPermissionsEuEntityRequest>(
             HttpMethod.Post, "/v2/permissions/eu-entities/administration/grants", requestPayload, accessToken, RestClient.DefaultContentType, cancellationToken
@@ -748,8 +754,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     public async Task<OperationResponse> GrantsPermissionEUEntityRepresentativeAsync(
         GrantPermissionsEuEntityRepresentativeRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<OperationResponse, GrantPermissionsEuEntityRepresentativeRequest>(
             HttpMethod.Post, "/v2/permissions/eu-entities/grants", requestPayload, accessToken, RestClient.DefaultContentType, cancellationToken
@@ -759,7 +765,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<CertificateLimitResponse> GetCertificateLimitsAsync(string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<CertificateLimitResponse, object>(HttpMethod.Get, "/v2/certificates/limits", default, accessToken, RestClient.DefaultContentType, cancellationToken).ConfigureAwait(false);
     }
@@ -767,7 +773,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<CertificateEnrollmentsInfoResponse> GetCertificateEnrollmentDataAsync(string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<CertificateEnrollmentsInfoResponse, object>(HttpMethod.Get,
                                                                                       "/v2/certificates/enrollments/data",
@@ -780,8 +786,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<CertificateEnrollmentResponse> SendCertificateEnrollmentAsync(SendCertificateEnrollmentRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<CertificateEnrollmentResponse, SendCertificateEnrollmentRequest>(HttpMethod.Post,
                                                                                                            "/v2/certificates/enrollments",
@@ -795,8 +801,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<CertificateEnrollmentStatusResponse> GetCertificateEnrollmentStatusAsync(string certificateRequestReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(certificateRequestReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(certificateRequestReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<CertificateEnrollmentStatusResponse, string>(HttpMethod.Get,
                                                                                        $"/v2/certificates/enrollments/{Uri.EscapeDataString(certificateRequestReferenceNumber)}",
@@ -809,8 +815,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<CertificateListResponse> GetCertificateListAsync(CertificateListRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<CertificateListResponse, CertificateListRequest>(HttpMethod.Post,
                                                                                            $"/v2/certificates/retrieve",
@@ -822,9 +828,9 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task RevokeCertificateAsync(CertificateRevokeRequest requestPayload, string serialNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
-        ArgumentException.ThrowIfNullOrWhiteSpace(serialNumber);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(serialNumber);
 
         await restClient.SendAsync(HttpMethod.Post,
                                    $"/v2/certificates/{Uri.EscapeDataString(serialNumber)}/revoke",
@@ -842,7 +848,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
        int? pageOffset = null,
        CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/certificates/query");
 
@@ -861,8 +867,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<KsefTokenResponse> GenerateKsefTokenAsync(KsefTokenRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<KsefTokenResponse, KsefTokenRequest>(HttpMethod.Post,
                                                                                "/v2/tokens",
@@ -889,23 +895,39 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
         {
             foreach (AuthenticationKsefTokenStatus s in statuses)
             {
+#if NETSTANDARD2_0
+                urlBuilder.Append(FormattableString.Invariant($"status={Uri.EscapeDataString(s.ToString())}&"));
+#else
                 urlBuilder.Append(CultureInfo.InvariantCulture, $"status={Uri.EscapeDataString(s.ToString())}&");
+#endif
             }
         }
 
         if (!string.IsNullOrWhiteSpace(authorIdentifier))
         {
+#if NETSTANDARD2_0
+            urlBuilder.Append(FormattableString.Invariant($"authorIdentifier={Uri.EscapeDataString(authorIdentifier)}&"));
+#else
             urlBuilder.Append(CultureInfo.InvariantCulture, $"authorIdentifier={Uri.EscapeDataString(authorIdentifier)}&");
+#endif
         }
 
         if (authorIdentifierType.HasValue)
         {
+#if NETSTANDARD2_0
+            urlBuilder.Append(FormattableString.Invariant($"authorIdentifierType={authorIdentifierType.Value}&"));
+#else
             urlBuilder.Append(CultureInfo.InvariantCulture, $"authorIdentifierType={authorIdentifierType.Value}&");
+#endif
         }
 
         if (!string.IsNullOrWhiteSpace(description))
         {
+#if NETSTANDARD2_0
+            urlBuilder.Append(FormattableString.Invariant($"description={Uri.EscapeDataString(description)}&"));
+#else
             urlBuilder.Append(CultureInfo.InvariantCulture, $"description={Uri.EscapeDataString(description)}&");
+#endif
         }
 
         PaginationHelper.AppendPagination(null, pageSize, urlBuilder);
@@ -928,8 +950,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task<AuthenticationKsefToken> GetKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return await restClient.SendAsync<AuthenticationKsefToken, string>(HttpMethod.Get,
                                                                             $"/v2/tokens/{Uri.EscapeDataString(tokenReferenceNumber)}",
@@ -942,8 +964,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     /// <inheritdoc />
     public async Task RevokeKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         await restClient.SendAsync(HttpMethod.Delete,
                                    $"/v2/tokens/{Uri.EscapeDataString(tokenReferenceNumber)}",
@@ -989,8 +1011,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     string accessToken,
     CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new("/v2/invoices/exports");
 
@@ -1013,8 +1035,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     string accessToken,
     CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(referenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(referenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string url = $"/v2/invoices/exports/{Uri.EscapeDataString(referenceNumber)}";
 

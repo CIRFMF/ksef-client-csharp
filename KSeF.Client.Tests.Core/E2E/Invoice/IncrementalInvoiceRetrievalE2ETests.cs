@@ -1,4 +1,5 @@
-﻿using KSeF.Client.Core.Models;
+#nullable enable
+using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Sessions;
@@ -75,7 +76,11 @@ public class IncrementalInvoiceRetrievalE2ETests : TestBase
         List<(DateTime From, DateTime To)> windows = BuildIncrementalWindows(batchCreationStart, batchCreationCompleted);
 
         // Tworzenie planu eksportu - krotki (okno czasowe, typ podmiotu)
+#if NETFRAMEWORK
+        IEnumerable<InvoiceSubjectType> subjectTypes = EnumPolyfills.GetValues<InvoiceSubjectType>().Where(x => x != InvoiceSubjectType.SubjectAuthorized);
+#else
         IEnumerable<InvoiceSubjectType> subjectTypes = Enum.GetValues<InvoiceSubjectType>().Where(x => x != InvoiceSubjectType.SubjectAuthorized);
+#endif
         IOrderedEnumerable<ExportTask> exportTasks = windows
             .SelectMany(window => subjectTypes, (window, subjectType) => new ExportTask(window.From, window.To, subjectType))
             .OrderBy(task => task.From)
@@ -181,7 +186,11 @@ public class IncrementalInvoiceRetrievalE2ETests : TestBase
         List<(DateTime From, DateTime To)> windows = BuildIncrementalWindows(batchCreationStart, batchCompletedUtc: batchCreationCompleted);
 
         // Tworzenie planu eksportu - krotki (okno czasowe, typ podmiotu)
+#if NETFRAMEWORK
+        IEnumerable<InvoiceSubjectType> subjectTypes = EnumPolyfills.GetValues<InvoiceSubjectType>().Where(x => x != InvoiceSubjectType.SubjectAuthorized);
+#else
         IEnumerable<InvoiceSubjectType> subjectTypes = Enum.GetValues<InvoiceSubjectType>().Where(x => x != InvoiceSubjectType.SubjectAuthorized);
+#endif
         IOrderedEnumerable<ExportTask> exportTasks = windows
             .SelectMany(window => subjectTypes, (window, subjectType) => new ExportTask(window.From, window.To, subjectType))
             .OrderBy(task => task.From)

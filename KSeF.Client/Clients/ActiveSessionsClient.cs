@@ -14,7 +14,7 @@ public class ActiveSessionsClient(IRestClient restClient, IRouteBuilder routeBui
     /// <inheritdoc />
     public Task<AuthenticationListResponse> GetActiveSessions(string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new(Routes.ActiveSessions.Session);
 
@@ -31,7 +31,7 @@ public class ActiveSessionsClient(IRestClient restClient, IRouteBuilder routeBui
     /// <inheritdoc />
     public Task RevokeCurrentSessionAsync(string token, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(token);
+        Guard.ThrowIfNullOrWhiteSpace(token);
 
         return ExecuteAsync(Routes.ActiveSessions.CurrentSession, HttpMethod.Delete, token, cancellationToken);
     }
@@ -39,8 +39,8 @@ public class ActiveSessionsClient(IRestClient restClient, IRouteBuilder routeBui
     /// <inheritdoc />
     public Task RevokeSessionAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(sessionReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = $"{Routes.ActiveSessions.Session}/{Uri.EscapeDataString(sessionReferenceNumber)}";
         return ExecuteAsync(endpoint, HttpMethod.Delete, accessToken, cancellationToken);

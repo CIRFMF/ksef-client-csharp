@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.Certificates;
 using KSeF.Client.Api.Services;
 using KSeF.Client.Core.Interfaces.Services;
@@ -22,6 +23,16 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
     private readonly IVerificationLinkService verificationLinkService = new VerificationLinkService(new KSeFClientOptions() { BaseUrl = KsefEnvironmentsUris.TEST, BaseQRUrl = KsefQREnvironmentsUris.TEST });
     private readonly string BaseUrl = $"{KsefQREnvironmentsUris.TEST}";
 
+    private static byte[] ComputeSha256(byte[] data)
+    {
+#if NETFRAMEWORK
+        using SHA256 sha256 = SHA256.Create();
+        return sha256.ComputeHash(data);
+#else
+        return SHA256.HashData(data);
+#endif
+    }
+
 
     // =============================================
     // Testy legacy (RSA) – tylko dla zgodności wstecznej; NIEZALECANE:
@@ -40,7 +51,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         DateTime issueDate = new(2026, 1, 5);
 
         byte[] sha;
-        sha = SHA256.HashData(Encoding.UTF8.GetBytes(xml));
+        sha = ComputeSha256(Encoding.UTF8.GetBytes(xml));
 
         string invoiceHash = Convert.ToBase64String(sha);
         string expectedHash = sha.EncodeBase64UrlToString();
@@ -69,13 +80,14 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string nip = "0000000000";
         string xml = "<x/>";
         string invoiceHash;
-        byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(xml));
+        byte[] hashBytes = ComputeSha256(Encoding.UTF8.GetBytes(xml));
         invoiceHash = Convert.ToBase64String(hashBytes);
 
         // Create full self-signed RSA cert with private key
         using RSA rsa = RSA.Create(2048);
         CertificateRequest certificateRequest = new("CN=TestRSA", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-        X509Certificate2 fullCert = certificateRequest.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow zamiast Now — spójność z pozostałymi testami i eliminacja zależności od strefy maszyny
+        X509Certificate2 fullCert = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
         // Act
         string url = verificationLinkService.BuildCertificateVerificationUrl(nip, QRCodeContextIdentifierType.Nip, nip, invoiceHash, fullCert);
@@ -84,7 +96,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string[] segments = [.. new Uri(url)
             .Segments
             .Select(s => s.Trim('/'))];
-                
+
         Assert.Equal("certificate", segments[1]);
         Assert.Equal("Nip", segments[2]);
         Assert.Equal(nip, segments[3]);
@@ -102,9 +114,10 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string xml = "<x/>";
         string invoiceHash;
         string cnEntry = "CN=TestECDSA";
-        DateTimeOffset certificateValidNotBefore = DateTimeOffset.Now;
-        DateTimeOffset certificateValidNotAfter = DateTimeOffset.Now.AddYears(1);
-        byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(xml));
+        // UtcNow zamiast Now — eliminacja zależności od strefy czasowej maszyny
+        DateTimeOffset certificateValidNotBefore = DateTimeOffset.UtcNow;
+        DateTimeOffset certificateValidNotAfter = DateTimeOffset.UtcNow.AddYears(1);
+        byte[] hashBytes = ComputeSha256(Encoding.UTF8.GetBytes(xml));
         invoiceHash = Convert.ToBase64String(hashBytes);
 
         // Create full self-signed ECDsa cert with private key
@@ -113,7 +126,14 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         X509Certificate2 fullCert = certificateRequest.CreateSelfSigned(certificateValidNotBefore, certificateValidNotAfter);
 
         // Act
-        string url = verificationLinkService.BuildCertificateVerificationUrl(nip, QRCodeContextIdentifierType.Nip, nip, invoiceHash, fullCert, fullCert.GetRSAPrivateKey()?.ExportPkcs8PrivateKeyPem());
+#if NETFRAMEWORK
+        // Na .NET Framework ExportPkcs8PrivateKeyPem() nie jest dostępne.
+        // GetRSAPrivateKey() zwraca null dla certyfikatu ECDSA, więc wartość jest tu zawsze null.
+        string? rsaPrivateKeyPem = null;
+#else
+        string? rsaPrivateKeyPem = fullCert.GetRSAPrivateKey()?.ExportPkcs8PrivateKeyPem();
+#endif
+        string url = verificationLinkService.BuildCertificateVerificationUrl(nip, QRCodeContextIdentifierType.Nip, nip, invoiceHash, fullCert, rsaPrivateKeyPem);
 
         // Assert
         string[] segments = [.. new Uri(url)
@@ -140,7 +160,8 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         // Arrange: certyfikat z samym kluczem publicznym (bez prywatnego)
         using RSA rsa = RSA.Create(2048);
         CertificateRequest req = new("CN=PublicOnly", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pss);
-        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow — spójność z resztą testów
+        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
 
         // Eksport tylko publicznego certyfikatu
         byte[] publicBytes = fullCert.Export(X509ContentType.Cert);
@@ -149,7 +170,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string nip = ZeroNip;
         string xml = MinimalXml;
         string invoiceHash;
-        byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(xml));
+        byte[] hashBytes = ComputeSha256(Encoding.UTF8.GetBytes(xml));
         invoiceHash = Convert.ToBase64String(hashBytes);
 
         // Act & Assert: próba podpisania bez klucza prywatnego → wyjątek
@@ -186,7 +207,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string nip = "0000000000";
         string xml = "<x/>";
         string invoiceHash;
-        byte[] sha = SHA256.HashData(Encoding.UTF8.GetBytes(xml));
+        byte[] sha = ComputeSha256(Encoding.UTF8.GetBytes(xml));
         invoiceHash = Convert.ToBase64String(sha);
 
         // Act
@@ -220,7 +241,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         DateTime issueDate = new(2026, 1, 5);
 
         byte[] sha;
-        sha = SHA256.HashData(Encoding.UTF8.GetBytes(xml));
+        sha = ComputeSha256(Encoding.UTF8.GetBytes(xml));
 
         string invoiceHash = Convert.ToBase64String(sha);
         string expectedHash = sha.EncodeBase64UrlToString();
@@ -246,14 +267,19 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string nip = "0000000000";
         string xml = "<x/>";
         string invoiceHash;
-        invoiceHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(xml)));
+        invoiceHash = Convert.ToBase64String(ComputeSha256(Encoding.UTF8.GetBytes(xml)));
 
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         CertificateRequest req = new("CN=TestECDSA", ecdsa, HashAlgorithmName.SHA256);
-        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddYears(1));
+        // UtcNow — spójność z resztą testów
+        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
 
         // Act – jawnie przekazujemy prywatny klucz ECDSA
+#if NETFRAMEWORK
+        string? privateKeyPem = fullCert.GetECDsaPrivateKey()?.ExportPkcs8PrivateKeyPemCompat();
+#else
         string? privateKeyPem = fullCert.GetECDsaPrivateKey()?.ExportPkcs8PrivateKeyPem();
+#endif
         string url = verificationLinkService.BuildCertificateVerificationUrl(nip, QRCodeContextIdentifierType.Nip, nip, invoiceHash, fullCert, privateKeyPem);
 
         // Assert – format ścieżek
@@ -273,14 +299,15 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         // Arrange – public-only ECC powinno rzucić
         using ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         CertificateRequest req = new("CN=PublicOnly", ecdsa, HashAlgorithmName.SHA256);
-        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now.AddDays(1));
+        // UtcNow — spójność z resztą testów
+        X509Certificate2 fullCert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(1));
         byte[] publicBytes = fullCert.Export(X509ContentType.Cert);
         X509Certificate2 pubOnly = X509CertificateLoaderExtensions.LoadCertificate(publicBytes);
 
         string nip = "0000000000";
         string xml = "<x/>";
         string invoiceHash;
-        invoiceHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(xml)));
+        invoiceHash = Convert.ToBase64String(ComputeSha256(Encoding.UTF8.GetBytes(xml)));
 
         // Act & Assert
         Assert.Throws<InvalidOperationException>(() =>
@@ -306,7 +333,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         string nip = ZeroNip;
         string xml = MinimalXml;
         string invoiceHash;
-        invoiceHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(xml)));
+        invoiceHash = Convert.ToBase64String(ComputeSha256(Encoding.UTF8.GetBytes(xml)));
 
         // Act
         string url = verificationLinkService.BuildCertificateVerificationUrl(nip, QRCodeContextIdentifierType.Nip, nip, invoiceHash, certWithKey);

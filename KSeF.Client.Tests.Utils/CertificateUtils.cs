@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Api.Builders.Certificates;
 using KSeF.Client.Api.Builders.X509Certificates;
 using KSeF.Client.Core.Interfaces.Clients;
@@ -120,9 +121,14 @@ public static class CertificateUtils
     public static string GetSha256Fingerprint(X509Certificate2 certificate)
     {
         byte[] raw = certificate.RawData;
+#if NETFRAMEWORK
+        using SHA256 sha = SHA256.Create();
+        byte[] sha256Bytes = sha.ComputeHash(raw);
+        string sha256Fingerprint = BitConverter.ToString(sha256Bytes).Replace("-", "").ToUpperInvariant();
+#else
         byte[] sha256Bytes = SHA256.HashData(raw);
         string sha256Fingerprint = Convert.ToHexString(sha256Bytes).ToUpperInvariant();
-
+#endif
         return sha256Fingerprint;
     }
 }

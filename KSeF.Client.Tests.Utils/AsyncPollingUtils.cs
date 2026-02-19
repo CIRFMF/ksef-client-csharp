@@ -1,3 +1,4 @@
+#nullable enable
 namespace KSeF.Client.Tests.Utils;
 
 public static class AsyncPollingUtils
@@ -28,11 +29,11 @@ public static class AsyncPollingUtils
         Func<TResult, RateLimitDecision>? rateLimitOnResult = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(action);
+        Guard.ThrowIfNull(action);
 
-        ArgumentNullException.ThrowIfNull(condition);
+        Guard.ThrowIfNull(condition);
 
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxAttempts);
+        Guard.ThrowIfNegativeOrZero(maxAttempts);
 
         TimeSpan defaultWait = delay ?? TimeSpan.FromSeconds(1);
         shouldRetryOnException ??= static ex => ex is not OperationCanceledException and not TaskCanceledException;
@@ -130,17 +131,17 @@ public static class AsyncPollingUtils
         string description = "",
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(action);
+        Guard.ThrowIfNull(action);
 
-        ArgumentNullException.ThrowIfNull(condition);
+        Guard.ThrowIfNull(condition);
 
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxAttempts);
+        Guard.ThrowIfNegativeOrZero(maxAttempts);
 
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(initialDelay, TimeSpan.Zero);
+        Guard.ThrowIfLessThanOrEqual(initialDelay, TimeSpan.Zero);
 
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxDelay, initialDelay);
+        Guard.ThrowIfLessThan(maxDelay, initialDelay);
 
-        ArgumentOutOfRangeException.ThrowIfLessThan(backoffFactor, 1.0);
+        Guard.ThrowIfLessThan(backoffFactor, 1.0);
 
         shouldRetryOnException ??= static ex => ex is not OperationCanceledException and not TaskCanceledException;
 

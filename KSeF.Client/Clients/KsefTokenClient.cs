@@ -14,8 +14,8 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
     /// <inheritdoc />
     public Task<KsefTokenResponse> GenerateKsefTokenAsync(KsefTokenRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<KsefTokenResponse, KsefTokenRequest>(Routes.Tokens.Root, requestPayload, accessToken, cancellationToken);
     }
@@ -31,7 +31,7 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
         int? pageSize = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         StringBuilder urlBuilder = new(Routes.Tokens.Root);
         bool hasQuery = false;
@@ -87,8 +87,8 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
     /// <inheritdoc />
     public Task<AuthenticationKsefToken> GetKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Tokens.ByReference(Uri.EscapeDataString(tokenReferenceNumber));
         return ExecuteAsync<AuthenticationKsefToken>(endpoint, HttpMethod.Get, accessToken, cancellationToken);
@@ -97,8 +97,8 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
     /// <inheritdoc />
     public Task RevokeKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = Routes.Tokens.ByReference(Uri.EscapeDataString(tokenReferenceNumber));
         return ExecuteAsync(endpoint, HttpMethod.Delete, accessToken, cancellationToken);

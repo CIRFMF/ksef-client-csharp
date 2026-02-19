@@ -120,7 +120,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
+          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None);
 
         AuthStatus status = await EnsureAuthenticationCompletedAsync(
             AuthorizationClient,
@@ -187,7 +187,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None);
+          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None);
 
         AuthStatus status = await EnsureAuthenticationCompletedAsync(
             AuthorizationClient,
@@ -239,7 +239,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
             SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
         });
     }
 
@@ -264,7 +264,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
             SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
         });
     }
 
@@ -301,7 +301,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
             SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, CancellationToken.None).ConfigureAwait(false);
+          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
         });
     }
 
@@ -371,7 +371,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
             .Where(c => c.Type == "per")
             .Select(c => c.Value)];
 
-        if (perClaims.Length == 1 && perClaims[0].TrimStart().StartsWith('['))
+        if (perClaims.Length == 1 && perClaims[0].TrimStart().StartsWith("["))
         {
             string[] arr = JsonSerializer.Deserialize<string[]>(perClaims[0]) ?? [];
             return arr.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -387,7 +387,7 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string[] perValues = [.. jwt.Claims.Where(c => c.Type == "per").Select(c => c.Value)];
 
         IEnumerable<string> rawEnums =
-            perValues.Length == 1 && perValues[0].TrimStart().StartsWith('[')
+            perValues.Length == 1 && perValues[0].TrimStart().StartsWith("[")
                 ? JsonSerializer.Deserialize<string[]>(perValues[0]) ?? []
                 : perValues;
 

@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -38,8 +39,14 @@ namespace KSeF.Client.Core
 
             string calculated = ComputeChecksum(Encoding.UTF8.GetBytes(data));
 
-            return calculated == checksum;
-        }
+			if (!string.Equals(calculated, checksum, StringComparison.OrdinalIgnoreCase))
+			{
+				errorMessage = $"Nieprawidłowa suma kontrolna. Oczekiwano: {checksum.ToUpperInvariant()}, wyliczono: {calculated}.";
+				return false;
+			}
+
+			return true;
+		}
 
         private static string ComputeChecksum(byte[] data)
         {

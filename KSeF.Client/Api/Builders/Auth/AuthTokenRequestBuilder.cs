@@ -139,7 +139,7 @@ internal sealed class AuthTokenRequestBuilderImpl :
     /// <inheritdoc />
     public IAuthTokenRequestBuilderWithContext WithContext(AuthenticationTokenContextIdentifier contextIdentifier)
     {
-        ArgumentNullException.ThrowIfNull(contextIdentifier);
+        Guard.ThrowIfNull(contextIdentifier);
         if (!TypeValueValidator.Validate(contextIdentifier))
         {
             throw new ArgumentException($"Nieprawidłowa wartość dla typu {contextIdentifier.Type}", nameof(contextIdentifier));

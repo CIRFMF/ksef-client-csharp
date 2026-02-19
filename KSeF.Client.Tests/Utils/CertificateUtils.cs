@@ -5,6 +5,9 @@ using KSeF.Client.Extensions;
 using KSeF.Client.Core.Models.Certificates;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+#if NETFRAMEWORK
+using KSeF.Client.Tests.Compatibility;
+#endif
 
 namespace KSeF.Client.Tests.Utils;
 

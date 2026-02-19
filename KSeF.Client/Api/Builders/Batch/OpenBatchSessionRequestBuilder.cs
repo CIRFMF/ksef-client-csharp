@@ -44,31 +44,52 @@ namespace KSeF.Client.Api.Builders.Batch
     /// </summary>
     public interface IOpenBatchSessionRequestBuilderBatchFile
     {
-        /// <summary>
-        /// Dodaje wiele części pliku wsadowego.
-        /// </summary>
-        /// <param name="parts">
-        /// Części pliku wsadowego zawierające nazwę pliku, numer porządkowy,
-        /// rozmiar części w bajtach oraz skrót kryptograficzny.
-        /// </param>
-        /// <returns>Interfejs pozwalający dodać kolejne części lub zakończyć opis pliku.</returns>
-        IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(IEnumerable<(string fileName, int ordinalNumber, long fileSize, string fileHash)> parts);
+		/// <summary>
+		/// Dodaje wiele części pliku wsadowego.
+		/// </summary>
+		/// <param name="parts">
+		/// Części pliku wsadowego zawierające nazwę pliku, numer porządkowy,
+		/// rozmiar części w bajtach oraz skrót kryptograficzny.
+		/// </param>
+		/// <returns>Interfejs pozwalający dodać kolejne części lub zakończyć opis pliku.</returns>
+		[Obsolete("Użyj AddBatchFileParts(IEnumerable<(int ordinalNumber, long fileSize, string fileHash)>). Parametr fileName nie jest używany i zostanie usunięty w przyszłej wersji.")]
+		IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(IEnumerable<(string fileName, int ordinalNumber, long fileSize, string fileHash)> parts);
 
-        /// <summary>
-        /// Dodaje pojedynczą część pliku wsadowego.
-        /// </summary>
-        /// <param name="fileName">Nazwa części pliku wsadowego.</param>
-        /// <param name="ordinalNumber">Numer porządkowy części w pliku wsadowym.</param>
-        /// <param name="fileSize">Rozmiar części pliku w bajtach.</param>
-        /// <param name="fileHash">Skrót kryptograficzny części pliku.</param>
-        /// <returns>Interfejs pozwalający dodać kolejne części lub zakończyć opis pliku.</returns>
-        IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(string fileName, int ordinalNumber, long fileSize, string fileHash);
+		/// <summary>
+		/// Dodaje wiele części pliku wsadowego.
+		/// </summary>
+		/// <param name="parts">
+		/// Części pliku wsadowego zawierające numer porządkowy,
+		/// rozmiar części w bajtach oraz skrót kryptograficzny.
+		/// </param>
+		/// <returns>Interfejs pozwalający dodać kolejne części lub zakończyć opis pliku.</returns>
+		IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(IEnumerable<(int ordinalNumber, long fileSize, string fileHash)> parts);
 
-        /// <summary>
-        /// Kończy opis pliku wsadowego i przechodzi do ustawienia danych szyfrowania.
-        /// </summary>
-        /// <returns>Interfejs do ustawienia danych szyfrowania.</returns>
-        IOpenBatchSessionRequestBuilderEncryption EndBatchFile();
+		/// <summary>
+		/// Dodaje pojedynczą część pliku wsadowego.
+		/// </summary>
+		/// <param name="fileName">Nieużywany. Parametr zostanie usunięty w przyszłej wersji.</param>
+		/// <param name="ordinalNumber">Numer porządkowy części w pliku wsadowym.</param>
+		/// <param name="fileSize">Rozmiar części pliku w bajtach.</param>
+		/// <param name="fileHash">Skrót kryptograficzny części pliku.</param>
+		/// <returns>Interfejs pozwalający dodać kolejne części lub zakończyć opis pliku.</returns>
+		[Obsolete("Użyj AddBatchFilePart(int ordinalNumber, long fileSize, string fileHash). Parametr fileName nie jest używany i zostanie usunięty w przyszłej wersji.")]
+		IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(string fileName, int ordinalNumber, long fileSize, string fileHash);
+
+		/// <summary>
+		/// Dodaje pojedynczą część pliku wsadowego.
+		/// </summary>
+		/// <param name="ordinalNumber">Numer porządkowy części w pliku wsadowym.</param>
+		/// <param name="fileSize">Rozmiar części pliku w bajtach.</param>
+		/// <param name="fileHash">Skrót kryptograficzny części pliku.</param>
+		/// <returns>Interfejs pozwalający dodać kolejne części lub zakończyć opis pliku.</returns>
+		IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(int ordinalNumber, long fileSize, string fileHash);
+
+		/// <summary>
+		/// Kończy opis pliku wsadowego i przechodzi do ustawienia danych szyfrowania.
+		/// </summary>
+		/// <returns>Interfejs do ustawienia danych szyfrowania.</returns>
+		IOpenBatchSessionRequestBuilderEncryption EndBatchFile();
     }
 
     /// <summary>
@@ -154,37 +175,52 @@ namespace KSeF.Client.Api.Builders.Batch
             return this;
         }
 
-        /// <inheritdoc />
-        public IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(
-            IEnumerable<(string fileName, int ordinalNumber, long fileSize, string fileHash)> parts)
-        {
-            foreach ((string fileName, int ordinalNumber, long fileSize, string fileHash) in parts)
-            {
-                AddBatchFilePart(fileName, ordinalNumber, fileSize, fileHash);
-            }
+		/// <inheritdoc />
+		[Obsolete("Użyj AddBatchFileParts(IEnumerable<(int ordinalNumber, long fileSize, string fileHash)>). Parametr fileName nie jest używany i zostanie usunięty w przyszłej wersji.")]
+		public IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(
+			IEnumerable<(string fileName, int ordinalNumber, long fileSize, string fileHash)> parts)
+		{
+			foreach ((string fileName, int ordinalNumber, long fileSize, string fileHash) in parts)
+			{
+				AddBatchFilePart(ordinalNumber, fileSize, fileHash);
+			}
+			return this;
+		}
 
-            return this;
-        }
+		/// <inheritdoc />
+		[Obsolete("Użyj AddBatchFilePart(int ordinalNumber, long fileSize, string fileHash). Parametr fileName nie jest używany i zostanie usunięty w przyszłej wersji.")]
+		public IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(string fileName, int ordinalNumber, long fileSize, string fileHash)
+			=> AddBatchFilePart(ordinalNumber, fileSize, fileHash);
 
-        /// <inheritdoc />
-        public IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(string fileName, int ordinalNumber, long fileSize, string fileHash)
-        {
-            if (string.IsNullOrWhiteSpace(fileName) || ordinalNumber < 0 || fileSize < 0 || string.IsNullOrWhiteSpace(fileHash))
-            {
-                throw new ArgumentException("Parametry BatchFilePart są nieprawidłowe.");
-            }
+		/// <inheritdoc />
+		public IOpenBatchSessionRequestBuilderBatchFile AddBatchFileParts(
+			IEnumerable<(int ordinalNumber, long fileSize, string fileHash)> parts)
+		{
+			foreach ((int ordinalNumber, long fileSize, string fileHash) in parts)
+			{
+				AddBatchFilePart(ordinalNumber, fileSize, fileHash);
+			}
+			return this;
+		}
 
-            _parts.Add(new BatchFilePartInfo
-            {
-                OrdinalNumber = ordinalNumber,
-                FileSize = fileSize,
-                FileHash = fileHash,
-            });
-            return this;
-        }
+		/// <inheritdoc />
+		public IOpenBatchSessionRequestBuilderBatchFile AddBatchFilePart(int ordinalNumber, long fileSize, string fileHash)
+		{
+			if (ordinalNumber < 0 || fileSize < 0 || string.IsNullOrWhiteSpace(fileHash))
+			{
+				throw new ArgumentException("Parametry BatchFilePart są nieprawidłowe.");
+			}
+			_parts.Add(new BatchFilePartInfo
+			{
+				OrdinalNumber = ordinalNumber,
+				FileSize = fileSize,
+				FileHash = fileHash,
+			});
+			return this;
+		}
 
-        /// <inheritdoc />
-        public IOpenBatchSessionRequestBuilderEncryption EndBatchFile()
+		/// <inheritdoc />
+		public IOpenBatchSessionRequestBuilderEncryption EndBatchFile()
         {
             if (string.IsNullOrWhiteSpace(_batchFileHash))
             {

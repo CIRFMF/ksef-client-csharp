@@ -102,7 +102,7 @@ public static class GrantAuthorizationPermissionsRequestBuilder
         /// <inheritdoc />
         public IPermissionsStep WithSubject(AuthorizationSubjectIdentifier subject)
         {
-            ArgumentNullException.ThrowIfNull(subject);
+            Guard.ThrowIfNull(subject);
             TypeValueValidator.Validate(subject);
             _subject = subject;
             return this;
@@ -118,7 +118,7 @@ public static class GrantAuthorizationPermissionsRequestBuilder
         /// <inheritdoc />
         public IOptionalStep WithDescription(string description)
         {
-            ArgumentNullException.ThrowIfNull(description);
+            Guard.ThrowIfNull(description);
             if (description.Length < ValidValues.PermissionDescriptionMinLength)
             {
                 throw new ArgumentException($"Opis uprawnienia za krótki, minimalna długość: {ValidValues.PermissionDescriptionMinLength} znaków.", nameof(description));

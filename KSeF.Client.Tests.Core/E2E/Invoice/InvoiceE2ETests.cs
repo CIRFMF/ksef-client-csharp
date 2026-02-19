@@ -170,8 +170,11 @@ public class InvoiceE2ETests : TestBase
         {
             DateRange = new DateRange
             {
-                From = DateTime.Now.AddDays(FromOffsetDays),
-                To = DateTime.Now.AddDays(ToOffsetDays),
+                // Użycie DateTime.UtcNow zamiast DateTime.Now — czas lokalny maszyny
+                // może różnić się od UTC, co powoduje niespójne wyniki zapytań DateRange
+                // (np. runner CI w strefie UTC vs. deweloper w CET/CEST).
+                From = DateTime.UtcNow.AddDays(FromOffsetDays),
+                To = DateTime.UtcNow.AddDays(ToOffsetDays),
                 DateType = DateType.Invoicing
             },
             SubjectType = InvoiceSubjectType.Subject1
@@ -303,8 +306,10 @@ public class InvoiceE2ETests : TestBase
         {
             DateRange = new DateRange
             {
-                From = DateTime.Now.AddDays(FromOffsetDays),
-                To = DateTime.Now.AddDays(ToOffsetDays),
+                // Użycie DateTime.UtcNow zamiast DateTime.Now — zapytania DateRange
+                // powinny być w UTC, aby uniknąć niespójności ze strefą czasową runnera.
+                From = DateTime.UtcNow.AddDays(FromOffsetDays),
+                To = DateTime.UtcNow.AddDays(ToOffsetDays),
                 DateType = DateType.Invoicing
             },
             SubjectType = InvoiceSubjectType.Subject2

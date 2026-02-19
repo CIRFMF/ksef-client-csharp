@@ -21,8 +21,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsPermissionPersonAsync(GrantPermissionsPersonRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsPersonRequest>(
             Routes.Permissions.Grants.Persons,
@@ -34,8 +34,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsPermissionEntityAsync(GrantPermissionsEntityRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsEntityRequest>(
             Routes.Permissions.Grants.Entities,
@@ -47,8 +47,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsAuthorizationPermissionAsync(GrantPermissionsAuthorizationRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsAuthorizationRequest>(
             Routes.Permissions.Grants.Authorizations,
@@ -60,8 +60,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsPermissionIndirectEntityAsync(GrantPermissionsIndirectEntityRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsIndirectEntityRequest>(
             Routes.Permissions.Grants.Indirect,
@@ -73,8 +73,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsPermissionSubUnitAsync(GrantPermissionsSubunitRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsSubunitRequest>(
             Routes.Permissions.Grants.Subunits,
@@ -86,8 +86,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsPermissionEUEntityAsync(GrantPermissionsEuEntityRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsEuEntityRequest>(
             Routes.Permissions.Grants.EuEntities,
@@ -99,8 +99,8 @@ public class GrantPermissionClient(IRestClient restClient, IRouteBuilder routeBu
     /// <inheritdoc />
     public Task<OperationResponse> GrantsPermissionEUEntityRepresentativeAsync(GrantPermissionsEuEntityRepresentativeRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(requestPayload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         return ExecuteAsync<OperationResponse, GrantPermissionsEuEntityRepresentativeRequest>(
             Routes.Permissions.Grants.EuEntitiesRepresentatives,

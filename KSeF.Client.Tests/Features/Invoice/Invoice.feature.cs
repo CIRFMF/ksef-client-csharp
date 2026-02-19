@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
@@ -157,6 +158,9 @@ namespace KSeF.Client.Tests.Features
         public async Task GivenInvoiceWithDataWytworzeniaFaBeforeCutoffShouldFail(
             SystemCode systemCode, string templatePath)
         {
+            // Stała data graniczna schematu KSeF — DataWytworzeniaFa nie może być wcześniejsza
+            // niż 2025-09-01 (więc 2025-08-31 powinno zostać odrzucone jako kod 450).
+            // UWAGA: to NIE jest data dynamiczna — to stała biznesowa schematu KSeF.
             DateTime cutoffUtc = new(2025, 8, 31);
 
             Core.Models.Sessions.EncryptionData encryptionData = CryptographyService.GetEncryptionData();
@@ -212,9 +216,13 @@ namespace KSeF.Client.Tests.Features
 
             string template = InvoiceHelpers.GetTemplateText(templatePath, nip);
 
-            // Jutro (UTC)
-            DateTime tomorrowUtc = DateTime.UtcNow.Date.AddDays(1);
-            string invalidXml = InvoiceHelpers.SetElementValue(template, "P_1", InvoiceHelpers.SetDateForElement("P_1", tomorrowUtc));
+            // Jutro w polskiej strefie czasowej (Europe/Warsaw, CET/CEST).
+            // NAPRAWA BUGA: DateTime.UtcNow.Date.AddDays(1) dawało niestabilne wyniki
+            // w oknie 00:00–02:00 CET/CEST — "jutro UTC" mogło być równe "dzisiaj CET",
+            // co powodowało, że KSeF akceptował fakturę (kod 200) zamiast ją odrzucić (kod 450).
+            // KSeF waliduje datę P_1 w polskiej strefie czasowej.
+            DateTime tomorrowWarsaw = KsefDateTimeHelper.GetWarsawTomorrow();
+            string invalidXml = InvoiceHelpers.SetElementValue(template, "P_1", InvoiceHelpers.SetDateForElement("P_1", tomorrowWarsaw));
 
             try
             {

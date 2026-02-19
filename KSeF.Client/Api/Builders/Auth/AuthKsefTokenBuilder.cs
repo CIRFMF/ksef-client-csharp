@@ -157,7 +157,7 @@ internal sealed class AuthKsefTokenRequestBuilderImpl :
     /// <inheritdoc />
     public IAuthKsefTokenRequestBuilderWithContext WithContext(AuthenticationTokenContextIdentifier contextIdentifier)
     {
-        ArgumentNullException.ThrowIfNull(contextIdentifier);
+        Guard.ThrowIfNull(contextIdentifier);
         if (!TypeValueValidator.Validate(contextIdentifier))
         {
             throw new ArgumentException($"Nieprawidłowa wartość dla typu {contextIdentifier.Type}", nameof(contextIdentifier));
