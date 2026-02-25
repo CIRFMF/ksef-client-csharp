@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="http://crd.gov.pl/wzor/2026/02/17/14164/">
+	<Naglowek>
+		<KodFormularza kodSystemowy="FA_RR(1)" wersjaSchemy="1-0E">FA_RR</KodFormularza>
+		<WariantFormularza>1</WariantFormularza>
+		<DataWytworzeniaFa>2026-02-23T10:37:00Z</DataWytworzeniaFa>
+		<SystemInfo>SamploFaktur</SystemInfo>
+	</Naglowek>
+	<Podmiot1>
+		<DaneIdentyfikacyjne>
+			<NIP>#nip#</NIP>
+			<Nazwa>Elektrownia S.A.</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>84-100 Zielona Wieś 12</AdresL1>
+		</Adres>
+	</Podmiot1>
+	<Podmiot2>
+		<DaneIdentyfikacyjne>
+			<NIP>#buyer_nip#</NIP>
+			<Nazwa>F.H.U. Jan Kowalski</Nazwa>
+		</DaneIdentyfikacyjne>
+		<Adres>
+			<KodKraju>PL</KodKraju>
+			<AdresL1>80-001 Gdańsk, ul. Handlowa 7</AdresL1>
+		</Adres>
+	</Podmiot2>
+	<FakturaRR>
+		<KodWaluty>PLN</KodWaluty>
+		<P_4A>2026-02-20</P_4A>
+		<P_4B>2026-02-23</P_4B>
+		<P_4C>#invoice_number#</P_4C>
+		<P_11_1>2000.00</P_11_1>
+		<P_11_2>140.00</P_11_2>
+		<P_12_1>2140.00</P_12_1>
+		<P_12_2>dwa tysiące sto czterdzieści złotych 00/100</P_12_2>
+		<RodzajFaktury>VAT_RR</RodzajFaktury>
+
+		<FakturaRRWiersz>
+			<NrWierszaFa>1</NrWierszaFa>
+			<P_5>ziemniaki jadalne odmiana irga (partia A)</P_5>
+			<P_6A>kg</P_6A>
+			<P_6B>300.000</P_6B>
+			<P_6C>klasa I</P_6C>
+			<P_7>2.50</P_7>
+			<P_8>750.00</P_8>
+			<P_9>7.0</P_9>
+			<P_10>52.50</P_10>
+			<P_11>802.50</P_11>
+		</FakturaRRWiersz>
+		<FakturaRRWiersz>
+			<NrWierszaFa>2</NrWierszaFa>
+			<P_5>marchew świeża (partia B)</P_5>
+			<P_6A>kg</P_6A>
+			<P_6B>500.000</P_6B>
+			<P_6C>myta, luz</P_6C>
+			<P_7>2.50</P_7>
+			<P_8>1250.00</P_8>
+			<P_9>7.0</P_9>
+			<P_10>87.50</P_10>
+			<P_11>1337.50</P_11>
+		</FakturaRRWiersz>
+
+		<Platnosc>
+			<FormaPlatnosci>1</FormaPlatnosci>
+			<RachunekBankowy1>
+				<NrRB>83102055550000987654321012</NrRB>
+				<NazwaBanku>Bank Alfa Test</NazwaBanku>
+			</RachunekBankowy1>
+			<RachunekBankowy2>
+				<NrRB>12114033330000123456789012</NrRB>
+				<NazwaBanku>Bank Beta Test</NazwaBanku>
+			</RachunekBankowy2>
+		</Platnosc>
+	</FakturaRR>
+</Faktura>

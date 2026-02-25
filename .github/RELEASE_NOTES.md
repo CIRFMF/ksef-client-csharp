@@ -1,7 +1,13 @@
+## Rejestr zmian: Wersja 2.1.2
+### Nowe
+- Dodano nowy kod systemowy `FA_RR(1)` w `SystemCode` (wraz z mapowaniem w `SystemCodeHelper`).
+- Dodano nowy test E2E dla faktury VAT RR: `AuthorizationPermissionsRRInvoicingE2ETests.RRInvoicingPermission_AllowsSendingFaRrInvoice`.
+
 ## Rejestr zmian: Wersja 2.1.1
 ### Nowe
 - Dodano parametr `enforceXadesCompliance` w metodzie `SubmitXadesAuthRequestAsync`, umożliwiający wcześniejsze włączenie nowych wymagań walidacji XAdES na środowiskach DEMO i PROD poprzez nagłówek `X-KSeF-Feature: enforce-xades-compliance`.
 - Dodano wsparcie dla .NET Standard 2.0 dla Windows oraz .NET Framework 4.8, dzięki zaangażowaniu Kontrybutora [@marcinborecki](https://github.com/CIRFMF/ksef-client-csharp/commits?author=marcinborecki)
+
 
 ## Rejestr zmian: Wersja 2.1.0
 ### Nowe

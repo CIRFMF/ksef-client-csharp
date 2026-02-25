@@ -7,7 +7,8 @@ namespace KSeF.Client.Core.Models.Invoices
         [EnumMember(Value = "FA (2)")] FA2,
         [EnumMember(Value = "FA (3)")] FA3,
         [EnumMember(Value = "PEF (3)")] PEF,
-        [EnumMember(Value = "PEF_KOR (3)")] PEFKOR
+        [EnumMember(Value = "PEF_KOR (3)")] PEFKOR,
+        [EnumMember(Value = "FA_RR (1)")] FA_RR
     }
 
     public static class SystemCodeHelper
@@ -24,6 +25,8 @@ namespace KSeF.Client.Core.Models.Invoices
                     return "PEF (3)";
                 case SystemCode.PEFKOR:
                     return "PEF_KOR (3)";
+                case SystemCode.FA_RR:
+                    return "FA_RR (1)";
                 default:
                     return code.ToString();
             }
@@ -41,6 +44,8 @@ namespace KSeF.Client.Core.Models.Invoices
                     return "PEF";
                 case SystemCode.PEFKOR:
                     return "PEF";
+                case SystemCode.FA_RR:
+                    return "RR";
                 default:
                     return code.ToString();
             }
@@ -53,6 +58,8 @@ namespace KSeF.Client.Core.Models.Invoices
                 case SystemCode.FA2:
                     return "1-0E";
                 case SystemCode.FA3:
+                    return "1-0E";
+                case SystemCode.FA_RR:
                     return "1-0E";
                 case SystemCode.PEF:
                     return "2-1";
