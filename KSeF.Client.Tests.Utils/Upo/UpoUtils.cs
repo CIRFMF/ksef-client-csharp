@@ -2,7 +2,6 @@
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Rest;
 using KSeF.Client.Core.Infrastructure.Rest;
-using System.Collections.Generic;
 using System.Xml.Serialization;
 using System.Xml;
 

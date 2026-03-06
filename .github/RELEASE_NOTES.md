@@ -1,12 +1,23 @@
+## Rejestr zmian: Wersja 2.2.0
+### Nowe
+- Dodano możliwość przełączenia PascalCase/camelCase w nazwach właściwości zwracanych z API.
+- Dodano obsługę endpointa `POST /permissions/query/entities/grants` umożliwiającego pobranie listy uprawnień do obsługi faktur w bieżącym kontekście logowania.
+- Rozszerzono odpowiedź endpointu POST `/auth/challenge` o pole `clientIp` zwracające adres IP klienta zarejestrowany przez KSeF.
+- Ustandaryzowano odpowiedzi `401 Unauthorized` oraz `403 Forbidden` do formatu Problem Details `(application/problem+json)`.
+- Dodano schematy `UnauthorizedProblemDetails` oraz `ForbiddenProblemDetails`.
+- Rozszerzono `ForbiddenProblemDetails` o wymagane pole `reasonCode` oraz o opcjonalny obiekt `security` (dodatkowe dane zależne od `reasonCode`).
+
 ## Rejestr zmian: Wersja 2.1.2
 ### Nowe
+
 - Dodano nowy kod systemowy `FA_RR(1)` w `SystemCode` (wraz z mapowaniem w `SystemCodeHelper`).
 - Dodano nowy test E2E dla faktury VAT RR: `AuthorizationPermissionsRRInvoicingE2ETests.RRInvoicingPermission_AllowsSendingFaRrInvoice`.
 
 ## Rejestr zmian: Wersja 2.1.1
 ### Nowe
 - Dodano parametr `enforceXadesCompliance` w metodzie `SubmitXadesAuthRequestAsync`, umożliwiający wcześniejsze włączenie nowych wymagań walidacji XAdES na środowiskach DEMO i PROD poprzez nagłówek `X-KSeF-Feature: enforce-xades-compliance`.
-- Dodano wsparcie dla .NET Standard 2.0 dla Windows oraz .NET Framework 4.8, dzięki zaangażowaniu Kontrybutora [@marcinborecki](https://github.com/CIRFMF/ksef-client-csharp/commits?author=marcinborecki)
+- Dodano wsparcie dla .NET Standard 2.0 dla Windows oraz .NET Framework 4.8, dzięki zaangażowaniu Kontrybutora [@marcinborecki](https://github.com/CIRFMF/ksef-client-csharp/pull/197)
+
 
 
 ## Rejestr zmian: Wersja 2.1.0
@@ -19,7 +30,7 @@
 
 ### Zmodyfikowane
 - `AuthStatus`, `AuthenticationListItem`: Pole `AuthenticationMethod` oznaczono jako **Obsolete** (planowane wycofanie: 2026-11-16).
-- Metody `AddBatchFilePart` oraz `AddBatchFileParts` z parametrem `fileName` oznaczono jako przestarzałe (Obsolete) i zostaną usunięte w niedalekiej przyszłości. Zaleca się używanie przyciążeń bez parametru `fileName`
+- Metody `AddBatchFilePart` oraz `AddBatchFileParts` z parametrem `fileName` oznaczono jako przestarzałe (Obsolete) i zostaną usunięte w niedalekiej przyszłości. Zaleca się używanie przeciążeń bez parametru `fileName`
 - `KsefNumberValidator` zwraca teraz komunikat informujący o błędzie w przypadku nieprawidłowej sumy kontrolnej
 - `DateRange`: Zmieniono typ pól `From` i `To` z DateTime na DateTimeOffset w celu poprawnej obsługi stref czasowych i offsetów zgodnie ze specyfikacją API KSeF (format ISO 8601 z offsetem/UTC/lokalny Europe/Warsaw)
 	- Zmiana typu DateRange.From i DateRange.To z DateTime na DateTimeOffset może wpłynąć na Twoje rozwiązania. Jeśli korzystasz z DateRange do filtrowania faktur, sprawdź czy Twój kod poprawnie tworzy DateTimeOffset

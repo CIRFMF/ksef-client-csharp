@@ -21,5 +21,14 @@ namespace KSeF.Client.Core.Exceptions
         /// Opcjonalna lista dodatkowych komunikatów kontekstowych.
         /// </summary>
         public List<string> Details { get; set; }
+
+        public ApiExceptionDetail() { }
+
+        public ApiExceptionDetail(int code, string description, List<string> details = null)
+        {
+            ExceptionCode = code;
+            ExceptionDescription = description;
+            Details = details;
+        }
     }
 }

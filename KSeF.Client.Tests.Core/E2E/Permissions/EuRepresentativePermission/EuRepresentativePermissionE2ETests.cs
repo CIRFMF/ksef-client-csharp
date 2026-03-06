@@ -9,18 +9,19 @@ using KSeF.Client.Core.Models.Permissions.EuEntityRepresentative;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Tests.Utils;
 using System.Security.Cryptography.X509Certificates;
+using System.Globalization;
 
 namespace KSeF.Client.Tests.Core.E2E.Permissions.EuRepresentativePermission;
 
 public class EuRepresentativePermissionE2ETests : TestBase
 {
     /*
-     * 1. Autentykacja jako owner - context NIP
-     * 2. Owner nadaje uprawnienia administracyjne jednostce organizacyjnej - context NipVatEu 
-     * 3. Pobranie uprawnień nadanych contextowi
-     * 4. Autentykacja jako jednostka organizacyjna - context NipVatEu
+     * 1. Uwierzytelnienie jako właściciel - kontekst NIP
+     * 2. Właściciel nadaje uprawnienia administracyjne jednostce organizacyjnej - kontekst NipVatEu 
+     * 3. Pobranie uprawnień nadanych kontekstowi
+     * 4. Uwierzytelnienie jako jednostka organizacyjna - kontekst NipVatEu
      * 5. W tokenie powinny być role jednostki
-     * 6. Nadanie uprawnień reprezentanta 
+     * 6. Nadanie uprawnień reprezentanta
      * 7. Pobranie/sprawdzenie nadanych uprawnień
      * 8. Odwołanie uprawnień (wymaga odczekania kilku sekund...)
      * 9. Sprawdzenie uprawnień po odwołaniu
@@ -124,7 +125,7 @@ public class EuRepresentativePermissionE2ETests : TestBase
             {
                 FirstName = "Reprezentant",
                 LastName = "Reprezentant",
-                BirthDate = new DateTimeOffset(1990, 1, 1, 0, 0, 0, TimeSpan.Zero).Date.ToString("yyyy-MM-dd"),
+                BirthDate = new DateTimeOffset(1990, 1, 1, 0, 0, 0, TimeSpan.Zero).Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 IdDocument = new EuEntityRepresentativeIdentityDocument
                 {
                     Type = "Passport",

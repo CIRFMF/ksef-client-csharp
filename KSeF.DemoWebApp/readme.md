@@ -49,6 +49,7 @@ konfigurować certyfikaty oraz uruchomić API w środowisku testowym KSeF.
 | **DefaultCulture**      | string                    | ❌        | Domyślne ustawienia regionalne (np. `pl-PL`).                     |
 | **SupportedCultures**   | string[]                  | ❌        | Lista kultur obsługiwanych przez backend.                     |
 | **SupportedUICultures** | string[]                  | ❌        | Lista kultur obsługiwanych w komunikatach UI.                 |
+| **UseCamelCaseForRequests** | bool                  | ❌        | Domyślne ustawienie wielkości pierwszych liter w komunikacji z api                 |
 
 Dokumentację na temat dostępnych kultur można znaleźć pod adresem : https://learn.microsoft.com/en-us/dotnet/api/system.globalization.culturetypes?view=net-10.0
 
@@ -85,6 +86,8 @@ builder.Services.AddKSeFClient(options =>
     options.SupportedCultures = builder.Configuration.GetSection("ApiSettings").GetSection("SupportedCultures").Get<string[]>() ?? null;
 
     options.SupportedUICultures = builder.Configuration.GetSection("ApiSettings").GetSection("SupportedUICultures").Get<string[]>() ?? null;
+
+    options.UseCamelCaseForRequests = builder.Configuration.GetSection("ApiSettings").GetSection("UseCamelCaseForRequests").Get<bool>() ?? null;
 });
 builder.Services.AddCryptographyClient();
 ```

@@ -189,7 +189,7 @@ namespace KSeF.Client.Tests.Features
                     description: "Oczekiwanie na błąd walidacji semantycznej (450) dla DataWytworzeniaFa",
                     delay: TimeSpan.FromMilliseconds(SleepTime),
                     maxAttempts: 120);
-                
+
                 Assert.NotNull(sendInvoiceStatus);
                 Assert.Equal(InvoiceInSessionStatusCodeResponse.InvoiceSemanticValidationError, sendInvoiceStatus.Status.Code); // KOD 450, błąd walidacji semantycznej dokumentu faktury
             }
@@ -364,5 +364,60 @@ namespace KSeF.Client.Tests.Features
             // Asercje
             Assert.Contains(invoiceQueryResponse.Invoices, x => x.ThirdSubjects.Any(y => y.Identifier.Value == thirdSubjectIdentifier));
         }
-    }
+
+		/// <summary>
+		/// Wysłanie faktury z załącznikiem w sesji online.
+		/// Weryfikacja odrzucenia z kodem błędu 415 (Brak możliwości wysyłania faktury z załącznikiem).
+		/// </summary>
+		[Theory]
+		[InlineData(SystemCode.FA3, "invoice-template-fa-3-with-attachment.xml")]
+		public async Task GivenInvoiceWithAttachmentInOnlineSessionShouldReturnError(SystemCode systemCode, string invoiceTemplatePath)
+		{
+			// Arrange
+			EncryptionData encryptionData = CryptographyService.GetEncryptionData();
+
+			// Act: otwarcie sesji online
+			OpenOnlineSessionResponse openSessionRequest = await OnlineSessionUtils.OpenOnlineSessionAsync(KsefClient,
+				encryptionData,
+				authToken,
+				systemCode);
+
+			Assert.NotNull(openSessionRequest);
+			Assert.False(string.IsNullOrWhiteSpace(openSessionRequest.ReferenceNumber),
+				 "Numer referencyjny sesji powinien zostać wygenerowany");
+
+			// Act: wysłanie faktury z nieprawidłowym NIP
+			SendInvoiceResponse sendInvoiceResponse = await OnlineSessionUtils.SendInvoiceAsync(KsefClient,
+				openSessionRequest.ReferenceNumber,
+				authToken,
+				nip,
+				invoiceTemplatePath,
+				encryptionData,
+				CryptographyService);
+
+			Assert.NotNull(sendInvoiceResponse);
+			Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse.ReferenceNumber),
+				 "Numer referencyjny sesji powinien zostać wygenerowany");
+
+			// Act: pobranie statusu wysłanej faktury
+			SessionInvoice sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
+				async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
+					KsefClient,
+					openSessionRequest.ReferenceNumber,
+					sendInvoiceResponse.ReferenceNumber,
+					authToken).ConfigureAwait(false),
+				result => result is not null && result.Status.Code == InvoiceInSessionStatusCodeResponse.AttachmentNotAllowed,
+				delay: TimeSpan.FromMilliseconds(SleepTime),
+				maxAttempts: 60);
+
+			// Assert: weryfikacja błędu niewystarczających uprawnień
+			Assert.NotNull(sendInvoiceStatus);
+			Assert.True(
+				sendInvoiceStatus.Status.Code == InvoiceInSessionStatusCodeResponse.AttachmentNotAllowed,
+				"Operacja powinna zakończyć się kodem 415 (Brak możliwości wysyłania faktury z załącznikiem)"
+			);
+
+			await OnlineSessionUtils.CloseOnlineSessionAsync(KsefClient, openSessionRequest.ReferenceNumber, authToken);
+		}
+	}
 }

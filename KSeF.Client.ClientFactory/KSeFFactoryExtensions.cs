@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using KSeF.Client.Http;
 using System.Net.Http.Headers;
 
 namespace KSeF.Client.ClientFactory.DI
@@ -13,8 +14,13 @@ namespace KSeF.Client.ClientFactory.DI
         /// </summary>
         /// <param name="services">Rozszerzany interfejs</param>
         /// <exception cref="ArgumentException"></exception>
-        public static IServiceCollection RegisterKSeFClientFactory(this IServiceCollection services)
+        public static IServiceCollection RegisterKSeFClientFactory(this IServiceCollection services, bool useCamelCase = false)
         {
+            if (useCamelCase)
+            {
+                JsonUtil.ResetConfigurationForCasePropertyName(useCamelCase);
+            }
+
             services.AddHttpClient(Environment.Demo.ToString(), http =>
             {
                 http.BaseAddress = new Uri(KsefEnvironmentConfig.BaseUrls[Environment.Demo]);

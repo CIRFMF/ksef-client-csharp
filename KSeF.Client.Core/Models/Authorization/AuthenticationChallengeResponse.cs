@@ -19,5 +19,9 @@ namespace KSeF.Client.Core.Models.Authorization
         /// </summary>
         public long TimestampMs { get; set; }
 
+        /// <summary>
+        /// Adres IP klienta
+        /// </summary>
+        public string ClientIp { get; set; }
     }
 }

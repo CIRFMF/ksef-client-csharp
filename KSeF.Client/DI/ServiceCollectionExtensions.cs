@@ -38,6 +38,12 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(options);
 
+        // UseCamelCaseForRequests is a non-nullable bool with a default of false.
+        if (options.UseCamelCaseForRequests)
+        {
+            JsonUtil.ResetConfigurationForCasePropertyName(true);
+        }
+
         services
             .AddHttpClient<IRestClient, RestClient>(http =>
             {
@@ -72,6 +78,7 @@ public static class ServiceCollectionExtensions
             return new RouteBuilder(options.ApiConfiguration.ApiVersion);
         });
 
+        services.AddScoped<ISearchPermissionClient, SearchPermissionClient>();
         services.AddScoped<IKSeFClient, KSeFClient>();
         services.AddScoped<ITestDataClient, TestDataClient>();
         services.AddScoped<IAuthCoordinator, AuthCoordinator>();

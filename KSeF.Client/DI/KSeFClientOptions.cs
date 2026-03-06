@@ -32,4 +32,10 @@ public class KSeFClientOptions
     public string DefaultCulture { get; set; }
 
     public ApiConfiguration ApiConfiguration { get; set; } = new ApiConfiguration();
+
+    /// <summary>
+    /// Jeśli ustawione na true, serializacja JSON dla wychodzących żądań do API
+    /// będzie używać camelCase dla nazw właściwości. Domyślnie false.
+    /// </summary>
+    public bool UseCamelCaseForRequests { get; set; } = false;
 }

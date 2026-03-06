@@ -5,10 +5,8 @@ using KSeF.Client.Http.Helpers;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Linq;
 
 namespace KSeF.Client.Http;
-
 
 /// <inheritdoc />
 public sealed class RestClient(HttpClient httpClient) : IRestClient
@@ -25,13 +23,23 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
     /// </summary>
     public const string XmlContentType = "application/xml";
 
+    private const string UnauthorizedText = "Unauthorized";
+    private const string ForbiddenText = "Forbidden";
+    private const string UnknownText = "Unknown";
+    private const string ProblemDetailsText = "ProblemDetails";
+    private const string ServiceNameText = "KSeF API";
+    private const string NotFoundText = "Not found";
+    private const string RateLimitText = "Przekroczono limit ilości zapytań do API (HTTP 429)";
+    private const string BearerScheme = "Bearer";
+    private const string UnknownMediaTypeText = "nieznany";
+
     /// <inheritdoc />
     public async Task<TResponse> SendAsync<TResponse, TRequest>(
-        HttpMethod method, 
-        string url, 
-        TRequest requestBody = default, 
-        string token = null, 
-        string contentType = "application/json", 
+        HttpMethod method,
+        string url,
+        TRequest requestBody = default,
+        string token = null,
+        string contentType = "application/json",
         CancellationToken cancellationToken = default)
     {
         return await SendAsync<TResponse, TRequest>(method, url, requestBody, token, contentType, additionalHeaders: null, cancellationToken).ConfigureAwait(false);
@@ -94,7 +102,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
         if (!string.IsNullOrWhiteSpace(token))
         {
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(BearerScheme, token);
         }
 
         if (additionalHeaders is not null)
@@ -171,7 +179,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
         if (!string.IsNullOrWhiteSpace(token))
         {
-            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(BearerScheme, token);
         }
 
         await SendCoreAsync<string>(httpRequestMessage, cancellationToken).ConfigureAwait(false);
@@ -238,12 +246,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             if (typeof(T) == typeof(string))
             {
-
-#if NETSTANDARD2_0
-                string responseText = await httpResponseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-#else
-                string responseText = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-#endif
+                string responseText = await ReadContentAsync(httpResponseMessage, cancellationToken).ConfigureAwait(false);
                 return (T)(object)(responseText ?? string.Empty);
             }
 
@@ -252,7 +255,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             if (!IsJsonMediaType(mediaType))
             {
-                throw new KsefApiException($"Nieoczekiwany typ treści '{mediaType ?? "nieznany"}' dla {typeof(T).Name}.", httpResponseMessage.StatusCode);
+                throw new KsefApiException($"Nieoczekiwany typ treści '{mediaType ?? UnknownMediaTypeText}' dla {typeof(T).Name}.", httpResponseMessage.StatusCode);
             }
 
 #if NETSTANDARD2_0
@@ -299,11 +302,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             if (typeof(T) == typeof(string))
             {
-#if NETSTANDARD2_0
-                string responseText = await httpResponseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-#else
-                string responseText = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-#endif
+                string responseText = await ReadContentAsync(httpResponseMessage, cancellationToken).ConfigureAwait(false);
                 return new RestResponse<T>((T)(object)(responseText ?? string.Empty), headers);
             }
 
@@ -312,7 +311,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
             if (!IsJsonMediaType(mediaType))
             {
-                throw new KsefApiException($"Nieoczekiwany typ treści '{mediaType ?? "nieznany"}' dla {typeof(T).Name}.", httpResponseMessage.StatusCode);
+                throw new KsefApiException($"Nieoczekiwany typ treści '{mediaType ?? UnknownMediaTypeText}' dla {typeof(T).Name}.", httpResponseMessage.StatusCode);
             }
 
 #if NETSTANDARD2_0
@@ -333,12 +332,19 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
     /// Guard na Content-Type.
     /// </summary>
     private static async Task HandleInvalidStatusCode(HttpResponseMessage response, CancellationToken cancellationToken)
-    {  
+    {
         switch (response.StatusCode)
         {
             case System.Net.HttpStatusCode.NotFound:
-                throw new KsefApiException("Not found", response.StatusCode);
+                throw new KsefApiException(NotFoundText, response.StatusCode);
 
+            case System.Net.HttpStatusCode.Unauthorized:
+                await HandleUnauthorizedAsync(response, cancellationToken).ConfigureAwait(false);
+                return;
+
+            case System.Net.HttpStatusCode.Forbidden:
+                await HandleForbiddenAsync(response, cancellationToken).ConfigureAwait(false);
+                return;
 
 #if NETSTANDARD2_0
             case (System.Net.HttpStatusCode)429:
@@ -351,7 +357,7 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
             default:
                 await HandleOtherErrorsAsync(response, cancellationToken).ConfigureAwait(false);
                 return;
-        }        
+        }
 
         static bool TryExtractRetryAfterHeaderValue(HttpResponseMessage responseMessage, out string retryAfterHeaderValue)
         {
@@ -379,12 +385,6 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
             return false;
         }
 
-        static bool IsJsonMediaType(string mediaType)
-        {
-            return !string.IsNullOrEmpty(mediaType) &&
-                   mediaType.Contains("json", StringComparison.OrdinalIgnoreCase);
-        }
-
         static bool IsJsonContent(HttpResponseMessage responseMessage)
         {
             MediaTypeHeaderValue contentTypeHeader = responseMessage.Content?.Headers?.ContentType;
@@ -409,6 +409,62 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
             return string.Join(" | ", parts);
         }
 
+        static ApiErrorResponse MapProblemDetailsToApiErrorResponse(
+            string title,
+            int status,
+            string detail,
+            string traceId = null,
+            string instance = null,
+            string reasonCode = null,
+            object security = null)
+        {
+            List<string> details = new List<string>();
+
+            static void AddIfNotEmpty(List<string> list, string value, string prefix = "")
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    list.Add(prefix + value);
+            }
+
+            AddIfNotEmpty(details, detail);
+            AddIfNotEmpty(details, instance, "instance: ");
+            AddIfNotEmpty(details, reasonCode, "reasonCode: ");
+
+            if (security is not null)
+            {
+                try
+                {
+                    string secJson = JsonUtil.Serialize(security);
+                    if (!string.IsNullOrWhiteSpace(secJson) && secJson != "null")
+                        details.Add($"security: {secJson}");
+                }
+                catch
+                {
+                }
+            }
+
+            AddIfNotEmpty(details, traceId, "traceId: ");
+
+            return new ApiErrorResponse
+            {
+                Exception = new ApiExceptionContent
+                {
+                    Timestamp = DateTime.UtcNow,
+                    ServiceName = ServiceNameText,
+                    ReferenceNumber = traceId,
+                    ExceptionDetailList = new List<ApiExceptionDetail>
+                    {
+                        new ApiExceptionDetail(
+                            status,
+                            string.IsNullOrWhiteSpace(reasonCode)
+                                ? (title ?? ProblemDetailsText)
+                                : $"{title ?? ProblemDetailsText} ({reasonCode})",
+                            details)
+                    }
+                }
+            };
+        }
+
         static bool TryDeserializeJson<T>(string json, out T result)
         {
             try
@@ -425,17 +481,11 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
         static async Task HandleTooManyRequestsAsync(HttpResponseMessage responseMessage, CancellationToken innerCancellationToken)
         {
-            string rateLimitMessage = "Przekroczono limit ilości zapytań do API (HTTP 429)";
+            string rateLimitMessage = RateLimitText;
 
             TryExtractRetryAfterHeaderValue(responseMessage, out string retryAfterHeaderValue);
 
-            string responseBody = responseMessage.Content is null
-                ? null
-#if NETSTANDARD2_0
-                : await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-#else
-                : await responseMessage.Content.ReadAsStringAsync(innerCancellationToken).ConfigureAwait(false);
-#endif
+            string responseBody = await ReadContentAsync(responseMessage, innerCancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(responseBody) && IsJsonContent(responseMessage))
             {
@@ -444,7 +494,8 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
                         out TooManyRequestsErrorResponse statusErrorResponse)
                     && statusErrorResponse?.Status?.Details?.Any() == true)
                 {
-                    rateLimitMessage = string.Join(" ", statusErrorResponse.Status.Details);
+                    string rateLimitDetails = string.Join(" ", statusErrorResponse.Status.Details);
+                    rateLimitMessage = rateLimitDetails;
                 }
             }
 
@@ -453,25 +504,19 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
 
         static async Task HandleOtherErrorsAsync(HttpResponseMessage responseMessage, CancellationToken innerCancellationToken)
         {
-            string responseBody = responseMessage.Content is null
-                ? null
-#if NETSTANDARD2_0
-                : await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false);
-#else
-                : await responseMessage.Content.ReadAsStringAsync(innerCancellationToken).ConfigureAwait(false);
-#endif
+            string responseBody = await ReadContentAsync(responseMessage, innerCancellationToken).ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(responseBody))
             {
                 throw new KsefApiException(
-                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? "Unknown"}",
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? UnknownText}",
                     responseMessage.StatusCode);
             }
 
             if (!IsJsonContent(responseMessage))
             {
                 throw new KsefApiException(
-                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? "Unknown"}",
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? UnknownText}",
                     responseMessage.StatusCode);
             }
 
@@ -479,7 +524,8 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
             {
                 ApiErrorResponse apiErrorResponse = JsonUtil.Deserialize<ApiErrorResponse>(responseBody);
                 string fullMessage = BuildErrorMessageFromDetails(apiErrorResponse);
-                throw new KsefApiException(fullMessage, responseMessage.StatusCode, apiErrorResponse);
+                string exceptionMessage = string.IsNullOrWhiteSpace(fullMessage) ? responseBody : fullMessage;
+                throw new KsefApiException(exceptionMessage, responseMessage.StatusCode, apiErrorResponse);
             }
             catch (KsefApiException)
             {
@@ -488,10 +534,137 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
             catch (Exception ex)
             {
                 throw new KsefApiException(
-                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? "Unknown"}, AdditionalInfo: {ex.Message}",
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? UnknownText}, AdditionalInfo: {ex.Message}",
                     responseMessage.StatusCode,
                     innerException: ex);
             }
+        }
+
+        static async Task HandleUnauthorizedAsync(HttpResponseMessage responseMessage, CancellationToken innerCancellationToken)
+        {
+            string responseBody = await ReadContentAsync(responseMessage, innerCancellationToken).ConfigureAwait(false);
+
+            if (string.IsNullOrEmpty(responseBody))
+            {
+                throw new KsefApiException(
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? UnauthorizedText}",
+                    responseMessage.StatusCode);
+            }
+
+            if (!IsJsonContent(responseMessage))
+            {
+                throw new KsefApiException(
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? UnauthorizedText}",
+                    responseMessage.StatusCode);
+            }
+
+            if (TryDeserializeJson<UnauthorizedProblemDetails>(responseBody, out UnauthorizedProblemDetails unauthorizedDetails) && unauthorizedDetails is not null)
+            {
+                string detailsText = string.IsNullOrWhiteSpace(unauthorizedDetails.Detail) ? unauthorizedDetails.Title ?? UnauthorizedText : unauthorizedDetails.Detail;
+                if (!string.IsNullOrWhiteSpace(unauthorizedDetails.TraceId))
+                {
+                    detailsText = detailsText + $" (traceId: {unauthorizedDetails.TraceId})";
+                }
+
+                ApiErrorResponse mapped = MapProblemDetailsToApiErrorResponse(
+                    title: unauthorizedDetails.Title ?? UnauthorizedText,
+                    status: unauthorizedDetails.Status,
+                    detail: unauthorizedDetails.Detail,
+                    traceId: unauthorizedDetails.TraceId,
+                    instance: unauthorizedDetails.Instance);
+
+                throw new KsefApiException(detailsText, responseMessage.StatusCode, mapped);
+            }
+
+            if (TryDeserializeJson<ApiErrorResponse>(responseBody, out ApiErrorResponse apiError) && apiError is not null)
+            {
+                string errorMessage = BuildErrorMessageFromDetails(apiError);
+                throw new KsefApiException(string.IsNullOrEmpty(errorMessage) ? responseBody : errorMessage, responseMessage.StatusCode, apiError);
+            }
+
+            throw new KsefApiException($"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? UnauthorizedText}", responseMessage.StatusCode);
+        }
+
+        static async Task HandleForbiddenAsync(HttpResponseMessage responseMessage, CancellationToken innerCancellationToken)
+        {
+            string responseBody = await ReadContentAsync(responseMessage, innerCancellationToken).ConfigureAwait(false);
+
+            if (string.IsNullOrEmpty(responseBody))
+            {
+                throw new KsefApiException(
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? ForbiddenText}",
+                    responseMessage.StatusCode);
+            }
+
+            if (!IsJsonContent(responseMessage))
+            {
+                throw new KsefApiException(
+                    $"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? ForbiddenText}",
+                    responseMessage.StatusCode);
+            }
+
+            if (TryDeserializeJson<ForbiddenProblemDetails>(responseBody, out ForbiddenProblemDetails forbiddenDetails) && forbiddenDetails is not null)
+            {
+                StringBuilder messageBuilder = new StringBuilder();
+                if (!string.IsNullOrWhiteSpace(forbiddenDetails.ReasonCode))
+                {
+                    messageBuilder.Append(forbiddenDetails.ReasonCode);
+                }
+
+                if (!string.IsNullOrWhiteSpace(forbiddenDetails.Detail))
+                {
+                    if (messageBuilder.Length > 0)
+                    {
+                        messageBuilder.Append(": ");
+                    }
+                    messageBuilder.Append(forbiddenDetails.Detail);
+                }
+
+                if (forbiddenDetails.Security is not null && forbiddenDetails.Security.Count > 0)
+                {
+                    try
+                    {
+                        string securityJson = JsonUtil.Serialize(forbiddenDetails.Security);
+                        if (!string.IsNullOrWhiteSpace(securityJson))
+                        {
+                            messageBuilder.Append($" (security: {securityJson})");
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(forbiddenDetails.TraceId))
+                {
+                    if (messageBuilder.Length > 0)
+                    {
+                        messageBuilder.Append(" ");
+                    }
+                    messageBuilder.Append($"(traceId: {forbiddenDetails.TraceId})");
+                }
+
+                string finalMessage = messageBuilder.Length > 0 ? messageBuilder.ToString() : (forbiddenDetails.Title ?? ForbiddenText);
+
+                ApiErrorResponse mapped = MapProblemDetailsToApiErrorResponse(
+                    title: forbiddenDetails.Title ?? ForbiddenText,
+                    status: forbiddenDetails.Status,
+                    detail: forbiddenDetails.Detail,
+                    traceId: forbiddenDetails.TraceId,
+                    instance: forbiddenDetails.Instance,
+                    reasonCode: forbiddenDetails.ReasonCode,
+                    security: forbiddenDetails.Security);
+
+                throw new KsefApiException(finalMessage, responseMessage.StatusCode, mapped);
+            }
+
+            if (TryDeserializeJson<ApiErrorResponse>(responseBody, out ApiErrorResponse apiError) && apiError is not null)
+            {
+                string errorMessage = BuildErrorMessageFromDetails(apiError);
+                throw new KsefApiException(string.IsNullOrEmpty(errorMessage) ? responseBody : errorMessage, responseMessage.StatusCode, apiError);
+            }
+
+            throw new KsefApiException($"HTTP {(int)responseMessage.StatusCode}: {responseMessage.ReasonPhrase ?? ForbiddenText}", responseMessage.StatusCode);
         }
     }
 
@@ -511,5 +684,19 @@ public sealed class RestClient(HttpClient httpClient) : IRestClient
         CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cancellationTokenSource.CancelAfter(perRequestTimeout.Value);
         return cancellationTokenSource;
+    }
+
+    private static async Task<string> ReadContentAsync(HttpResponseMessage resp, CancellationToken ct)
+    {
+        if (resp?.Content is null)
+        {
+            return null;
+        }
+
+#if NETSTANDARD2_0
+        return await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+#else
+        return await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+#endif
     }
 }

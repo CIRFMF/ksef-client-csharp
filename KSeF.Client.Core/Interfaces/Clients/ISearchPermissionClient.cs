@@ -103,5 +103,21 @@ namespace KSeF.Client.Core.Interfaces.Clients
         /// <exception cref="KsefApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
         /// <exception cref="KsefApiException">Brak autoryzacji. (401 Unauthorized)</exception>
         Task<PagedPermissionsResponse<EuEntityPermission>> SearchGrantedEuEntityPermissionsAsync(EuEntityPermissionsQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Pobranie listy uprawnień do obsługi faktur w bieżącym kontekście.
+        /// </summary>
+        /// <param name="requestPayload">Zapytanie z ContextIdentifier</param>
+        /// <param name="accessToken">Access token</param>
+        /// <param name="pageOffset">Index strony wyników (domyślnie 0)</param>
+        /// <param name="pageSize">Ilość elementów na stronie (domyślnie 10)</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns><see cref="EntityPermissionGrantResponse"/></returns>
+        Task<EntityPermissionGrantResponse> QueryEntitiesGrantsAsync(
+            EntityPermissionGrantQueryRequest requestPayload,
+            string accessToken,
+            int? pageOffset = null,
+            int? pageSize = null,
+            CancellationToken cancellationToken = default);
     }
 }

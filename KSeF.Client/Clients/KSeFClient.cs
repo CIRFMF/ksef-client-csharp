@@ -1,36 +1,36 @@
+using KSeF.Client.Core.Infrastructure.Rest;
+using KSeF.Client.Core.Interfaces.Clients;
+using KSeF.Client.Core.Interfaces.Rest;
+using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Certificates;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Peppol;
 using KSeF.Client.Core.Models.Permissions;
+using KSeF.Client.Core.Models.Permissions.Authorizations;
 using KSeF.Client.Core.Models.Permissions.Entity;
 using KSeF.Client.Core.Models.Permissions.EUEntity;
 using KSeF.Client.Core.Models.Permissions.EuEntityRepresentative;
 using KSeF.Client.Core.Models.Permissions.IndirectEntity;
 using KSeF.Client.Core.Models.Permissions.Person;
+using KSeF.Client.Core.Models.Permissions.SubUnit;
 using KSeF.Client.Core.Models.Sessions;
 using KSeF.Client.Core.Models.Sessions.ActiveSessions;
 using KSeF.Client.Core.Models.Sessions.BatchSession;
 using KSeF.Client.Core.Models.Sessions.OnlineSession;
-using KSeF.Client.Core.Models;
-using System.Text;
-using System.Text.RegularExpressions;
-using KSeF.Client.Http;
-using KSeF.Client.Core.Interfaces.Clients;
-using KSeF.Client.Core.Models.Permissions.Authorizations;
-using KSeF.Client.Core.Interfaces.Rest;
-using KSeF.Client.Core.Models.Permissions.SubUnit;
-using KSeF.Client.Http.Helpers;
 using KSeF.Client.Extensions;
 using KSeF.Client.Helpers;
+using KSeF.Client.Http;
+using KSeF.Client.Http.Helpers;
 using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace KSeF.Client.Clients;
 
 /// <inheritdoc />
 public class KSeFClient(IRestClient restClient) : IKSeFClient
-{
-    private readonly IRestClient restClient = restClient;
+{    
 
     /// <inheritdoc />
     public async Task<AuthenticationListResponse> GetActiveSessions(string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default)
@@ -1094,5 +1094,23 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
             (info) => new StreamContent(info.DataStream),
             cancellationToken
         ).ConfigureAwait(false);
+    }
+
+    public async Task<EntityPermissionGrantResponse> QueryEntitiesGrantsAsync(EntityPermissionGrantQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        StringBuilder urlBuilder = new("/v2/" + Routes.Permissions.Query.Entities);
+
+        PaginationHelper.AppendPagination(pageOffset, pageSize, urlBuilder);
+
+        return await restClient.SendAsync<EntityPermissionGrantResponse, EntityPermissionGrantQueryRequest>(HttpMethod.Post,
+                                                                    urlBuilder.ToString(),
+                                                                    requestPayload,
+                                                                    accessToken,
+                                                                    RestClient.DefaultContentType,
+                                                                    cancellationToken)
+                                                                    .ConfigureAwait(false);
     }
 }

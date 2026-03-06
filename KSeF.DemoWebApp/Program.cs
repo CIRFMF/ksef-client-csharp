@@ -28,6 +28,8 @@ builder.Services.AddKSeFClient
     options.SupportedCultures = builder.Configuration.GetSection("ApiSettings").GetSection("SupportedCultures").Get<string[]>() ?? null;
 
     options.SupportedUICultures = builder.Configuration.GetSection("ApiSettings").GetSection("SupportedUICultures").Get<string[]>() ?? null;
+
+    options.UseCamelCaseForRequests = builder.Configuration.GetSection("ApiSettings").GetValue<bool>("UseCamelCaseForRequests");
 });
 
 builder.Services.AddLighthouseClient(options =>

@@ -136,10 +136,11 @@ public static class AuthenticationUtils
     public static async Task<AuthenticationOperationStatusResponse> AuthenticateAsync(
         IAuthorizationClient authorizationClient,
         AuthenticationTokenContextIdentifierType contextIdentifierType = AuthenticationTokenContextIdentifierType.Nip,
-        EncryptionMethodEnum encryptionMethod = EncryptionMethodEnum.Rsa
+        EncryptionMethodEnum encryptionMethod = EncryptionMethodEnum.Rsa,
+        string identifier = null
         )
     {
-        string nip = MiscellaneousUtils.GetRandomNip();
+        string nip = identifier ?? MiscellaneousUtils.GetRandomNip();
 
         AuthenticationChallengeResponse challengeResponse = await authorizationClient
             .GetAuthChallengeAsync().ConfigureAwait(false);

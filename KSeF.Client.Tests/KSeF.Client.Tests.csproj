@@ -58,6 +58,9 @@
     <None Update="Templates\invoice-template-fa-2.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Templates\invoice-template-fa-3-with-attachment.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Templates\invoice-template-fa-3-with-custom-Subject3.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

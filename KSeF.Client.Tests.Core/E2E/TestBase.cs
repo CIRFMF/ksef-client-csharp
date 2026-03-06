@@ -1,6 +1,7 @@
 using KSeF.Client.Api.Services;
 using KSeF.Client.Api.Services.Internal;
 using KSeF.Client.Clients;
+using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Rest;
 using KSeF.Client.Core.Interfaces.Services;
@@ -8,6 +9,7 @@ using KSeF.Client.DI;
 using KSeF.Client.Extensions;
 using KSeF.Client.Tests.Core.Config;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 
 namespace KSeF.Client.Tests.Core.E2E;
@@ -54,11 +56,14 @@ public abstract class TestBase : IDisposable
         }
 
         string lighthouseBaseUrlFromConfig = TestConfig.Load()[LighthouseBaseUrlSettingKey] ?? string.Empty;
+        bool useCamelCaseForRequestsApiSettings = TestConfig.Load().GetValue<bool>("ApiSettings:UseCamelCaseForRequests");
 
         services.AddKSeFClient(options =>
         {
             options.BaseUrl = apiSettings.BaseUrl!;
             options.CustomHeaders = apiSettings.CustomHeaders ?? [];
+
+            options.UseCamelCaseForRequests = useCamelCaseForRequestsApiSettings;
         });
 
         services.AddLighthouseClient(options =>
@@ -84,9 +89,9 @@ public abstract class TestBase : IDisposable
         _scope = _serviceProvider.CreateScope();
 
         // opcjonalne: inicjalizacja lub inne czynności startowe
-        // Uruchomienie usługi hostowanej w trybie blokującym (domyślnym) na potrzeby testów
+        // Uruchomienie usługi hostowanej w trybie blokującym (domyślnym) na potrzeby testów       
         _scope.ServiceProvider.GetRequiredService<CryptographyWarmupHostedService>()
-                   .StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+                .StartAsync(CancellationToken.None).GetAwaiter().GetResult();               
     }
 
     public Task DisposeAsync() => Task.Run(() => Dispose());

@@ -374,6 +374,11 @@
                 /// Wyszukiwanie uprawnień nadanych podmiotom unijnym (EU entities) w bieżącym kontekście.
                 /// </summary>
                 public const string EuEntitiesGrants = Prefix + "/query/eu-entities/grants";
+
+                /// <summary>
+                /// Wyszukiwanie uprawnień do obsługi faktur w bieżącym kontekście.
+                /// </summary>
+                public const string Entities = Prefix + "/query/entities/grants";
             }
 
             /// <summary>

@@ -56,3 +56,10 @@ Oraz faktura zostanie pomyślnie wysłana i przetworzona w KSeF
 Jeżeli podmiot 3 uwierzytelni się w KSeF jako organizacja
 Oraz wykona zapytanie o metadane faktur jako Podmiot 3 w zadanym zakresie dat
 Wtedy odnajdzie fakturę, w której widnieje jako ThirdSubject
+
+@validation @negative @regresja @attachment
+Scenariusz: Posiadając uprawnienie właścicielskie wysyłamy fakturę z załącznikiem w sesji online
+Zakładając, że jestem uwierzytelniony w sesji interaktywnej online
+Oraz przygotuję plik FA3 zgodny ze schemą faktury zawierający załącznik
+Jeżeli wyślę fakturę z załącznikiem
+Wtedy zostanie ona odrzucona z kodem 415 i komunikatem zawierającym "Brak możliwości wysyłania faktury z załącznikiem"

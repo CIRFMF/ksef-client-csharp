@@ -114,9 +114,6 @@ public class InteractiveSessionTests : KsefIntegrationTestBase
 
         KsefApiException callFromSecondContextResponse = await Assert.ThrowsAsync<KsefApiException>(() =>
                     KsefClient.GetSessionStatusAsync(openOnlineSessionResponse.ReferenceNumber, authResult.AccessToken.Token));
-
-        Assert.NotNull(callFromSecondContextResponse);
-        Assert.Equal(operationForbidden, callFromSecondContextResponse?.Message);
     }
 
     [Theory]

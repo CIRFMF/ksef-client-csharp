@@ -148,4 +148,21 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
             accessToken,
             cancellationToken);
     }
+
+    public Task<EntityPermissionGrantResponse> QueryEntitiesGrantsAsync(
+        EntityPermissionGrantQueryRequest requestPayload,
+        string accessToken,
+        int? pageOffset = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+        string endpoint = WithPagination(Routes.Permissions.Query.Entities, pageOffset, pageSize);
+        return ExecuteAsync<EntityPermissionGrantResponse, EntityPermissionGrantQueryRequest>(
+            endpoint,
+            requestPayload,
+            accessToken,
+            cancellationToken);
+    }
 }

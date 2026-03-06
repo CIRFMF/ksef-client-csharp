@@ -1,5 +1,3 @@
-using System;
-
 namespace KSeF.Client.Tests.Utils;
 
 /// <summary>

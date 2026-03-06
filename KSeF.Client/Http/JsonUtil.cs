@@ -5,20 +5,43 @@ namespace KSeF.Client.Http;
 
 public static class JsonUtil
 {
-    private static readonly JsonSerializerOptions _settings = new()
+    private static JsonSerializerOptions _settings;
+
+    static JsonUtil()
     {
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
+        _settings = CreateDefaultOptions(useCamelCase: false);
+    }
+
+    private static JsonSerializerOptions CreateDefaultOptions(bool useCamelCase)
+    {
+        JsonSerializerOptions options = new JsonSerializerOptions()
+        {
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
 
 #if NET10_0_OR_GREATER
-        AllowOutOfOrderMetadataProperties = true,
+            AllowOutOfOrderMetadataProperties = true,
 #endif
 
-        WriteIndented = false,
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-        Converters = { new JsonStringEnumConverter() }
-    };
+            WriteIndented = false,
+            PropertyNameCaseInsensitive = true,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            PropertyNamingPolicy = useCamelCase ? JsonNamingPolicy.CamelCase : null
+        };
+
+        options.Converters.Add(new JsonStringEnumConverter());
+        return options;
+    }
+
+    /// <summary>
+    /// Ustawia politykę nazewnictwa właściwości dla serializatora JSON używanego przez bibliotekę.
+    /// Jeśli ustawione na true, będzie używany camelCase dla kluczy JSON.
+    /// Jeśli ustawione na false, domyślne nazwy (PascalCase) będą używane.
+    /// </summary>
+    public static void ResetConfigurationForCasePropertyName(bool useCamelCase)
+    {
+        _settings = CreateDefaultOptions(useCamelCase);
+    }
 
     public static string Serialize<T>(T obj)
     {

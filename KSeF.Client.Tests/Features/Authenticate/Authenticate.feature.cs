@@ -120,7 +120,11 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None);
+          .SubmitXadesAuthRequestAsync(
+            signedXml,
+            verifyCertificateChain: false,
+            enforceXadesCompliance: false,
+            cancellationToken: CancellationToken.None);
 
         AuthStatus status = await EnsureAuthenticationCompletedAsync(
             AuthorizationClient,
@@ -187,7 +191,11 @@ public class AuthenticateTests : KsefIntegrationTestBase
         string signedXml = SignatureService.Sign(unsignedXml, certificate);
 
         SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None);
+          .SubmitXadesAuthRequestAsync(
+            signedXml,
+            verifyCertificateChain: false,
+            enforceXadesCompliance: false,
+            cancellationToken: CancellationToken.None);
 
         AuthStatus status = await EnsureAuthenticationCompletedAsync(
             AuthorizationClient,
@@ -239,7 +247,11 @@ public class AuthenticateTests : KsefIntegrationTestBase
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
             SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
+          .SubmitXadesAuthRequestAsync(
+            signedXml,
+            verifyCertificateChain: false,
+            enforceXadesCompliance: false,
+            cancellationToken: CancellationToken.None).ConfigureAwait(false);
         });
     }
 
@@ -264,7 +276,11 @@ public class AuthenticateTests : KsefIntegrationTestBase
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
             SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
+          .SubmitXadesAuthRequestAsync(
+            signedXml,
+            verifyCertificateChain: false,
+            enforceXadesCompliance: false,
+            cancellationToken: CancellationToken.None).ConfigureAwait(false);
         });
     }
 
@@ -301,7 +317,11 @@ public class AuthenticateTests : KsefIntegrationTestBase
         KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () =>
         {
             SignatureResponse authOperationInfo = await AuthorizationClient
-          .SubmitXadesAuthRequestAsync(signedXml, false, false, CancellationToken.None).ConfigureAwait(false);
+          .SubmitXadesAuthRequestAsync(
+            signedXml,
+            verifyCertificateChain: false,
+            enforceXadesCompliance: false,
+            cancellationToken: CancellationToken.None).ConfigureAwait(false);
         });
     }
 

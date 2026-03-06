@@ -45,10 +45,10 @@
         /// </summary>
         public const int SessionCancelledNoInvoices = 440;
 
-        /// <summary>
-        /// Kod 445 — Błąd weryfikacji, brak poprawnych faktur.
-        /// </summary>
-        public const int NoValidInvoices = 445;
+		/// <summary>
+		/// Kod 445 — Błąd weryfikacji, brak poprawnych faktur.
+		/// </summary>
+		public const int NoValidInvoices = 445;
 
         /// <summary>
         /// Kod 500 — Nieznany błąd.
