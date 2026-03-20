@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Faktura xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xmlns="http://crd.gov.pl/wzor/2026/02/17/14164/">
+xmlns="http://crd.gov.pl/wzor/2026/03/06/14189/">
 	<Naglowek>
-		<KodFormularza kodSystemowy="FA_RR(1)" wersjaSchemy="1-0E">FA_RR</KodFormularza>
+		<KodFormularza kodSystemowy="FA_RR (1)" wersjaSchemy="1-1E">FA_RR</KodFormularza>
 		<WariantFormularza>1</WariantFormularza>
 		<DataWytworzeniaFa>2026-02-23T10:37:00Z</DataWytworzeniaFa>
 		<SystemInfo>SamploFaktur</SystemInfo>

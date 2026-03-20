@@ -1,4 +1,5 @@
 #nullable enable
+using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Tests.Utils;
@@ -92,6 +93,98 @@ public class KsefTokenE2ETests : TestBase
 
         Assert.NotNull(revokedToken);
         Assert.Equal(AuthenticationKsefTokenStatus.Revoked, revokedToken.Status);
+    }
+
+    [Fact]
+    public async Task When_KsefTokensAreActive_ThenTryToRevokeOneWithAnother_ShouldThrowKsefApiException()
+    {
+        // 1) Przygotuj dwa tokeny
+        KsefTokenRequest createTokenRequest = new KsefTokenRequest
+        {
+            Permissions = [
+                KsefTokenPermissionType.InvoiceRead,
+                KsefTokenPermissionType.InvoiceWrite
+            ],
+            Description = "E2E token"
+        };
+
+        KsefTokenResponse tokenResponse = await KsefClient.GenerateKsefTokenAsync(
+            createTokenRequest,
+            AccessToken,
+            CancellationToken
+        );
+        Assert.NotNull(tokenResponse);
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.ReferenceNumber));
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.Token));
+
+        KsefTokenResponse secondTokenResponse = await KsefClient.GenerateKsefTokenAsync(
+            createTokenRequest,
+            AccessToken,
+            CancellationToken
+        );
+
+        Assert.NotNull(secondTokenResponse);
+        Assert.False(string.IsNullOrWhiteSpace(secondTokenResponse.ReferenceNumber));
+        Assert.False(string.IsNullOrWhiteSpace(secondTokenResponse.Token));
+
+        // 2) Poczekaj, aż token stanie się aktywny (polling)
+        int activationAttempts = Math.Max(1, (TokenActivationTimeoutSeconds * 1000) / SleepTime);
+        AuthenticationKsefToken activeToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(secondTokenResponse.ReferenceNumber, AccessToken, CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Active,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(activeToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Active, activeToken.Status);
+
+        // 3) Uwierzytelnij w KSeF przy użyciu drugiego tokena KSeF (polling statusu 200 w AuthenticateWithKsefTokenAsync)
+        AuthenticationOperationStatusResponse authResult = await AuthenticateWithKsefTokenAsync(secondTokenResponse.Token, Nip);
+        Assert.NotNull(authResult);
+        Assert.False(string.IsNullOrWhiteSpace(authResult.AccessToken?.Token));
+        Assert.False(string.IsNullOrWhiteSpace(authResult.RefreshToken?.Token));
+
+        // 4) Unieważnij token pierwszy tokenem drugim
+        KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(async () => { await KsefClient.RevokeKsefTokenAsync(
+            tokenResponse.ReferenceNumber,
+            authResult.AccessToken?.Token,
+            CancellationToken).ConfigureAwait(false); }).ConfigureAwait(false);
+
+        // 5) Unieważnij tokeny
+        await KsefClient.RevokeKsefTokenAsync(
+            tokenResponse.ReferenceNumber,
+            AccessToken,
+            CancellationToken);
+
+        await KsefClient.RevokeKsefTokenAsync(
+            secondTokenResponse.ReferenceNumber,
+            AccessToken,
+            CancellationToken);
+
+        // 6) Zweryfikuj, że tokeny zostały unieważnione (polling)
+        AuthenticationKsefToken revokedToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(
+                tokenResponse.ReferenceNumber,
+                authResult.AccessToken?.Token,
+                CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Revoked,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(revokedToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Revoked, revokedToken.Status);
+
+        AuthenticationKsefToken revokedSecondToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(
+                secondTokenResponse.ReferenceNumber,
+                authResult.AccessToken?.Token,
+                CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Revoked,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(revokedSecondToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Revoked, revokedSecondToken.Status);
     }
 
     /// <summary>

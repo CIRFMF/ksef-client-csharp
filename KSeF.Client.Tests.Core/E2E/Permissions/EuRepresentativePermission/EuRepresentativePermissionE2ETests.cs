@@ -2,12 +2,14 @@
 using KSeF.Client.Api.Builders.EuEntityPermissions;
 using KSeF.Client.Api.Builders.EUEntityRepresentativePermissions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.EUEntity;
 using KSeF.Client.Core.Models.Permissions.EuEntityRepresentative;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Tests.Utils;
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Globalization;
 
@@ -169,10 +171,28 @@ public class EuRepresentativePermissionE2ETests : TestBase
         );
 
         // 8) Odwołaj uprawnienia reprezentanta (wszystkie zwrócone)
+        List<PermissionsOperationStatusResponse> unsuccessfulRemovedPermissions = [];
+        List<OperationResponse> referenceList = [];
         foreach (Client.Core.Models.Permissions.EuEntityPermission? permission in grantedRepresentativePermission.Permissions)
         {
-            await KsefClient.RevokeCommonPermissionAsync(permission.Id, euAuthInfo.AccessToken.Token);
+            OperationResponse revokeCommonPermissionAsyncReference = await KsefClient.RevokeCommonPermissionAsync(permission.Id, euAuthInfo.AccessToken.Token);
+            referenceList.Add(revokeCommonPermissionAsyncReference);            
         }
+
+        Thread.Sleep(SleepTime);
+
+        foreach (OperationResponse revokeCommonPermissionAsyncReference in referenceList)
+        {
+            PermissionsOperationStatusResponse revokeCommonPermissionAsyncStatus = await KsefClient.OperationsStatusAsync(revokeCommonPermissionAsyncReference.ReferenceNumber, euAuthInfo.AccessToken.Token);
+
+            if (revokeCommonPermissionAsyncStatus.Status.Code != OperationStatusCodeResponse.Success)
+            {
+                unsuccessfulRemovedPermissions.Add(revokeCommonPermissionAsyncStatus);
+            }
+        }
+
+
+        Assert.Empty(unsuccessfulRemovedPermissions);
 
         // 9) Odpytywanie aż uprawnienia znikną
         PagedPermissionsResponse<Client.Core.Models.Permissions.EuEntityPermission> afterRevoke = await AsyncPollingUtils.PollAsync(

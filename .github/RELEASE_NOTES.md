@@ -1,3 +1,16 @@
+## Rejestr zmian: Wersja 2.3.0
+### Nowe
+- Dodano właściwość `OnlyMetadata` w `InvoiceExportRequest`, umożliwiającą eksport paczki zawierającej wyłącznie plik `_metadata.json` bez plików faktur.
+
+### Zmodyfikowane
+- Zaktualizowano mapowanie `SystemCodeHelper` dla `FA_RR (1)` zgodnie ze zmianami API 2.3.0:
+  - wartość pola `Value` zwracana jest teraz jako `FA_RR` zamiast `RR`,
+  - wersję schemy zmieniono z `1-0E` na `1-1E`.
+- Zaktualizowano szablon `invoice-template-fa-rr-1.xml` do nowej przestrzeni nazw oraz nagłówka `KodFormularza` zgodnego z wersją `FA_RR (1) 1-1E`.
+
+### Testy
+- Dodano test E2E `When_KsefTokensAreActive_ThenTryToRevokeOneWithAnother_ShouldThrowKsefApiException`, weryfikujący, że aktywny token KSeF nie może unieważnić innego aktywnego tokena.
+
 ## Rejestr zmian: Wersja 2.2.0
 ### Nowe
 - Dodano możliwość przełączenia PascalCase/camelCase w nazwach właściwości zwracanych z API.

@@ -45,7 +45,7 @@ namespace KSeF.Client.Core.Models.Invoices
                 case SystemCode.PEFKOR:
                     return "PEF";
                 case SystemCode.FA_RR:
-                    return "RR";
+                    return "FA_RR";
                 default:
                     return code.ToString();
             }
@@ -60,7 +60,7 @@ namespace KSeF.Client.Core.Models.Invoices
                 case SystemCode.FA3:
                     return "1-0E";
                 case SystemCode.FA_RR:
-                    return "1-0E";
+                    return "1-1E";
                 case SystemCode.PEF:
                     return "2-1";
                 case SystemCode.PEFKOR:

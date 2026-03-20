@@ -92,7 +92,10 @@
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Templates\invoice-template-fa-rr-1.xml">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="Templates\invoice-template-fa-rr-1.xml">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Templates\invoice-template.xml">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
