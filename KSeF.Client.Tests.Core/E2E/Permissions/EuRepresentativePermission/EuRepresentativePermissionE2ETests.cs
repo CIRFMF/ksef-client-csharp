@@ -160,8 +160,15 @@ public class EuRepresentativePermissionE2ETests : TestBase
                 CancellationToken);
 
         // 7) Odpytywanie aż uprawnienia reprezentanta będą widoczne
+        // Filtrujemy wyłącznie po fingerprincie reprezentanta – nie cofamy uprawnień administracyjnych
+        // nadanych przez właściciela (krok 2), tylko te nadane przez EU entity (krok 6).
+        EuEntityPermissionsQueryRequest representativePermissionsQueryRequest = new()
+        {
+            AuthorizedFingerprintIdentifier = euRepresentativeEntityCertificateFingerprint
+        };
+
         PagedPermissionsResponse<Client.Core.Models.Permissions.EuEntityPermission> grantedRepresentativePermission = await AsyncPollingUtils.PollAsync(
-            action: async () => await KsefClient.SearchGrantedEuEntityPermissionsAsync(permissionsQueryRequest, euAuthInfo.AccessToken.Token).ConfigureAwait(false),
+            action: async () => await KsefClient.SearchGrantedEuEntityPermissionsAsync(representativePermissionsQueryRequest, euAuthInfo.AccessToken.Token).ConfigureAwait(false),
             condition: result => result is not null 
                        && result.Permissions is { Count: > 0} 
                        && result.Permissions.Any(p => p.AuthorizedFingerprintIdentifier == euRepresentativeEntityCertificateFingerprint),
@@ -179,24 +186,27 @@ public class EuRepresentativePermissionE2ETests : TestBase
             referenceList.Add(revokeCommonPermissionAsyncReference);            
         }
 
-        Thread.Sleep(SleepTime);
-
         foreach (OperationResponse revokeCommonPermissionAsyncReference in referenceList)
         {
-            PermissionsOperationStatusResponse revokeCommonPermissionAsyncStatus = await KsefClient.OperationsStatusAsync(revokeCommonPermissionAsyncReference.ReferenceNumber, euAuthInfo.AccessToken.Token);
+            PermissionsOperationStatusResponse revokeStatus = await AsyncPollingUtils.PollAsync(
+                action: () => KsefClient.OperationsStatusAsync(revokeCommonPermissionAsyncReference.ReferenceNumber, euAuthInfo.AccessToken.Token),
+                condition: s => s?.Status?.Code != null && s.Status.Code != OperationStatusCodeResponse.AcceptedForProcessing,
+                delay: TimeSpan.FromSeconds(1),
+                maxAttempts: 60,
+                cancellationToken: CancellationToken);
 
-            if (revokeCommonPermissionAsyncStatus.Status.Code != OperationStatusCodeResponse.Success)
+            if (revokeStatus.Status.Code != OperationStatusCodeResponse.Success)
             {
-                unsuccessfulRemovedPermissions.Add(revokeCommonPermissionAsyncStatus);
+                unsuccessfulRemovedPermissions.Add(revokeStatus);
             }
         }
 
 
         Assert.Empty(unsuccessfulRemovedPermissions);
 
-        // 9) Odpytywanie aż uprawnienia znikną
+        // 9) Odpytywanie aż uprawnienia reprezentanta znikną
         PagedPermissionsResponse<Client.Core.Models.Permissions.EuEntityPermission> afterRevoke = await AsyncPollingUtils.PollAsync(
-            action: async () => await KsefClient.SearchGrantedEuEntityPermissionsAsync(permissionsQueryRequest, euAuthInfo.AccessToken.Token).ConfigureAwait(false),
+            action: async () => await KsefClient.SearchGrantedEuEntityPermissionsAsync(representativePermissionsQueryRequest, euAuthInfo.AccessToken.Token).ConfigureAwait(false),
             condition: result => result is not null && (result.Permissions is null || result.Permissions.Count == 0),
             delay: TimeSpan.FromSeconds(1),
             maxAttempts: 60,

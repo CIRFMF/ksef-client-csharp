@@ -44,9 +44,9 @@ public class Fa3XsdValidationE2ETests
         // 5. Niepoprawny format daty
         {
             "Invalid Date Format (P_1)",
-            "<P_1>2025-12-08</P_1>",
-            "<P_1>2025/12/08</P_1>",
-            "2025/12/08"
+            "<P_1>2025-09-01</P_1>",
+            "<P_1>2025/09/01</P_1>",
+            "2025/09/01"
         },
 
         // 6. Znak niepoprawny w standardzie XML

@@ -1,3 +1,17 @@
+## Rejestr zmian: Wersja 2.4.0
+### Nowe
+- Dodano obsługę formatu Problem Details (`application/problem+json`) dla odpowiedzi HTTP 400 Bad Request, HTTP 410 Gone oraz HTTP 429 Too Many Requests, zgodnie z propozycją API KSeF ([#764](https://github.com/CIRFMF/ksef-docs/issues/764)).
+  - Dodano model `BadRequestProblemDetails` reprezentujący odpowiedź Problem Details dla błędów 400, zawierający pole `errors` z listą obiektów `BadRequestApiError` (pola: `code`, `description`, `details`).
+  - Dodano model `TooManyRequestsProblemDetails` reprezentujący odpowiedź Problem Details dla błędów 429.
+  - Dodano model `GoneProblemDetails` reprezentujący odpowiedź Problem Details dla błędów 410, zawierający pola: `title`, `status`, `instance`, `detail`, `timestamp`, `traceId`.
+  - Dodano model `BadRequestApiError` – pojedynczy błąd w liście `errors` odpowiedzi 400 Problem Details.
+- Klient HTTP automatycznie wysyła nagłówek `X-Error-Format: problem-details` z każdym żądaniem, aktywując nowy format odpowiedzi błędów po stronie API.
+
+### Zmodyfikowane
+- `RestClient`: dodano dedykowaną obsługę HTTP 400 – klient próbuje najpierw zdekodować odpowiedź jako `BadRequestProblemDetails` (nowy format), a następnie cofa się do dotychczasowego formatu `ApiErrorResponse`. Lista błędów z pola `errors` jest mapowana na `KsefApiException.ApiErrorResponse` ze szczegółami w `ExceptionDetailList`.
+- `RestClient`: dodano dedykowaną obsługę HTTP 410 Gone – klient próbuje najpierw zdekodować odpowiedź jako `GoneProblemDetails` (nowy format), a następnie cofa się do dotychczasowego formatu `ApiErrorResponse`.
+- `RestClient`: zaktualizowano obsługę HTTP 429 – klient próbuje najpierw zdekodować odpowiedź jako `TooManyRequestsProblemDetails` (nowy format, pole `detail`), a następnie cofa się do dotychczasowego formatu `TooManyRequestsErrorResponse` (pole `status.details`).
+
 ## Rejestr zmian: Wersja 2.3.0
 ### Nowe
 - Dodano właściwość `OnlyMetadata` w `InvoiceExportRequest`, umożliwiającą eksport paczki zawierającej wyłącznie plik `_metadata.json` bez plików faktur.

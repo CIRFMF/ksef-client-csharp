@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="../Wizualizacja/style_v1.29.xsl"?>
 <cn:CreditNote
 	xmlns:cn="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2"
 	xmlns:cac-pl="urn:pl:extended:CommonAggregateComponents-2"
@@ -724,9 +723,9 @@
 	<cac:BillingReference>
 		<!--  referencje do faktury / invoice reference -->
 		<cac:InvoiceDocumentReference>
-			<cbc:ID>123456</cbc:ID>
+			<cbc:ID>#ksef_number#</cbc:ID>
 			<!--  numer faktury korygowanej / Correcting Invoice number -->
-			<cbc:IssueDate>2018-06-04</cbc:IssueDate>
+			<cbc:IssueDate>#issue_date#</cbc:IssueDate>
 			<!--  data faktury korygowanej / Correcting Invoice date -->
 		</cac:InvoiceDocumentReference>
 	</cac:BillingReference>

@@ -133,7 +133,7 @@ public partial class PeppolPefE2ETests : TestBase
         // (providerToken, NIPy, IBAN, template)
 
         // Act
-        string upo = await SendPefInvoiceFlowAsync(providerToken);
+        (string upo, _) = await SendPefInvoiceFlowAsync(providerToken);
 
         // Assert
         Assert.False(string.IsNullOrWhiteSpace(upo));
@@ -221,7 +221,7 @@ public partial class PeppolPefE2ETests : TestBase
         // (providerToken, NIPy, IBAN, template)
 
         // Act
-        string upo = await SendPefInvoiceFlowAsync(providerToken);
+        (string upo, string ksefNumber) = await SendPefInvoiceFlowAsync(providerToken);
 
         // Assert
         Assert.False(string.IsNullOrWhiteSpace(upo));
@@ -232,8 +232,8 @@ public partial class PeppolPefE2ETests : TestBase
         // === 4) Wysyłka KOREKTY do faktury bazowej ===
         // Przygotowanie template'u korekty: wstrzyknięcie numeru KSeF oryginału + przyczyna + pozycje
         string correctionUpo = await SendPefCorrectionInvoiceFlowAsync(
-            providerToken
-        //,                originalKsefNumber: baseInvoice.KsefNumber
+            providerToken,
+            originalKsefNumber: ksefNumber
         );
 
         Assert.False(string.IsNullOrWhiteSpace(correctionUpo));
@@ -416,7 +416,7 @@ public partial class PeppolPefE2ETests : TestBase
     // -----------------------------
     // KROK 3: Wysyłka PEF (sesja online)
     // -----------------------------
-    private async Task<string> SendPefInvoiceFlowAsync(string providerToken)
+    private async Task<(string upo, string ksefNumber)> SendPefInvoiceFlowAsync(string providerToken)
     {
         EncryptionData encryptionData = CryptographyService.GetEncryptionData();
 
@@ -480,18 +480,23 @@ public partial class PeppolPefE2ETests : TestBase
         SessionInvoice sessionInvoice = invoices.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
 
         // jeżeli faktura jeszcze jest w statusie „processing”, spróbuj odświeżyć kilka razy zamiast jednego sleepa
-        if (sessionInvoice.Status.Code == InvoiceInSessionStatusCodeResponse.Processing)
+        if (string.IsNullOrWhiteSpace(sessionInvoice.KsefNumber))
         {
             await AsyncPollingUtils.PollAsync(
-               description: "faktura gotowa (status inny niż processing)",
+               description: "Oczekiwanie na numer KSeF faktury",
                check: async () =>
                {
                    SessionInvoicesResponse inv = await KsefClient.GetSessionInvoicesAsync(openSession.ReferenceNumber, providerToken, pageSize: 10).ConfigureAwait(false);
                    SessionInvoice refreshed = inv.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
-                   return refreshed.Status.Code != InvoiceInSessionStatusCodeResponse.Processing;
+                   if (!string.IsNullOrWhiteSpace(refreshed.KsefNumber))
+                   {
+                       sessionInvoice = refreshed;
+                       return true;
+                   }
+                   return false;
                },
                delay: TimeSpan.FromMilliseconds(SleepTime),
-               maxAttempts: 5).ConfigureAwait(false);
+               maxAttempts: 10).ConfigureAwait(false);
         }
 
         // UPO:
@@ -501,13 +506,14 @@ public partial class PeppolPefE2ETests : TestBase
             providerToken).ConfigureAwait(false);
 
         Assert.NotNull(upo);
-        return upo;
+        Assert.False(string.IsNullOrWhiteSpace(sessionInvoice.KsefNumber));
+        return (upo, sessionInvoice.KsefNumber);
     }
 
     // -----------------------------
     // KROK 4: Wysyłka Korekty PEF (sesja online)
     // -----------------------------
-    private async Task<string> SendPefCorrectionInvoiceFlowAsync(string providerToken)
+    private async Task<string> SendPefCorrectionInvoiceFlowAsync(string providerToken, string originalKsefNumber)
     {
         EncryptionData encryptionData = CryptographyService.GetEncryptionData();
 
@@ -531,7 +537,8 @@ public partial class PeppolPefE2ETests : TestBase
             iban: iban,
             templatePath: _pefCorrectionTemplate,
             encryptionData: encryptionData,
-            cryptographyService: CryptographyService).ConfigureAwait(false);
+            cryptographyService: CryptographyService,
+            originalKsefNumber: originalKsefNumber).ConfigureAwait(false);
 
         Assert.NotNull(sendResp);
 
@@ -540,14 +547,15 @@ public partial class PeppolPefE2ETests : TestBase
         SessionStatusResponse statusProcessing = await KsefClient.GetSessionStatusAsync(openSession.ReferenceNumber, providerToken, CancellationToken.None).ConfigureAwait(false);
         Assert.NotNull(statusProcessing);
 
-        SessionInvoicesResponse failedInvoices;
+        string failureInfo = string.Empty;
         if (statusProcessing.FailedInvoiceCount is not null)
         {
-            failedInvoices = await KsefClient.GetSessionFailedInvoicesAsync(openSession.ReferenceNumber, providerToken, pageSize: 10, continuationToken: string.Empty, CancellationToken.None).ConfigureAwait(false);
+            SessionInvoicesResponse failedInvoices = await KsefClient.GetSessionFailedInvoicesAsync(openSession.ReferenceNumber, providerToken, pageSize: 10, continuationToken: string.Empty, CancellationToken.None).ConfigureAwait(false);
+            SessionInvoice? fi = failedInvoices?.Invoices?.FirstOrDefault();
+            failureInfo = $"Code={fi?.Status?.Code}, Desc={fi?.Status?.Description}, Details={string.Join(";", fi?.Status?.Details ?? [])}";
         }
 
-        Assert.Null(statusProcessing.FailedInvoiceCount);
-        Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusProcessing.Status.Code);
+        Assert.True(statusProcessing.FailedInvoiceCount is null, $"Korekta odrzucona przez KSeF: {failureInfo}");
         Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusProcessing.Status.Code);
 
         await KsefClient.CloseOnlineSessionAsync(openSession.ReferenceNumber, providerToken, CancellationToken.None).ConfigureAwait(false);
@@ -570,15 +578,17 @@ public partial class PeppolPefE2ETests : TestBase
         SessionInvoice sessionInvoice = invoices.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
 
         // jeżeli faktura jeszcze jest w statusie „processing”, należy odświeżyć kilka razy zamiast jednego sleepa
-        if (sessionInvoice.Status.Code == InvoiceInSessionStatusCodeResponse.Processing)
+        if (sessionInvoice.Status.Code == InvoiceInSessionStatusCodeResponse.AcceptedForProcessing ||
+            sessionInvoice.Status.Code == InvoiceInSessionStatusCodeResponse.Processing)
         {
             await AsyncPollingUtils.PollAsync(
-               description: "faktura gotowa (status inny niż processing)",
+               description: "Oczekiwanie na zakończenie przetwarzania faktury korekty",
                check: async () =>
                {
                    SessionInvoicesResponse inv = await KsefClient.GetSessionInvoicesAsync(openSession.ReferenceNumber, providerToken, pageSize: 10).ConfigureAwait(false);
                    SessionInvoice refreshed = inv.Invoices.First(x => x.ReferenceNumber == sendResp.ReferenceNumber);
-                   return refreshed.Status.Code != InvoiceInSessionStatusCodeResponse.Processing;
+                   return refreshed.Status.Code != InvoiceInSessionStatusCodeResponse.AcceptedForProcessing &&
+                          refreshed.Status.Code != InvoiceInSessionStatusCodeResponse.Processing;
                },
                delay: TimeSpan.FromMilliseconds(SleepTime),
                maxAttempts: 5).ConfigureAwait(false);

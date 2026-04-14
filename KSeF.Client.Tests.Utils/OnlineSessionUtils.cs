@@ -192,6 +192,7 @@ public static class OnlineSessionUtils
     /// <param name="templatePath">Ścieżka do pliku szablonu XML.</param>
     /// <param name="encryptionData">Dane szyfrowania.</param>
     /// <param name="cryptographyService">Serwis kryptograficzny.</param>
+    /// <param name="originalKsefNumber">Numer KSeF faktury korygowanej – wymagany, jeśli szablon zawiera <c>#ksef_number#</c>.</param>
     /// <returns>Odpowiedź z informacjami o wysłanej fakturze.</returns>
     public static async Task<SendInvoiceResponse> SendPefInvoiceAsync(
      IKSeFClient ksefClient,
@@ -203,7 +204,8 @@ public static class OnlineSessionUtils
      string iban,
      string templatePath,
      EncryptionData encryptionData,
-     ICryptographyService cryptographyService)
+     ICryptographyService cryptographyService,
+     string? originalKsefNumber = null)
     {
         string path = Path.Combine(AppContext.BaseDirectory, "Templates", templatePath);
         if (!File.Exists(path))
@@ -255,6 +257,11 @@ public static class OnlineSessionUtils
             throw new ArgumentException("Template requires #iban#/#iban_plain#/#iban_masked# but 'iban' is null/empty.", nameof(iban));
         }
 
+        if (xml.Contains("#ksef_number#", StringComparison.Ordinal) && string.IsNullOrWhiteSpace(originalKsefNumber))
+        {
+            throw new ArgumentException("Template requires #ksef_number# but 'originalKsefNumber' is null/empty.", nameof(originalKsefNumber));
+        }
+
         // Daty: jeśli są tokeny – ustaw defaulty (Issue=dziś w strefie KSeF, Due=Issue+14).
         // NAPRAWA: DateTime.Today zwracało datę w strefie lokalnej maszyny, co powodowało
         // niespójności — ten sam test generował faktury z różnymi datami wystawienia
@@ -294,6 +301,7 @@ public static class OnlineSessionUtils
         ("#invoice_number#", Guid.NewGuid().ToString()),
         ("#issue_date#", issueDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
         ("#due_date#", dueDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+        ("#ksef_number#", originalKsefNumber ?? string.Empty),
         ];
 
         foreach ((string token, string value) in replacements)
@@ -308,7 +316,7 @@ public static class OnlineSessionUtils
         string[] known =
         [
         "#nip#", "#supplier_nip#", "#invoice_number#", "#buyer_nip#", "#buyer_reference#",
-        "#iban#", "#iban_plain#", "#iban_masked#", "#issue_date#", "#due_date#"
+        "#iban#", "#iban_plain#", "#iban_masked#", "#issue_date#", "#due_date#", "#ksef_number#"
     ];
         string[] leftovers = [.. known.Where(t => xml.Contains(t, StringComparison.Ordinal))];
         if (leftovers.Length > 0)

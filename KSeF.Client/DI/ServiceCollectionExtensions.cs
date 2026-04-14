@@ -58,6 +58,9 @@ public static class ServiceCollectionExtensions
                 http.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
 
+                // Wymuszenie formatu Problem Details dla odpowiedzi błędów 400 i 429
+                http.DefaultRequestHeaders.TryAddWithoutValidation("X-Error-Format", "problem-details");
+
                 // Domyślny timeout HttpClient (100s) jest zbyt krótki dla operacji wsadowych
                 // wysyłających paczki do 100 MB na część (limit API KSeF).
                 http.Timeout = TimeSpan.FromMinutes(5);

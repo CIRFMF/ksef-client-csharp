@@ -7,7 +7,6 @@ namespace KSeF.Client.Tests.Core.Utils.RateLimit;
 public static class KsefApiLimits
 {
     // Predefiniowane profile limitów
-    private static readonly ApiLimits Low = new() { RequestsPerSecond = 4, RequestsPerMinute = 8, RequestsPerHour = 20 };
     private static readonly ApiLimits Medium = new() { RequestsPerSecond = 8, RequestsPerMinute = 16, RequestsPerHour = 20 };
     private static readonly ApiLimits Standard = new() { RequestsPerSecond = 10, RequestsPerMinute = 20, RequestsPerHour = 120 };
     private static readonly ApiLimits Enhanced = new() { RequestsPerSecond = 10, RequestsPerMinute = 30, RequestsPerHour = 120 };
@@ -16,7 +15,7 @@ public static class KsefApiLimits
     private static readonly Dictionary<KsefApiEndpoint, ApiLimits> _limits = new()
     {
         [KsefApiEndpoint.InvoiceQueryMetadata] = Medium,
-        [KsefApiEndpoint.InvoiceExport] = Low,
+        [KsefApiEndpoint.InvoiceExport] = Medium,
         [KsefApiEndpoint.InvoiceGetByNumber] = Medium with { RequestsPerHour = 64 },
         [KsefApiEndpoint.SessionBatchOpen] = Standard,
         [KsefApiEndpoint.SessionBatchClose] = Standard,

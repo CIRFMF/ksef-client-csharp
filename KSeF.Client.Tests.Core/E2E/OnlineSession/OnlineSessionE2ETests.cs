@@ -38,30 +38,30 @@ public class OnlineSessionE2ETests : TestBase
 
 	[Theory]
 	[InlineData(SystemCode.FA3, "invoice-template-fa-3.xml")]
-	public async Task OnlineSessionAsync_TryReadInvoiceWithNoPermission_ShouldThrowException(SystemCode systemCode, string invoiceTemplatePath)
+	public async Task OnlineSessionAsync_TryOperateOnOnlineSessionWithNoPermission_ShouldThrowException(SystemCode systemCode, string invoiceTemplatePath)
 	{
 		string authorizedNip = MiscellaneousUtils.GetRandomNip();
-		Client.Core.Models.OperationResponse operationResponse = await PermissionsUtils.GrantPersonPermissionsAsync(
-			KsefClient,
-			accessToken,
-			new GrantPermissionsPersonSubjectIdentifier
-			{
-				Type = GrantPermissionsPersonSubjectIdentifierType.Nip,
-				Value = authorizedNip
-			},
+        Client.Core.Models.OperationResponse operationResponse = await PermissionsUtils.GrantPersonPermissionsAsync(
+            KsefClient,
+            accessToken,
+            new GrantPermissionsPersonSubjectIdentifier
+            {
+                Type = GrantPermissionsPersonSubjectIdentifierType.Nip,
+                Value = authorizedNip
+            },
 			[
 				PersonPermissionType.InvoiceWrite
 			],
-			new PersonPermissionSubjectDetails
-			{
-				SubjectDetailsType = PersonPermissionSubjectDetailsType.PersonByIdentifier,
-				PersonById = new PersonPermissionPersonById
-				{
-					FirstName = "Anna",
-					LastName = "Testowa"
-				}
-			},
-		"Grant write invoices permission for testing.");
+            new PersonPermissionSubjectDetails
+            {
+                SubjectDetailsType = PersonPermissionSubjectDetailsType.PersonByIdentifier,
+                PersonById = new PersonPermissionPersonById
+                {
+                    FirstName = "Anna",
+                    LastName = "Testowa"
+                }
+            },
+            "Grant write invoices permission for testing.");
 
 		bool isSuccess = await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, operationResponse, accessToken);
 
@@ -98,10 +98,10 @@ public class OnlineSessionE2ETests : TestBase
 
 		SessionInvoicesResponse invoices = await KsefClient.GetSessionInvoicesAsync(openSessionResponse.ReferenceNumber, accessToken);
 
-		// 3) Autoryzacja drugiego nipu
-		AuthenticationOperationStatusResponse unauthorizedNipToken = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, authorizedNip);
+        // 3) Autoryzacja drugiego NIP
+		AuthenticationOperationStatusResponse unauthorizedNipToken = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, authorizedNip, Nip);
 
-		// 4) Próba pobrania faktur sesji przez nieautoryzowany nip
+        // 4) Próba pobrania faktur sesji przez nieautoryzowany NIP
 		await Assert.ThrowsAsync<KsefApiException>(async () =>
 		{
 			await KsefClient.GetSessionInvoicesAsync(
@@ -110,8 +110,18 @@ public class OnlineSessionE2ETests : TestBase
 			).ConfigureAwait(false);
 		});
 
-		// 5) Próba pobrania faktury przez nadany numer KSeF przez nieautoryzowany nip
-		await Assert.ThrowsAsync<KsefApiException>(async () =>
+        // 5) Zamknięcie sesji przez nieautoryzowany NIP
+        await Assert.ThrowsAsync<KsefApiException>(async () =>
+        {
+            await KsefClient.CloseOnlineSessionAsync(
+                openSessionResponse.ReferenceNumber,
+                unauthorizedNipToken.AccessToken.Token
+            ).ConfigureAwait(false);
+        });
+
+
+        // 6) Próba pobrania faktury po nadanym numerze KSeF przez nieautoryzowany NIP
+        await Assert.ThrowsAsync<KsefApiException>(async () =>
 		{
 			await KsefClient.GetInvoiceAsync(invoices.Invoices.First().KsefNumber, unauthorizedNipToken.AccessToken.Token).ConfigureAwait(false);
 		});

@@ -123,18 +123,25 @@ public class InvoiceWithAttachmentE2ETests : TestBase
 				To = DateTime.UtcNow.AddMinutes(5),
 				DateType = DateType.Invoicing
 			},
-			SubjectType = InvoiceSubjectType.Subject1
+			SubjectType = InvoiceSubjectType.Subject1,
+			HasAttachment = true
 		};
 
-		PagedInvoiceResponse invoiceQueryResponse = await KsefClient.QueryInvoiceMetadataAsync(
-			requestPayload: invoiceQueryFilters,
-			accessToken: accessToken,
-			cancellationToken: CancellationToken.None,
-			pageOffset: 0,
-			pageSize: 30);
-
-
 		// Krok 6: Assert - Wszystkie faktury z załącznikiem zostały pomyślnie przetworzone
+		// Polling jest wymagany, ponieważ indeks faktur może nie odzwierciedlać jeszcze wszystkich
+		// przetworzonych faktur w sesji wsadowej bezpośrednio po jej zamknięciu.
+		PagedInvoiceResponse invoiceQueryResponse = await AsyncPollingUtils.PollAsync(
+			action: () => KsefClient.QueryInvoiceMetadataAsync(
+				requestPayload: invoiceQueryFilters,
+				accessToken: accessToken,
+				cancellationToken: CancellationToken.None,
+				pageOffset: 0,
+				pageSize: 30),
+			condition: r => r?.Invoices?.Count >= TotalInvoicesCount,
+			delay: TimeSpan.FromSeconds(2),
+			maxAttempts: 30,
+			cancellationToken: CancellationToken);
+
 		Assert.Equal(TotalInvoicesCount, invoiceQueryResponse.Invoices.Count);
 		Assert.True(invoiceQueryResponse.Invoices.All(x => x.HasAttachment == true),
 			"Wszystkie faktury powinny zawierać załącznik");

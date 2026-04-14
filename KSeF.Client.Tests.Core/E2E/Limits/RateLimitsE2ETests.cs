@@ -25,7 +25,7 @@ public class RateLimitsE2ETests : TestBase
     private static readonly RateMax SessionInvoiceListMax = new(10, 20, 200);
     private static readonly RateMax SessionMiscMax = new(10, 120, 720);
     private static readonly RateMax InvoiceMetadataMax = new(8, 16, 20);
-    private static readonly RateMax InvoiceExportMax = new(4, 8, 20);
+    private static readonly RateMax InvoiceExportMax = new(8, 16, 20);
     private static readonly RateMax InvoiceDownloadMax = new(8, 16, 64);
     private static readonly RateMax OtherMax = new(10, 30, 120);
 
@@ -219,6 +219,13 @@ public class RateLimitsE2ETests : TestBase
     /// <returns>Skorygowana wartość w przedziale [min, max].</returns>
     private static int Adjust(int current, int delta, int min, int max)
     {
+        // Jeśli bieżąca wartość wykracza poza nasze oczekiwane widełki, nie wiemy jakie są
+        // rzeczywiste limity API dla tej wartości – pozostawiamy bez zmian.
+        if (current < min || current > max)
+        {
+            return current;
+        }
+
         if (current + delta <= max)
         {
             return current + delta;
@@ -229,7 +236,7 @@ public class RateLimitsE2ETests : TestBase
             return current - delta;
         }
 
-        return current; // w praktyce nie powinno się zdarzyć dla delta=1 i max>1
+        return current;
     }
 
     /// <summary>
