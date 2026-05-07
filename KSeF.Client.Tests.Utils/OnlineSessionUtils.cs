@@ -41,7 +41,8 @@ public static class OnlineSessionUtils
           .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: SystemCodeHelper.GetSchemaVersion(systemCode), value: SystemCodeHelper.GetValue(systemCode))
           .WithEncryption(
               encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-              initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+              initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+              publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
           .Build();
 
         return await ksefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, accessToken).ConfigureAwait(false);

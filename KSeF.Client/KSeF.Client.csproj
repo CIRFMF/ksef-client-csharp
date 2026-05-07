@@ -38,15 +38,15 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
 		<PackageReference Include="System.Memory.Data" Version="8.0.1" />
-		<PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.2" />
+		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.7" />
 
 		<!-- Polyfill packages for netstandard2.0 -->
-		<PackageReference Include="Microsoft.Bcl.Cryptography" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Bcl.Cryptography" Version="10.0.7" />
 		<PackageReference Include="System.Memory" Version="4.6.3" />
-		<PackageReference Include="System.Formats.Asn1" Version="10.0.2" />
+		<PackageReference Include="System.Formats.Asn1" Version="10.0.7" />
 		<PackageReference Include="System.Text.Json" Version="8.0.5" />
 		<PackageReference Include="System.Security.Cryptography.Cng" Version="5.0.0" />
-		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.2" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.7" />
 	</ItemGroup>
 
 	<!-- NET 8 -->
@@ -65,7 +65,7 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
 		<PackageReference Include="System.Memory.Data" Version="8.0.1" />
-		<PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.2" />
+		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.7" />
 	</ItemGroup>
 
 	<!-- NET 9 -->
@@ -83,7 +83,7 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.11" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.11" />
 		<PackageReference Include="System.Memory.Data" Version="9.0.11" />
-		<PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.11" />
+		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.7" />
 	</ItemGroup>
 
 	<!-- NET 10 -->
@@ -101,7 +101,7 @@
 		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
 		<PackageReference Include="System.Memory.Data" Version="10.0.0" />
-		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.0" />
+		<PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.7" />
 	</ItemGroup>
 
 	<ItemGroup>

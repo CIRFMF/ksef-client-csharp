@@ -224,7 +224,8 @@ public class UpoVersionedE2ETests : TestBase
 			.WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: DefaultSchemaVersion, value: DefaultFormCodeValue)
 			.WithEncryption(
 				encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-				initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+				initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+				publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
 			.Build();
 
 		OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, _accessToken, UpoVersion, cancellationToken: CancellationToken).ConfigureAwait(false);

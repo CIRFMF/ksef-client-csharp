@@ -38,4 +38,17 @@ public class KSeFClientOptions
     /// będzie używać camelCase dla nazw właściwości. Domyślnie false.
     /// </summary>
     public bool UseCamelCaseForRequests { get; set; } = false;
+
+    /// <summary>
+    /// Jeśli ustawione na true (domyślnie), klient HTTP będzie preferował HTTP/2
+    /// z automatycznym fallbackiem do HTTP/1.1 (<see cref="HttpVersionPolicy.RequestVersionOrLower"/>),
+    /// gdy serwer lub infrastruktura pośrednia (proxy, load balancer) nie obsługuje HTTP/2.
+    /// Ustaw na false, aby wymusić wyłącznie HTTP/1.1 — np. gdy proxy
+    /// nie obsługuje HTTP/2 i nie wykonuje poprawnej negocjacji.
+    /// </summary>
+    /// <remarks>
+    /// Właściwość jest uwzględniana wyłącznie na platformach .NET 5+.
+    /// Na .NET Standard 2.0 ustawienie jest ignorowane (HttpClient nie udostępnia tych API).
+    /// </remarks>
+    public bool UseHttp2 { get; set; } = true;
 }

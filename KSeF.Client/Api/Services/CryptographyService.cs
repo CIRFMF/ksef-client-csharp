@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Interfaces.Services;
 using KSeF.Client.Core.Models.Certificates;
 using KSeF.Client.Core.Models.Sessions;
@@ -63,6 +64,14 @@ public class CryptographyService : ICryptographyService, IDisposable
     public X509Certificate2 KsefTokenCertificate =>
         (_materials ?? throw NotReady()).KsefTokenCert;
 
+    /// <inheritdoc />
+    public string? SymmetricKeyPublicKeyId =>
+        (_materials ?? throw NotReady()).SymmetricKeyPublicKeyId;
+
+    /// <inheritdoc />
+    public string? KsefTokenPublicKeyId =>
+        (_materials ?? throw NotReady()).KsefTokenPublicKeyId;
+
     /// <summary>
     /// Certyfikat używany do szyfrowania klucza symetrycznego w formacie PEM.
     /// </summary>
@@ -93,12 +102,15 @@ public class CryptographyService : ICryptographyService, IDisposable
             return; // Nie wykonuj, jeśli zarządzane zewnętrznie
         }
 
+        // Resetuj flagę inicjalizacji, by RefreshAsync wykonał ponowne pobranie
+        // (np. po otrzymaniu błędu 21470 – nieznany/wycofany keyId)
+        _isInitialized = false;
         await RefreshAsync(cancellationToken).ConfigureAwait(false);
         ScheduleNextRefresh();
     }
 
     /// <inheritdoc />
-    public void SetExternalMaterials(X509Certificate2 symmetricKeyCert, X509Certificate2 ksefTokenCert)
+    public void SetExternalMaterials(X509Certificate2 symmetricKeyCert, X509Certificate2 ksefTokenCert, string? symmetricKeyPublicKeyId = null, string? ksefTokenPublicKeyId = null)
     {
         Guard.ThrowIfNull(symmetricKeyCert);
         Guard.ThrowIfNull(ksefTokenCert);
@@ -107,7 +119,7 @@ public class CryptographyService : ICryptographyService, IDisposable
         _isExternallyManaged = true; // Oznacz jako zarządzane zewnętrznie
 
         // Tworzy materiały bez daty wygaśnięcia i odświeżania
-        CertificateMaterials materials = new(symmetricKeyCert, ksefTokenCert, DateTimeOffset.MaxValue, DateTimeOffset.MaxValue);
+        CertificateMaterials materials = new(symmetricKeyCert, ksefTokenCert, DateTimeOffset.MaxValue, DateTimeOffset.MaxValue, symmetricKeyPublicKeyId, ksefTokenPublicKeyId);
         Volatile.Write(ref _materials, materials);
         _isInitialized = true; // Oznacz jako zainicjalizowane
     }
@@ -122,8 +134,8 @@ public class CryptographyService : ICryptographyService, IDisposable
         EncryptionInfo encryptionInfo = new()
         {
             EncryptedSymmetricKey = Convert.ToBase64String(encryptedKey),
-
-            InitializationVector = Convert.ToBase64String(iv)
+            InitializationVector = Convert.ToBase64String(iv),
+            PublicKeyId = SymmetricKeyPublicKeyId
         };
         return new EncryptionData
         {
@@ -465,7 +477,7 @@ public class CryptographyService : ICryptographyService, IDisposable
     /// zaprojektowaną do pobierania certyfikatów przy użyciu określonej funkcji asynchronicznej.
     /// Służy wyłącznie utrzymaniu kompatybilności wstecznej (użyciu konstruktora z delegatem)</remarks>
     private sealed class CertificateFetcher(Func<CancellationToken, Task<ICollection<PemCertificateInfo>>> func) : ICertificateFetcher
-    {   
+    {
         public Task<ICollection<PemCertificateInfo>> GetCertificatesAsync(CancellationToken cancellationToken) => func(cancellationToken);
     }
 
@@ -642,10 +654,19 @@ public class CryptographyService : ICryptographyService, IDisposable
             throw new InvalidOperationException("Brak certyfikatów.");
         }
 
-        PemCertificateInfo symmetricDto = certs.FirstOrDefault(c => c.Usage.Contains(PublicKeyCertificateUsage.SymmetricKeyEncryption))
+        DateTimeOffset now = DateTimeOffset.UtcNow;
+
+        PemCertificateInfo symmetricDto = certs
+            .Where(c => c.Usage.Contains(PublicKeyCertificateUsage.SymmetricKeyEncryption)
+                     && c.ValidFrom <= now && now < c.ValidTo)
+            .OrderByDescending(c => c.ValidFrom)
+            .FirstOrDefault()
             ?? throw new InvalidOperationException("Brak certyfikatu SymmetricKeyEncryption.");
-        PemCertificateInfo tokenDto = certs.OrderBy(c => c.ValidFrom)
-            .FirstOrDefault(c => c.Usage.Contains(PublicKeyCertificateUsage.KsefTokenEncryption))
+        PemCertificateInfo tokenDto = certs
+            .Where(c => c.Usage.Contains(PublicKeyCertificateUsage.KsefTokenEncryption)
+                     && c.ValidFrom <= now && now < c.ValidTo)
+            .OrderByDescending(c => c.ValidFrom)
+            .FirstOrDefault()
             ?? throw new InvalidOperationException("Brak certyfikatu KsefTokenEncryption.");
 
         byte[] symetricBytes = Convert.FromBase64String(symmetricDto.Certificate);
@@ -671,7 +692,7 @@ public class CryptographyService : ICryptographyService, IDisposable
         refreshAt -= TimeSpan.FromMinutes(Random.Shared.Next(0, 5));
 #endif
 
-        return new CertificateMaterials(sym, tok, expiresAt, refreshAt);
+        return new CertificateMaterials(sym, tok, expiresAt, refreshAt, symmetricDto.PublicKeyId, tokenDto.PublicKeyId);
     }
 
     private static InvalidOperationException NotReady() =>
@@ -757,7 +778,11 @@ public class CryptographyService : ICryptographyService, IDisposable
     X509Certificate2 SymmetricKeyCert,
     X509Certificate2 KsefTokenCert,
     DateTimeOffset ExpiresAt,
-    DateTimeOffset RefreshAt);
+    DateTimeOffset RefreshAt,
+    string? SymmetricKeyPublicKeyId = null,
+    string? KsefTokenPublicKeyId = null);
+
+
 
     void IDisposable.Dispose()
     {

@@ -207,10 +207,11 @@ public class BatchSessionStreamE2ETests : TestBase
             .EndBatchFile()
             .WithEncryption(
                 encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-                initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+                initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+                publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
             .Build();
 
-        OpenBatchSessionResponse openResp = await KsefClient.OpenBatchSessionAsync(openBatchSessionRequest, accessToken,cancellationToken: CancellationToken).ConfigureAwait(false);
+        OpenBatchSessionResponse openResp = await KsefClient.OpenBatchSessionAsync(openBatchSessionRequest, accessToken, cancellationToken: CancellationToken).ConfigureAwait(false);
 
         return (openResp.ReferenceNumber, openResp, encryptedParts);
     }

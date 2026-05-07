@@ -105,6 +105,18 @@ public interface IAuthKsefTokenRequestBuilderWithEncryptedToken
     IAuthKsefTokenRequestBuilderWithEncryptedToken WithAuthorizationPolicy(AuthenticationTokenAuthorizationPolicy authorizationPolicy);
 
     /// <summary>
+    /// Ustawia identyfikator klucza publicznego użytego do zaszyfrowania tokenu KSeF.
+    /// </summary>
+    /// <param name="publicKeyId">
+    /// Identyfikator klucza publicznego (skrót SHA-256 z DER SubjectPublicKeyInfo, zakodowany w Base64).
+    /// Pobierany z <see cref="KSeF.Client.Core.Interfaces.Services.ICryptographyService.KsefTokenPublicKeyId"/>.
+    /// </param>
+    /// <returns>
+    /// Ten sam interfejs, umożliwiający dalszą konfigurację lub wywołanie <see cref="Build"/>.
+    /// </returns>
+    IAuthKsefTokenRequestBuilderWithEncryptedToken WithPublicKeyId(string publicKeyId);
+
+    /// <summary>
     /// Tworzy obiekt żądania tokenu KSeF na podstawie ustawionych wartości.
     /// </summary>
     /// <returns>
@@ -123,6 +135,7 @@ internal sealed class AuthKsefTokenRequestBuilderImpl :
     private string _challenge;
     private AuthenticationTokenContextIdentifier _contextIdentifier;
     private string _encryptedToken;
+    private string _publicKeyId;
     private AuthenticationTokenAuthorizationPolicy _authorizationPolicy;
 
     private AuthKsefTokenRequestBuilderImpl() { }
@@ -220,6 +233,13 @@ internal sealed class AuthKsefTokenRequestBuilderImpl :
     }
 
     /// <inheritdoc />
+    public IAuthKsefTokenRequestBuilderWithEncryptedToken WithPublicKeyId(string publicKeyId)
+    {
+        _publicKeyId = publicKeyId;
+        return this;
+    }
+
+    /// <inheritdoc />
     public AuthenticationKsefTokenRequest Build()
     {
         if (_challenge is null || _contextIdentifier is null || _encryptedToken is null)
@@ -232,6 +252,7 @@ internal sealed class AuthKsefTokenRequestBuilderImpl :
             Challenge = _challenge,
             ContextIdentifier = _contextIdentifier,
             EncryptedToken = _encryptedToken,
+            PublicKeyId = _publicKeyId,
             AuthorizationPolicy = _authorizationPolicy
         };
     }

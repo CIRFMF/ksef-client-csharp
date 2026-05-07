@@ -129,6 +129,7 @@ public class SignatureService
         Reference rootReference = new(string.Empty);
         rootReference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
         rootReference.AddTransform(new XmlDsigExcC14NTransform());
+        rootReference.DigestMethod = SignedXml.XmlDsigSHA256Url;
         signedXml.AddReference(rootReference);
     }
 
@@ -140,6 +141,7 @@ public class SignatureService
         };
 
         xadesReference.AddTransform(new XmlDsigExcC14NTransform());
+        xadesReference.DigestMethod = SignedXml.XmlDsigSHA256Url;
         signedXml.AddReference(xadesReference);
     }
 

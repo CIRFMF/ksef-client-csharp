@@ -1,3 +1,4 @@
+#nullable enable
 using KSeF.Client.Core.Models.Certificates;
 using KSeF.Client.Core.Models.Sessions;
 using System.IO;
@@ -158,7 +159,11 @@ namespace KSeF.Client.Core.Interfaces.Services
         /// Metoda pozwalająca na ręczne ustawienie materiałów kryptograficznych.
         /// Pomija mechanizm fetchera i odświeżania.
         /// </summary>
-        void SetExternalMaterials(X509Certificate2 symmetricKeyCert, X509Certificate2 ksefTokenCert);
+        /// <param name="symmetricKeyCert">Certyfikat do szyfrowania klucza symetrycznego AES.</param>
+        /// <param name="ksefTokenCert">Certyfikat do szyfrowania tokenu KSeF.</param>
+        /// <param name="symmetricKeyPublicKeyId">Identyfikator klucza publicznego dla SymmetricKeyEncryption.</param>
+        /// <param name="ksefTokenPublicKeyId">Identyfikator klucza publicznego dla KsefTokenEncryption.</param>
+        void SetExternalMaterials(X509Certificate2 symmetricKeyCert, X509Certificate2 ksefTokenCert, string? symmetricKeyPublicKeyId = null, string? ksefTokenPublicKeyId = null);
 
         /// <summary>
         /// Certyfikat używany do szyfrowania symetrycznego klucza AES.
@@ -169,5 +174,17 @@ namespace KSeF.Client.Core.Interfaces.Services
         /// Certyfikat używany do szyfrowania tokena KSeF.
         /// </summary>
         X509Certificate2 KsefTokenCertificate { get; }
+
+        /// <summary>
+        /// Identyfikator klucza publicznego używanego do szyfrowania klucza symetrycznego AES
+        /// (skrót SHA-256 z DER SubjectPublicKeyInfo, zakodowany w Base64).
+        /// </summary>
+           string? SymmetricKeyPublicKeyId { get; }
+
+        /// <summary>
+        /// Identyfikator klucza publicznego używanego do szyfrowania tokenu KSeF
+        /// (skrót SHA-256 z DER SubjectPublicKeyInfo, zakodowany w Base64).
+        /// </summary>
+        string? KsefTokenPublicKeyId { get; }
     }
 }

@@ -30,7 +30,7 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
             Directory.CreateDirectory(InvoicesDirectory);
         }
 
-        for (int i =0; i < 20; i++)
+        for (int i = 0; i < 20; i++)
         {
             string inv = System.IO.File.ReadAllText(invoicePath).Replace("#nip#", contextIdentifier).Replace("#invoice_number#", Guid.NewGuid().ToString());
             string invoiceName = $"faktura_{i + 1}.xml";
@@ -51,14 +51,14 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
         byte[] zipBytes;
         using MemoryStream zipStream = new();
         using ZipArchive archive = new(zipStream, ZipArchiveMode.Create, leaveOpen: true);
-        
+
         foreach ((string FileName, byte[] Content) file in files)
         {
             ZipArchiveEntry entry = archive.CreateEntry(file.FileName, CompressionLevel.Optimal);
             using Stream entryStream = entry.Open();
             entryStream.Write(file.Content);
         }
-        
+
         archive.Dispose();
         zipBytes = zipStream.ToArray();
 
@@ -89,7 +89,7 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
         {
             byte[] encrypted = cryptographyService.EncryptBytesWithAES256(zipParts[i], encryptionData.CipherKey, encryptionData.CipherIv);
             FileMetadata metadata = cryptographyService.GetMetaData(encrypted);
-            encryptedParts.Add(new BatchPartSendingInfo { Data = encrypted, OrdinalNumber = i+1, Metadata = metadata});
+            encryptedParts.Add(new BatchPartSendingInfo { Data = encrypted, OrdinalNumber = i + 1, Metadata = metadata });
         }
 
         // 6. Buduj request
@@ -112,12 +112,13 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
         OpenBatchSessionRequest openBatchRequest = batchFileInfoBuilder.EndBatchFile()
             .WithEncryption(
                 encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-                initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+                initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+                publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
         .Build();
 
         OpenBatchSessionResponse openBatchSessionResponse = await ksefClient.OpenBatchSessionAsync(openBatchRequest, accessToken, cancellationToken: cancellationToken).ConfigureAwait(false);
-       await ksefClient.SendBatchPartsAsync(openBatchSessionResponse, encryptedParts, cancellationToken).ConfigureAwait(false);
-       return Ok($"Wysłano, zamknij sesję, żeby zacząć przetwarzanie i sprawdź status sesji, {openBatchSessionResponse.ReferenceNumber}");
+        await ksefClient.SendBatchPartsAsync(openBatchSessionResponse, encryptedParts, cancellationToken).ConfigureAwait(false);
+        return Ok($"Wysłano, zamknij sesję, żeby zacząć przetwarzanie i sprawdź status sesji, {openBatchSessionResponse.ReferenceNumber}");
     }
 
     [HttpPost("close-session")]
@@ -126,5 +127,5 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
         await ksefClient.CloseBatchSessionAsync(sessionReferenceNumber, accessToken, cancellationToken).ConfigureAwait(false);
         return Ok();
     }
-  
+
 }

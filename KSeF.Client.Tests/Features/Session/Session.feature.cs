@@ -31,7 +31,8 @@ public class InteractiveSessionTests : KsefIntegrationTestBase
            .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: "1-0E", value: "FA")
            .WithEncryption(
                encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-               initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+               initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+               publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
            .Build();
 
         Core.Models.Sessions.OnlineSession.OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, authResult.AccessToken.Token);
@@ -60,7 +61,8 @@ public class InteractiveSessionTests : KsefIntegrationTestBase
                .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: "1-0E", value: "FA")
                .WithEncryption(
                    encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-                   initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+                   initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+               publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
                .Build();
 
         Core.Models.Sessions.OnlineSession.OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, authResult.AccessToken.Token);
@@ -94,7 +96,8 @@ public class InteractiveSessionTests : KsefIntegrationTestBase
                .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: "1-0E", value: "FA")
                .WithEncryption(
                    encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-                   initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+                   initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+               publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
                .Build();
 
         Core.Models.Sessions.OnlineSession.OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, authResult.AccessToken.Token);
@@ -131,7 +134,8 @@ public class InteractiveSessionTests : KsefIntegrationTestBase
                .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: "1-0E", value: "FA")
                .WithEncryption(
                    encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-                   initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+                   initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+               publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
                .Build();
 
         Core.Models.Sessions.OnlineSession.OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, authResult.AccessToken.Token);

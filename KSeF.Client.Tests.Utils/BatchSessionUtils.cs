@@ -252,7 +252,8 @@ public static class BatchUtils
             .EndBatchFile()
             .WithEncryption(
                 encryptedSymmetricKey: encryption.EncryptionInfo.EncryptedSymmetricKey,
-                initializationVector: encryption.EncryptionInfo.InitializationVector)
+                initializationVector: encryption.EncryptionInfo.InitializationVector,
+                publicKeyId: encryption.EncryptionInfo.PublicKeyId)
             .Build();
     }
 

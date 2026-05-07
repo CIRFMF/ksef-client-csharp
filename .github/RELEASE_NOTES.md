@@ -1,3 +1,16 @@
+## Rejestr zmian: Wersja 2.5.0
+### Zmodyfikowane
+- `PemCertificateInfo`: dodano pola `CertificateId` oraz `PublicKeyId` zgodnie z założeniami opisanymi w [#737](https://github.com/CIRFMF/ksef-docs/issues/737),
+- `EncryptionInfo`: dodano pole `PublicKeyId` j.w.,
+- `AuthenticationKsefTokenRequest`: dodano pole `PublicKeyId` j.w.,
+- `AuthKsefTokenBuilder`: dodano metodę `WithPublicKeyId(string publicKeyId)` umożliwiającą ustawienie parametru `PublicKeyId` w `AuthenticationKsefTokenRequest`,
+- `AuthCoordinator`: rozszerzono obsługę `AuthenticationKsefTokenRequest` o nowe pole.
+- `OpenBatchSessionRequestBuilder`: rozszerzono metodę `WithEncryption` o opcjonalny parametr `publicKeyId`,
+- `OpenOnlineSessionRequestBuilder`: rozszerzono metodę `WithEncryption` o opcjonalny parametr `publicKeyId`,
+- `CryptographyService`: rozszerzono mechanizm cache (materials) o pola `SymmetricKeyPublicKeyId` oraz `KsefTokenPublicKeyId`; naprawiono błąd, który powodował nieodświeżanie certyfikatów po wywołaniu `ForceRefreshAsync()`; dostosowano kod do rotacji planowej wymiany kluczy, gdzie możliwe jest wystąpienie dwóch kluczy o nakładających się datach ważności.
+- `SignatureService`:  poprawiono działanie serwisu w przypadku użycia .NET Framework 4.7.2+ [#215](https://github.com/CIRFMF/ksef-client-csharp/issues/215), dziękujemy użytkownikowi [@Marmelada100](https://github.com/Marmelada100) za zgłoszony problem,
+-  Podniesiono wersję paczki zależnej `System.Security.Cryptography.Xml` do wersji `10.0.7`, dziękujemy użytkownikowi [@DawidBartniczak](https://github.com/DawidBartniczak) za zgłoszony problem,
+
 ## Rejestr zmian: Wersja 2.4.0
 ### Nowe
 - Dodano obsługę formatu Problem Details (`application/problem+json`) dla odpowiedzi HTTP 400 Bad Request, HTTP 410 Gone oraz HTTP 429 Too Many Requests, zgodnie z propozycją API KSeF ([#764](https://github.com/CIRFMF/ksef-docs/issues/764)).

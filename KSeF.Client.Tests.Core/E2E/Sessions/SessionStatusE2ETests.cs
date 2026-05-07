@@ -162,8 +162,8 @@ public class SessionStatusE2ETests : TestBase
 		// 4) Oczekiwanie na trwały zapis faktury w repozytorium KSeF
 		SessionInvoicesResponse sessionInvoices = await AsyncPollingUtils.PollWithBackoffAsync(
 			action: () => KsefClient.GetSessionInvoicesAsync(
-				openOnlineSessionResponse.ReferenceNumber!, 
-				_accessToken, 
+				openOnlineSessionResponse.ReferenceNumber!,
+				_accessToken,
 				cancellationToken: CancellationToken.None),
 			result => result is not null && result.Invoices.First().PermanentStorageDate is not null,
 			initialDelay: TimeSpan.FromSeconds(1),
@@ -222,9 +222,9 @@ public class SessionStatusE2ETests : TestBase
 		// 4) Oczekiwanie na trwały zapis faktury
 		SessionInvoice sessionInvoice = await AsyncPollingUtils.PollWithBackoffAsync(
 			action: () => KsefClient.GetSessionInvoiceAsync(
-				openOnlineSessionResponse.ReferenceNumber!, 
-				sessionResponse.ReferenceNumber, 
-				_accessToken, 
+				openOnlineSessionResponse.ReferenceNumber!,
+				sessionResponse.ReferenceNumber,
+				_accessToken,
 				cancellationToken: CancellationToken.None),
 			result => result is not null && result.PermanentStorageDate is not null,
 			initialDelay: TimeSpan.FromSeconds(1),
@@ -241,7 +241,7 @@ public class SessionStatusE2ETests : TestBase
 		Assert.NotNull(sessionInvoice.InvoiceHash);
 		Assert.NotNull(sessionInvoice.ReferenceNumber);
 		Assert.NotNull(sessionInvoice.UpoDownloadUrl);
-		
+
 		// Uzupełniane jedyne dla wysyłki wsadowej
 		Assert.Null(sessionInvoice.InvoiceFileName);
 
@@ -419,7 +419,8 @@ public class SessionStatusE2ETests : TestBase
 				value: DefaultFormCodeValue)
 			.WithEncryption(
 				encryptedSymmetricKey: _encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-				initializationVector: _encryptionData.EncryptionInfo.InitializationVector)
+				initializationVector: _encryptionData.EncryptionInfo.InitializationVector,
+				publicKeyId: _encryptionData.EncryptionInfo.PublicKeyId)
 			.Build();
 
 		OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient

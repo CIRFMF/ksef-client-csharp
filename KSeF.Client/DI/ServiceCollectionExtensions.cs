@@ -64,6 +64,17 @@ public static class ServiceCollectionExtensions
                 // Domyślny timeout HttpClient (100s) jest zbyt krótki dla operacji wsadowych
                 // wysyłających paczki do 100 MB na część (limit API KSeF).
                 http.Timeout = TimeSpan.FromMinutes(5);
+
+                #if NET5_0_OR_GREATER
+                // Preferuj HTTP/2, z fallbackiem do HTTP/1.1.
+                // Można wyłączyć przez opcję UseHttp2 = false — np. gdy korporacyjny proxy
+                // nie obsługuje HTTP/2 i nie wykonuje poprawnego negotiate.
+                if (options.UseHttp2)
+                {
+                    http.DefaultRequestVersion = System.Net.HttpVersion.Version20;
+                    http.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                }
+                #endif
             })
             .ConfigurePrimaryHttpMessageHandler(() =>
             {

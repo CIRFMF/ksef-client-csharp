@@ -30,10 +30,13 @@ namespace KSeF.Client.Api.Builders.Online
         /// </summary>
         /// <param name="encryptedSymmetricKey">Zaszyfrowany klucz symetryczny użyty do szyfrowania danych.</param>
         /// <param name="initializationVector">Wektor inicjalizujący użyty przy szyfrowaniu.</param>
+        /// <param name="publicKeyId">Identyfikator klucza publicznego użytego do zaszyfrowania klucza symetrycznego.</param>
         /// <returns>
         /// Interfejs pozwalający zbudować finalne żądanie.
         /// </returns>
-        IOpenOnlineSessionRequestBuilderWithEncryption WithEncryption(string encryptedSymmetricKey, string initializationVector);
+#nullable enable
+        IOpenOnlineSessionRequestBuilderWithEncryption WithEncryption(string encryptedSymmetricKey, string initializationVector, string? publicKeyId = null);
+#nullable disable 
     }
 
     /// <summary>
@@ -85,7 +88,8 @@ namespace KSeF.Client.Api.Builders.Online
         }
 
         /// <inheritdoc />
-        public IOpenOnlineSessionRequestBuilderWithEncryption WithEncryption(string encryptedSymmetricKey, string initializationVector)
+#nullable enable
+        public IOpenOnlineSessionRequestBuilderWithEncryption WithEncryption(string encryptedSymmetricKey, string initializationVector, string? publicKeyId = null)
         {
             if (string.IsNullOrWhiteSpace(encryptedSymmetricKey) || string.IsNullOrWhiteSpace(initializationVector))
             {
@@ -94,8 +98,10 @@ namespace KSeF.Client.Api.Builders.Online
 
             _encryption.EncryptedSymmetricKey = encryptedSymmetricKey;
             _encryption.InitializationVector = initializationVector;
+            _encryption.PublicKeyId = publicKeyId;
             return this;
         }
+#nullable disable
 
         /// <inheritdoc />
         public OpenOnlineSessionRequest Build()

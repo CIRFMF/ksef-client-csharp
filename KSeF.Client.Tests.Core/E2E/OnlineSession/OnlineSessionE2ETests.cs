@@ -41,27 +41,27 @@ public class OnlineSessionE2ETests : TestBase
 	public async Task OnlineSessionAsync_TryOperateOnOnlineSessionWithNoPermission_ShouldThrowException(SystemCode systemCode, string invoiceTemplatePath)
 	{
 		string authorizedNip = MiscellaneousUtils.GetRandomNip();
-        Client.Core.Models.OperationResponse operationResponse = await PermissionsUtils.GrantPersonPermissionsAsync(
-            KsefClient,
-            accessToken,
-            new GrantPermissionsPersonSubjectIdentifier
-            {
-                Type = GrantPermissionsPersonSubjectIdentifierType.Nip,
-                Value = authorizedNip
-            },
+		Client.Core.Models.OperationResponse operationResponse = await PermissionsUtils.GrantPersonPermissionsAsync(
+			KsefClient,
+			accessToken,
+			new GrantPermissionsPersonSubjectIdentifier
+			{
+				Type = GrantPermissionsPersonSubjectIdentifierType.Nip,
+				Value = authorizedNip
+			},
 			[
 				PersonPermissionType.InvoiceWrite
 			],
-            new PersonPermissionSubjectDetails
-            {
-                SubjectDetailsType = PersonPermissionSubjectDetailsType.PersonByIdentifier,
-                PersonById = new PersonPermissionPersonById
-                {
-                    FirstName = "Anna",
-                    LastName = "Testowa"
-                }
-            },
-            "Grant write invoices permission for testing.");
+			new PersonPermissionSubjectDetails
+			{
+				SubjectDetailsType = PersonPermissionSubjectDetailsType.PersonByIdentifier,
+				PersonById = new PersonPermissionPersonById
+				{
+					FirstName = "Anna",
+					LastName = "Testowa"
+				}
+			},
+			"Grant write invoices permission for testing.");
 
 		bool isSuccess = await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, operationResponse, accessToken);
 
@@ -98,10 +98,10 @@ public class OnlineSessionE2ETests : TestBase
 
 		SessionInvoicesResponse invoices = await KsefClient.GetSessionInvoicesAsync(openSessionResponse.ReferenceNumber, accessToken);
 
-        // 3) Autoryzacja drugiego NIP
+		// 3) Autoryzacja drugiego NIP
 		AuthenticationOperationStatusResponse unauthorizedNipToken = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, authorizedNip, Nip);
 
-        // 4) Próba pobrania faktur sesji przez nieautoryzowany NIP
+		// 4) Próba pobrania faktur sesji przez nieautoryzowany NIP
 		await Assert.ThrowsAsync<KsefApiException>(async () =>
 		{
 			await KsefClient.GetSessionInvoicesAsync(
@@ -110,18 +110,18 @@ public class OnlineSessionE2ETests : TestBase
 			).ConfigureAwait(false);
 		});
 
-        // 5) Zamknięcie sesji przez nieautoryzowany NIP
-        await Assert.ThrowsAsync<KsefApiException>(async () =>
-        {
-            await KsefClient.CloseOnlineSessionAsync(
-                openSessionResponse.ReferenceNumber,
-                unauthorizedNipToken.AccessToken.Token
-            ).ConfigureAwait(false);
-        });
+		// 5) Zamknięcie sesji przez nieautoryzowany NIP
+		await Assert.ThrowsAsync<KsefApiException>(async () =>
+		{
+			await KsefClient.CloseOnlineSessionAsync(
+				openSessionResponse.ReferenceNumber,
+				unauthorizedNipToken.AccessToken.Token
+			).ConfigureAwait(false);
+		});
 
 
-        // 6) Próba pobrania faktury po nadanym numerze KSeF przez nieautoryzowany NIP
-        await Assert.ThrowsAsync<KsefApiException>(async () =>
+		// 6) Próba pobrania faktury po nadanym numerze KSeF przez nieautoryzowany NIP
+		await Assert.ThrowsAsync<KsefApiException>(async () =>
 		{
 			await KsefClient.GetInvoiceAsync(invoices.Invoices.First().KsefNumber, unauthorizedNipToken.AccessToken.Token).ConfigureAwait(false);
 		});
@@ -209,7 +209,8 @@ public class OnlineSessionE2ETests : TestBase
 			.WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: DefaultSchemaVersion, value: DefaultFormCodeValue)
 			.WithEncryption(
 				encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-				initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+				initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+				publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
 			.Build();
 
 		OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, accessToken, cancellationToken: CancellationToken).ConfigureAwait(false);

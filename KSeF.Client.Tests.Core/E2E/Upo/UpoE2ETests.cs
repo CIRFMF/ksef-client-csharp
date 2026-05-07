@@ -33,7 +33,7 @@ public class UpoE2ETests : TestBase
 
     [Theory]
     [InlineData(SystemCode.FA3, "invoice-template-fa-3.xml")]
-	public async Task UpoRetreivalAsyncFullIntegrationFlowAllStepsSucceed(SystemCode systemCode, string invoiceTemplatePath)
+    public async Task UpoRetreivalAsyncFullIntegrationFlowAllStepsSucceed(SystemCode systemCode, string invoiceTemplatePath)
     {
         // Arrange
         EncryptionData encryptionData = CryptographyService.GetEncryptionData();
@@ -181,7 +181,8 @@ public class UpoE2ETests : TestBase
             .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: DefaultSchemaVersion, value: DefaultFormCodeValue)
             .WithEncryption(
                 encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-                initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+                initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+                publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
             .Build();
 
         OpenOnlineSessionResponse openOnlineSessionResponse = await KsefClient.OpenOnlineSessionAsync(openOnlineSessionRequest, _accessToken, cancellationToken: CancellationToken).ConfigureAwait(false);

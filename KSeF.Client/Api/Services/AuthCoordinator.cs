@@ -28,7 +28,7 @@ public class AuthCoordinator(
         AuthenticationChallengeResponse challengeResponse = await authorizationClient
             .GetAuthChallengeAsync(cancellationToken).ConfigureAwait(false);
 
-        string challenge = challengeResponse.Challenge;      
+        string challenge = challengeResponse.Challenge;
 
         long timestampMs = challengeResponse.Timestamp.ToUnixTimeMilliseconds();
 
@@ -58,6 +58,11 @@ public class AuthCoordinator(
             authKsefTokenRequest = authKsefTokenRequest.WithAuthorizationPolicy(authorizationPolicy);
         }
 
+        if (cryptographyService.KsefTokenPublicKeyId != null)
+        {
+            authKsefTokenRequest = authKsefTokenRequest.WithPublicKeyId(cryptographyService.KsefTokenPublicKeyId);
+        }
+
         // 5) Wysłanie do KSeF
         SignatureResponse submissionResponse = await authorizationClient
             .SubmitKsefTokenAuthRequestAsync(authKsefTokenRequest.Build(), cancellationToken).ConfigureAwait(false);
@@ -66,7 +71,7 @@ public class AuthCoordinator(
         await WaitForAuthCompletionAsync(submissionResponse, cancellationToken).ConfigureAwait(false);
 
         // 7) Pobranie tokenu dostępowego
-        AuthenticationOperationStatusResponse accessTokenResponse = await authorizationClient.GetAccessTokenAsync(submissionResponse.AuthenticationToken.Token, cancellationToken).ConfigureAwait(false);       
+        AuthenticationOperationStatusResponse accessTokenResponse = await authorizationClient.GetAccessTokenAsync(submissionResponse.AuthenticationToken.Token, cancellationToken).ConfigureAwait(false);
 
         // 8) Zwróć token            
         return accessTokenResponse;
@@ -99,7 +104,7 @@ public class AuthCoordinator(
         if (authorizationPolicy != null)
         {
             authTokenRequest = authTokenRequest
-            .WithAuthorizationPolicy(authorizationPolicy);               
+            .WithAuthorizationPolicy(authorizationPolicy);
         }
 
         AuthenticationTokenRequest authorizeRequest = authTokenRequest.Build();

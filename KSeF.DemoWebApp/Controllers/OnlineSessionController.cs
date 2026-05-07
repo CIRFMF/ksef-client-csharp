@@ -25,7 +25,8 @@ public class OnlineSessionController(IKSeFClient ksefClient, ICryptographyServic
          .WithFormCode(systemCode: "FA (2)", schemaVersion: "1-0E", value: "FA")
          .WithEncryption(
              encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
-             initializationVector: encryptionData.EncryptionInfo.InitializationVector)
+             initializationVector: encryptionData.EncryptionInfo.InitializationVector,
+             publicKeyId: encryptionData.EncryptionInfo.PublicKeyId)
          .Build();
 
         OpenOnlineSessionResponse openSessionResponse = await ksefClient.OpenOnlineSessionAsync(request, accessToken, cancellationToken: cancellationToken).ConfigureAwait(false);
