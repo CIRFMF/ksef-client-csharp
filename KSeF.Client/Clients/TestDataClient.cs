@@ -69,15 +69,15 @@ namespace KSeF.Client.Clients
 
         /// <inheritdoc />
         public Task<Status> RestoreProductionRateLimitsAsync(string accessToken, CancellationToken cancellationToken = default) =>
-             ExecuteAsync<Status>(Routes.TestData.RestoreDefaultCertificatesLimitInCurrentSubject, HttpMethod.Delete, accessToken, cancellationToken);
+             ExecuteAsync<Status>(Routes.TestData.ProductionRateLimits, HttpMethod.Post, accessToken, cancellationToken);
 
         /// <inheritdoc />
-        public Task<Status> UnblockContextAsync(ContextIdentifier requestPayload, string accessToken, CancellationToken cancellationToken = default) =>  
+        public Task<Status> UnblockContextAsync(ContextIdentifier requestPayload, string accessToken, CancellationToken cancellationToken = default) =>
             ExecuteAsync<Status, ContextIdentifier>(Routes.TestData.UnblockContext, requestPayload, accessToken, cancellationToken);
 
         /// <inheritdoc />
-        public Task<Status> BlockContextAsync(ContextIdentifier requestPayload, string accessToken, CancellationToken cancellationToken = default) =>            
-            ExecuteAsync<Status, ContextIdentifier>(Routes.TestData.BlockContext, requestPayload, accessToken, cancellationToken);        
+        public Task<Status> BlockContextAsync(ContextIdentifier requestPayload, string accessToken, CancellationToken cancellationToken = default) =>
+            ExecuteAsync<Status, ContextIdentifier>(Routes.TestData.BlockContext, requestPayload, accessToken, cancellationToken);
 
     }
 }
