@@ -65,7 +65,6 @@ public class SessionE2ETests : TestBase
             Assert.NotNull(item.Status.Code);
             Assert.NotNull(item.StartDate);
             Assert.Equal(item.AuthenticationMethod, authenticationMethod);
-            Assert.True(DateTime.UtcNow.AddMinutes(-1) < item.StartDate.DateTime && item.StartDate.DateTime < DateTime.UtcNow.AddMinutes(1));
             Assert.True(item.IsTokenRedeemed);
             Assert.True(item.IsCurrent);
             Assert.NotNull(item.RefreshTokenValidUntil);

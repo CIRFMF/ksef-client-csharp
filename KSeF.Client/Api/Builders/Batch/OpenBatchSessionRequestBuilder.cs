@@ -32,6 +32,15 @@ namespace KSeF.Client.Api.Builders.Batch
         IOpenBatchSessionRequestBuilderBatchFile WithBatchFile(long fileSize, string fileHash);
 
         /// <summary>
+        /// Ustawia podstawowe informacje o pliku wsadowym wraz z typem kompresji.
+        /// </summary>
+        /// <param name="fileSize">Rozmiar pliku wsadowego w bajtach.</param>
+        /// <param name="fileHash">Skrót kryptograficzny całego pliku wsadowego.</param>
+        /// <param name="compressionType">Typ kompresji pliku wsadowego (np. Zip lub TarGz).</param>
+        /// <returns>Interfejs do dodawania części pliku wsadowego.</returns>
+        IOpenBatchSessionRequestBuilderBatchFile WithBatchFile(long fileSize, string fileHash, CompressionType compressionType);
+
+        /// <summary>
         /// Włącza lub wyłącza tryb offline sesji wsadowej.
         /// </summary>
         /// <param name="offlineMode">Wartość true włącza tryb offline, false pozostawia tryb domyślny.</param>
@@ -133,6 +142,7 @@ namespace KSeF.Client.Api.Builders.Batch
         private readonly List<BatchFilePartInfo> _parts = new();
         private long _batchFileSize;
         private string _batchFileHash = "";
+        private CompressionType? _batchFileCompressionType;
         private bool _offlineMode;
         private readonly EncryptionInfo _encryption = new();
 
@@ -175,6 +185,21 @@ namespace KSeF.Client.Api.Builders.Batch
 
             _batchFileSize = fileSize;
             _batchFileHash = fileHash;
+            _batchFileCompressionType = null;
+            return this;
+        }
+
+        /// <inheritdoc />
+        public IOpenBatchSessionRequestBuilderBatchFile WithBatchFile(long fileSize, string fileHash, CompressionType compressionType)
+        {
+            if (fileSize < 0 || string.IsNullOrWhiteSpace(fileHash))
+            {
+                throw new ArgumentException("Parametry BatchFile są nieprawidłowe.");
+            }
+
+            _batchFileSize = fileSize;
+            _batchFileHash = fileHash;
+            _batchFileCompressionType = compressionType;
             return this;
         }
 
@@ -275,6 +300,7 @@ namespace KSeF.Client.Api.Builders.Batch
                 {
                     FileSize = _batchFileSize,
                     FileHash = _batchFileHash,
+                    CompressionType = _batchFileCompressionType,
                     FileParts = _parts
                 },
                 OfflineMode = _offlineMode,
@@ -296,3 +322,4 @@ namespace KSeF.Client.Api.Builders.Batch
             OpenBatchSessionRequestBuilderImpl.Create();
     }
 }
+

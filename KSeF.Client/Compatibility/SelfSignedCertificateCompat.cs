@@ -354,10 +354,23 @@ internal static class SelfSignedCertificateCompat
 
     private static byte[] TrimLeadingZeros(byte[] data)
     {
+        if (data == null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+
         int start = 0;
+
         while (start < data.Length - 1 && data[start] == 0)
+        {
             start++;
-        if (start == 0) return data;
+        }
+
+        if (start == 0)
+        {
+            return data;
+        }
+
         byte[] trimmed = new byte[data.Length - start];
         Buffer.BlockCopy(data, start, trimmed, 0, trimmed.Length);
         return trimmed;
@@ -448,20 +461,20 @@ internal static class SelfSignedCertificateCompat
     /// </summary>
     private static byte[] ExportRsaPrivateKeyPkcs8(RSAParameters p)
     {
-        // PKCS#1 RSAPrivateKey
-        AsnWriter pkcs1 = new AsnWriter(AsnEncodingRules.DER);
-        pkcs1.PushSequence();
-        pkcs1.WriteInteger(0);
-        pkcs1.WriteIntegerUnsigned(p.Modulus);
-        pkcs1.WriteIntegerUnsigned(p.Exponent);
-        pkcs1.WriteIntegerUnsigned(p.D);
-        pkcs1.WriteIntegerUnsigned(p.P);
-        pkcs1.WriteIntegerUnsigned(p.Q);
-        pkcs1.WriteIntegerUnsigned(p.DP);
-        pkcs1.WriteIntegerUnsigned(p.DQ);
-        pkcs1.WriteIntegerUnsigned(p.InverseQ);
-        pkcs1.PopSequence();
-        byte[] pkcs1Der = pkcs1.Encode();
+		// PKCS#1 RSAPrivateKey
+		AsnWriter pkcs1 = new AsnWriter(AsnEncodingRules.DER);
+		pkcs1.PushSequence();
+		pkcs1.WriteInteger(0);
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.Modulus));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.Exponent));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.D));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.P));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.Q));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.DP));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.DQ));
+		pkcs1.WriteIntegerUnsigned(TrimLeadingZeros(p.InverseQ));
+		pkcs1.PopSequence();
+		byte[] pkcs1Der = pkcs1.Encode();
 
         // PKCS#8 PrivateKeyInfo
         AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

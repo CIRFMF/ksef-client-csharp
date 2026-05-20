@@ -125,14 +125,21 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.IndirectPermission
                     }
                 }
 
-                IReadOnlyList<Client.Core.Models.Permissions.PersonPermission> permissionsAfterRevoking = (await PermissionsUtils.SearchPersonPermissionsAsync(
-                   KsefClient,
-                   grantorAccessToken,
-                   PersonQueryType.PermissionsGrantedInCurrentContext,
-                   PersonPermissionState.Active).ConfigureAwait(false));
+                IReadOnlyList<Client.Core.Models.Permissions.PersonPermission> permissionsAfterRevoking = await AsyncPollingUtils.PollAsync(
+                    async () => await PermissionsUtils.SearchPersonPermissionsAsync(
+                       KsefClient,
+                       grantorAccessToken,
+                       PersonQueryType.PermissionsGrantedInCurrentContext,
+                       PersonPermissionState.Active).ConfigureAwait(false),
+					result => !result.Any(),
+				    delay: TimeSpan.FromSeconds(5),
+				    maxAttempts: 12,
+				    cancellationToken: CancellationToken.None);
 
-                Assert.False(permissionsAfterRevoking.Any(permission => permission.Description == GrantPermissionsEntityDescription));
-            }
+				Assert.DoesNotContain(
+					permissionsAfterRevoking,
+					permission => permission.Description == GrantPermissionsEntityDescription);
+			}
         }
     }
 }

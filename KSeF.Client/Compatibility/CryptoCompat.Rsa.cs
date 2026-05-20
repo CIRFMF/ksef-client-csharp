@@ -335,25 +335,30 @@ internal static class RsaCompat
         return bytes;
     }
 
-    /// <summary>
-    /// Zapisuje wartość liczby całkowitej bez znaku jako ASN.1 INTEGER (dodaje wiodące zero jeśli najwyższy bit jest ustawiony).
-    /// </summary>
-    private static void WriteUnsignedInteger(AsnWriter writer, byte[] value)
-    {
-        if (value is null || value.Length == 0)
-        {
-            writer.WriteInteger(0);
-            return;
-        }
+	/// <summary>
+	/// Zapisuje wartość liczby całkowitej bez znaku jako ASN.1 INTEGER (dodaje wiodące zero jeśli najwyższy bit jest ustawiony).
+	/// </summary>
+	private static void WriteUnsignedInteger(AsnWriter writer, byte[] value)
+	{
+		if (value is null || value.Length == 0)
+		{
+			writer.WriteInteger(0);
+			return;
+		}
 
-        writer.WriteIntegerUnsigned(new ReadOnlySpan<byte>(value));
-    }
+		// DER wymaga minimalnej reprezentacji, usunięcie nadmiarowych wiodących zer
+		int start = 0;
+		while (start < value.Length - 1 && value[start] == 0x00 && (value[start + 1] & 0x80) == 0)
+			start++;
 
-    /// <summary>
-    /// Dopełnia lub przycina tablicę bajtów do dokładnej docelowej długości.
-    /// Jeśli krótsza — dopełnia wiodącymi zerami. Jeśli dłuższa i wiodące bajty są zerami — przycina.
-    /// </summary>
-    private static byte[] PadOrTrimLeft(byte[] data, int targetLength)
+		writer.WriteIntegerUnsigned(new ReadOnlySpan<byte>(value, start, value.Length - start));
+	}
+
+	/// <summary>
+	/// Dopełnia lub przycina tablicę bajtów do dokładnej docelowej długości.
+	/// Jeśli krótsza — dopełnia wiodącymi zerami. Jeśli dłuższa i wiodące bajty są zerami — przycina.
+	/// </summary>
+	private static byte[] PadOrTrimLeft(byte[] data, int targetLength)
     {
         if (data.Length == targetLength)
             return data;

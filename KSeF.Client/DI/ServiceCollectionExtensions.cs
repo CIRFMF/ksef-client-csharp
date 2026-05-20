@@ -38,13 +38,9 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(options);
 
-        // UseCamelCaseForRequests is a non-nullable bool with a default of false.
-        if (options.UseCamelCaseForRequests)
-        {
-            JsonUtil.ResetConfigurationForCasePropertyName(true);
-        }
+        JsonUtil.ResetConfigurationForCasePropertyName(options.UseCamelCaseForRequests);
 
-        services
+        IHttpClientBuilder httpClientBuilder = services
             .AddHttpClient<IRestClient, RestClient>(http =>
             {
                 http.BaseAddress = new Uri(options.BaseUrl);
@@ -86,6 +82,11 @@ public static class ServiceCollectionExtensions
                 }
                 return handler;
             });
+
+        if (options.CircuitBreaker is null || options.CircuitBreaker.Enabled)
+        {
+            httpClientBuilder.AddHttpMessageHandler(() => new KsefCircuitBreakerHandler(options.CircuitBreaker ?? new KsefCircuitBreakerOptions()));
+        }
 
         services.AddSingleton<IRouteBuilder>(sp =>
         {

@@ -80,13 +80,13 @@
             /// Zablokowanie kontekstu testowego w środowisku DEMO.
             /// Wywołanie: POST /testdata/context/block
             /// </summary>
-            public const string BlockContext = Prefix + "/testdata/context/block";
+            public const string BlockContext = Prefix + "/context/block";
 
             /// <summary>
             /// Odblokowanie kontekstu testowego w środowisku DEMO.
             /// Wywołanie: POST /testdata/context/unblock
             /// </summary>
-            public const string UnblockContext = Prefix + "/testdata/context/unblock";
+            public const string UnblockContext = Prefix + "/context/unblock";
         }
 
         /// <summary>

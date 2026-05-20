@@ -16,10 +16,7 @@ namespace KSeF.Client.ClientFactory.DI
         /// <exception cref="ArgumentException"></exception>
         public static IServiceCollection RegisterKSeFClientFactory(this IServiceCollection services, bool useCamelCase = false)
         {
-            if (useCamelCase)
-            {
-                JsonUtil.ResetConfigurationForCasePropertyName(useCamelCase);
-            }
+            JsonUtil.ResetConfigurationForCasePropertyName(useCamelCase);
 
             services.AddHttpClient(Environment.Demo.ToString(), http =>
             {

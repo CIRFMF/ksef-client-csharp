@@ -1,6 +1,9 @@
 #nullable enable
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.RateLimits;
+using KSeF.Client.Core.Models.TestData;
+using KSeF.Client.DI;
+using KSeF.Client.Tests.Core.Config;
 using KSeF.Client.Tests.Utils;
 using KSeF.Client.Core.Exceptions;
 
@@ -15,6 +18,16 @@ namespace KSeF.Client.Tests.Core.E2E.Limits;
 public class RateLimitsE2ETests : TestBase
 {
     private const int MinApiRateLimit = 1;
+    private const int LowOtherPerSecondLimit = 1;
+    private const int MaxRequestsToReachOtherPerSecondLimit = 10;
+    private const int PermissionPropagationMaxAttempts = 30;
+    private const int RateLimitChangeMaxAttempts = 3;
+    private const int RateLimitChangeVerificationMaxAttempts = 15;
+    private const int CleanupRateLimitMaxAttempts = 5;
+    private static readonly TimeSpan RateLimitRetryDelay = TimeSpan.FromMilliseconds(1_200);
+    private static readonly TimeSpan RateLimitChangeVerificationDelay = TimeSpan.FromMilliseconds(1_200);
+    private static readonly TimeSpan PermissionPropagationPollingDelay = TimeSpan.FromSeconds(2);
+    private const int MaxAttempts = 12;
 
     // Maksymalne wartości (min zawsze 1) zgodne z walidacją API
     private static readonly RateMax OnlineSessionMax = new(10, 30, 120);
@@ -75,26 +88,34 @@ public class RateLimitsE2ETests : TestBase
             setRequest,
             accessToken);
 
-        // Act: Ponowne pobranie limitów po zmianie
-        EffectiveApiRateLimits currentLimits =
-            await LimitsClient.GetRateLimitsAsync(
-                accessToken,
-                CancellationToken);
+		// Act: Ponowne pobranie limitów po zmianie
+		EffectiveApiRateLimits currentLimits = await AsyncPollingUtils.PollAsync(
+			async () => await LimitsClient.GetRateLimitsAsync(
+				accessToken,
+				CancellationToken).ConfigureAwait(false),
+			response => response.OnlineSession.PerHour != originalLimits.OnlineSession.PerHour,
+			delay: TimeSpan.FromSeconds(5),
+			maxAttempts: MaxAttempts,
+			cancellationToken: CancellationToken.None);
 
-        // Assert: Weryfikacja, że limity zostały zmienione zgodnie z oczekiwaniami
-        AssertRateLimitsEqual(modifiedLimits, currentLimits);
+		// Assert: Weryfikacja, że limity zostały zmienione zgodnie z oczekiwaniami
+		AssertRateLimitsEqual(modifiedLimits, currentLimits);
 
         // Act: Przywrócenie wartości domyślnych
         await TestDataClient.RestoreRateLimitsAsync(accessToken);
 
-        // Act: Ponowne pobranie po przywróceniu
-        EffectiveApiRateLimits restoredLimits =
-            await LimitsClient.GetRateLimitsAsync(
-                accessToken,
-                CancellationToken);
+		// Act: Ponowne pobranie po przywróceniu
+		EffectiveApiRateLimits restoredLimits = await AsyncPollingUtils.PollAsync(
+			async () => await LimitsClient.GetRateLimitsAsync(
+				accessToken,
+				CancellationToken).ConfigureAwait(false),
+			response => response.OnlineSession.PerHour == originalLimits.OnlineSession.PerHour,
+			delay: TimeSpan.FromSeconds(5),
+			maxAttempts: MaxAttempts,
+			cancellationToken: CancellationToken.None);
 
-        // Assert: Weryfikacja, że wartości po przywróceniu są identyczne jak oryginalne
-        AssertRateLimitsEqual(originalLimits, restoredLimits);
+		// Assert: Weryfikacja, że wartości po przywróceniu są identyczne jak oryginalne
+		AssertRateLimitsEqual(originalLimits, restoredLimits);
     }
 
     /// <summary>
@@ -163,6 +184,156 @@ public class RateLimitsE2ETests : TestBase
     }
 
     /// <summary>
+    /// Weryfikuje limit endpointu z grupy "Pozostałe" przy równoległych żądaniach.
+    /// Po wspólnym starcie część żądań powinna przejść, a część zakończyć się HTTP 429.
+    /// </summary>
+    [Fact]
+    public async Task RateLimits_E2E_CurrentContextEndpoint_ShouldRateLimitConcurrentRequests()
+    {
+        if (ShouldSkipTestDataRateLimitsTest())
+        {
+            return;
+        }
+
+        string contextNip = MiscellaneousUtils.GetRandomNip();
+
+        AuthenticationOperationStatusResponse ownerAuth =
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, contextNip).ConfigureAwait(false);
+
+        string ownerAccessToken = ownerAuth.AccessToken.Token;
+
+        try
+        {
+            EffectiveApiRateLimits originalLimits =
+                await LimitsClient.GetRateLimitsAsync(ownerAccessToken, CancellationToken).ConfigureAwait(false);
+
+            EffectiveApiRateLimitsRequest rateLimitsRequest =
+                CreateRateLimitsWithLowOtherPerSecond(originalLimits);
+
+            await SetAndVerifyOtherPerSecondLimitAsync(
+                rateLimitsRequest,
+                ownerAccessToken,
+                contextNip).ConfigureAwait(false);
+
+            IReadOnlyList<Exception?> results =
+                await ExecuteConcurrentCurrentContextEndpointRequestsAsync(ownerAccessToken, MaxRequestsToReachOtherPerSecondLimit).ConfigureAwait(false);
+
+            AssertRateLimitReached(
+                results,
+                $"Burst traffic dla kontekstu {contextNip} powinien zwrócić co najmniej jedno HTTP 429.");
+
+            int successCount = results.Count(exception => exception is null);
+            int rateLimitedCount = results.Count(exception => exception is KsefRateLimitException);
+
+            Assert.True(successCount > 0,
+                $"Burst traffic dla kontekstu {contextNip} powinien przepuścić co najmniej jedno żądanie przed zadziałaniem limitu.");
+            Assert.True(rateLimitedCount > 0,
+                $"Burst traffic dla kontekstu {contextNip} powinien ograniczyć co najmniej jedno żądanie HTTP 429.");
+            Assert.Equal(results.Count, successCount + rateLimitedCount);
+        }
+        finally
+        {
+            await RestoreRateLimitsWithRetryAsync(ownerAccessToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Weryfikuje, że limit 429 jest liczony dla bieżącego kontekstu i IP,
+    /// a nie zbiorczo dla tego samego identyfikatora użytego w różnych kontekstach.
+    /// Mechanika testu wynika z dokumentacji limitów: liczniki są niezależne dla pary
+    /// ContextIdentifier + IP, a dla endpointów z grupy "Pozostałe" każdy endpoint ma własny licznik.
+    /// </summary>
+    [Fact]
+    public async Task RateLimits_E2E_SameIdentifierDifferentContexts_ShouldBeCountedPerContext()
+    {
+        if (ShouldSkipTestDataRateLimitsTest())
+        {
+            return;
+        }
+
+        string contextOverLimitNip = MiscellaneousUtils.GetRandomNip();
+        string contextStillBelowLimitNip = MiscellaneousUtils.GetRandomNip();
+        string authorizedNip = MiscellaneousUtils.GetRandomNip();
+
+        AuthenticationOperationStatusResponse contextOverLimitOwnerAuth =
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, contextOverLimitNip);
+        AuthenticationOperationStatusResponse contextStillBelowLimitOwnerAuth =
+            await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, contextStillBelowLimitNip);
+
+        string contextOverLimitOwnerToken = contextOverLimitOwnerAuth.AccessToken.Token;
+        string contextStillBelowLimitOwnerToken = contextStillBelowLimitOwnerAuth.AccessToken.Token;
+
+        await GrantInvoiceReadPermissionAsync(contextOverLimitNip, authorizedNip);
+        await GrantInvoiceReadPermissionAsync(contextStillBelowLimitNip, authorizedNip);
+
+        AuthenticationOperationStatusResponse contextOverLimitAuth =
+            await AuthenticateAuthorizedInContextAsync(authorizedNip, contextOverLimitNip);
+        AuthenticationOperationStatusResponse contextStillBelowLimitAuth =
+            await AuthenticateAuthorizedInContextAsync(authorizedNip, contextStillBelowLimitNip);
+
+        string contextOverLimitToken = contextOverLimitAuth.AccessToken.Token;
+        string contextStillBelowLimitToken = contextStillBelowLimitAuth.AccessToken.Token;
+
+        try
+        {
+            EffectiveApiRateLimits contextOverLimitLimits =
+                await LimitsClient.GetRateLimitsAsync(contextOverLimitOwnerToken, CancellationToken);
+            EffectiveApiRateLimits contextStillBelowLimitLimits =
+                await LimitsClient.GetRateLimitsAsync(contextStillBelowLimitOwnerToken, CancellationToken);
+
+            EffectiveApiRateLimitsRequest contextOverLimitRateLimitsRequest =
+                CreateRateLimitsWithLowOtherPerSecond(contextOverLimitLimits);
+            EffectiveApiRateLimitsRequest contextStillBelowLimitRateLimitsRequest =
+                CreateRateLimitsWithLowOtherPerSecond(contextStillBelowLimitLimits);
+
+            await SetAndVerifyOtherPerSecondLimitAsync(
+                contextOverLimitRateLimitsRequest,
+                contextOverLimitOwnerToken,
+                contextOverLimitNip);
+
+            await SetAndVerifyOtherPerSecondLimitAsync(
+                contextStillBelowLimitRateLimitsRequest,
+                contextStillBelowLimitOwnerToken,
+                contextStillBelowLimitNip);
+
+            IReadOnlyList<Exception?> contextOverLimitResults =
+                await ExecuteSequentialCurrentContextEndpointRequestsAsync(contextOverLimitToken, MaxRequestsToReachOtherPerSecondLimit);
+            AssertRateLimitReached(
+                contextOverLimitResults,
+                $"Kontekst {contextOverLimitNip} powinien dostać 429 po przekroczeniu własnego limitu dla IP.");
+
+            await AssertNoRateLimitAsync(
+                () => LimitsClient.GetLimitsForCurrentContextAsync(contextStillBelowLimitToken, CancellationToken),
+                $"Kontekst {contextStillBelowLimitNip} nie powinien dostać 429 po przekroczeniu limitu w kontekście {contextOverLimitNip} dla tego samego identyfikatora {authorizedNip}.");
+
+            IReadOnlyList<Exception?> contextStillBelowLimitResults =
+                await ExecuteSequentialCurrentContextEndpointRequestsAsync(contextStillBelowLimitToken, MaxRequestsToReachOtherPerSecondLimit);
+            AssertRateLimitReached(
+                contextStillBelowLimitResults,
+                $"Kontekst {contextStillBelowLimitNip} powinien dostać 429 dopiero po przekroczeniu własnego limitu dla IP.");
+        }
+        finally
+        {
+            await RestoreRateLimitsWithRetryAsync(contextOverLimitOwnerToken);
+            await RestoreRateLimitsWithRetryAsync(contextStillBelowLimitOwnerToken);
+
+            await RevokePermissionsWithRetryAsync(contextOverLimitNip, authorizedNip);
+            await RevokePermissionsWithRetryAsync(contextStillBelowLimitNip, authorizedNip);
+        }
+    }
+
+    private static bool ShouldSkipTestDataRateLimitsTest()
+    {
+        string baseUrl = TestConfig.GetApiSettings().BaseUrl?.TrimEnd('/') ?? string.Empty;
+
+        return IsSameBaseUrl(baseUrl, KsefEnvironmentsUris.PROD)
+            || IsSameBaseUrl(baseUrl, KsefEnvironmentsUris.DEMO);
+    }
+
+    private static bool IsSameBaseUrl(string actual, string expected)
+        => string.Equals(actual.TrimEnd('/'), expected.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Tworzy kopię przekazanych limitów i modyfikuje je w oparciu o delta, nie przekraczając granic (min=1, max wg kategorii).
     /// </summary>
     /// <param name="source">Oryginalne limity.</param>
@@ -184,6 +355,246 @@ public class RateLimitsE2ETests : TestBase
             InvoiceDownload = ModifyWithinBounds(source.InvoiceDownload, delta, InvoiceDownloadMax),
             Other = ModifyWithinBounds(source.Other, delta, OtherMax)
         };
+    }
+
+    private static EffectiveApiRateLimitsRequest CreateRateLimitsWithLowOtherPerSecond(EffectiveApiRateLimits source)
+    {
+        return new EffectiveApiRateLimitsRequest
+        {
+            RateLimits = new EffectiveApiRateLimits
+            {
+                OnlineSession = source.OnlineSession,
+                BatchSession = source.BatchSession,
+                InvoiceSend = source.InvoiceSend,
+                InvoiceStatus = source.InvoiceStatus,
+                SessionList = source.SessionList,
+                SessionInvoiceList = source.SessionInvoiceList,
+                SessionMisc = source.SessionMisc,
+                InvoiceMetadata = source.InvoiceMetadata,
+                InvoiceExport = source.InvoiceExport,
+                InvoiceExportStatus = source.InvoiceExportStatus,
+                InvoiceDownload = source.InvoiceDownload,
+                Other = new EffectiveApiRateLimitValues
+                {
+                    PerSecond = LowOtherPerSecondLimit,
+                    PerMinute = source.Other.PerMinute,
+                    PerHour = source.Other.PerHour
+                }
+            }
+        };
+    }
+
+    private async Task GrantInvoiceReadPermissionAsync(string contextNip, string authorizedNip)
+    {
+        TestDataPermissionsGrantRequest grantRequest = new()
+        {
+            AuthorizedIdentifier = new AuthorizedIdentifier
+            {
+                Type = AuthorizedIdentifierType.Nip,
+                Value = authorizedNip
+            },
+            ContextIdentifier = new KSeF.Client.Core.Models.TestData.ContextIdentifier
+            {
+                Value = contextNip
+            },
+            Permissions =
+            [
+                new Permission
+                {
+                    PermissionType = PermissionType.InvoiceRead,
+                    Description = "Rate limits per context E2E"
+                }
+            ]
+        };
+
+        await TestDataClient.GrantPermissionsAsync(grantRequest, CancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task RevokePermissionsAsync(string contextNip, string authorizedNip)
+    {
+        TestDataPermissionsRevokeRequest revokeRequest = new()
+        {
+            AuthorizedIdentifier = new AuthorizedIdentifier
+            {
+                Type = AuthorizedIdentifierType.Nip,
+                Value = authorizedNip
+            },
+            ContextIdentifier = new KSeF.Client.Core.Models.TestData.ContextIdentifier
+            {
+                Value = contextNip
+            }
+        };
+
+        await TestDataClient.RevokePermissionsAsync(revokeRequest, CancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<AuthenticationOperationStatusResponse> AuthenticateAuthorizedInContextAsync(
+        string authorizedNip,
+        string contextNip)
+    {
+        AuthenticationOperationStatusResponse? response = await AsyncPollingUtils.PollAsync(
+            action: async () =>
+            {
+                try
+                {
+                    return await AuthenticationUtils.AuthenticateAsync(
+                        AuthorizationClient,
+                        authorizedNip,
+                        contextNip).ConfigureAwait(false);
+                }
+                catch
+                {
+                    return null;
+                }
+            },
+            condition: authResponse => authResponse is not null,
+            delay: PermissionPropagationPollingDelay,
+            maxAttempts: PermissionPropagationMaxAttempts,
+            cancellationToken: CancellationToken).ConfigureAwait(false);
+
+        return response!;
+    }
+
+    private async Task SetAndVerifyOtherPerSecondLimitAsync(
+        EffectiveApiRateLimitsRequest request,
+        string ownerAccessToken,
+        string contextNip)
+    {
+        EffectiveApiRateLimits? lastLimits = null;
+
+        for (int attempt = 1; attempt <= RateLimitChangeMaxAttempts; attempt++)
+        {
+            await TestDataClient.SetRateLimitsAsync(request, ownerAccessToken, CancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                lastLimits = await AsyncPollingUtils.PollAsync(
+                    action: () => LimitsClient.GetRateLimitsAsync(ownerAccessToken, CancellationToken),
+                    condition: limits => limits.Other.PerSecond == LowOtherPerSecondLimit,
+                    description: $"Limit Other.PerSecond dla kontekstu {contextNip} powinien zostać zastosowany.",
+                    delay: RateLimitChangeVerificationDelay,
+                    maxAttempts: RateLimitChangeVerificationMaxAttempts,
+                    cancellationToken: CancellationToken).ConfigureAwait(false);
+
+                return;
+            }
+            catch (TimeoutException) when (attempt < RateLimitChangeMaxAttempts)
+            {
+                lastLimits = await LimitsClient.GetRateLimitsAsync(ownerAccessToken, CancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        Assert.Fail(
+            $"Kontekst {contextNip} powinien mieć ustawiony limit Other.PerSecond={LowOtherPerSecondLimit}, a widzi {lastLimits?.Other.PerSecond}.");
+    }
+
+    private async Task<IReadOnlyList<Exception?>> ExecuteSequentialCurrentContextEndpointRequestsAsync(string accessToken, int maxCount)
+    {
+        // GET /limits/context jest endpointem z grupy "Pozostałe". Używamy go jako osobnego
+        // licznika, żeby wcześniejsze GET /rate-limits z setupu nie wpływały na właściwą asercję.
+        List<Exception?> results = new(capacity: maxCount);
+
+        for (int i = 0; i < maxCount; i++)
+        {
+            Exception? exception = await CaptureExceptionAsync(
+                () => LimitsClient.GetLimitsForCurrentContextAsync(accessToken, CancellationToken)).ConfigureAwait(false);
+
+            results.Add(exception);
+
+            if (exception is not null && exception is not KsefRateLimitException)
+            {
+                throw exception;
+            }
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyList<Exception?>> ExecuteConcurrentCurrentContextEndpointRequestsAsync(string accessToken, int requestCount)
+    {
+        TaskCompletionSource<bool> startSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Task<Exception?>[] tasks = Enumerable.Range(0, requestCount)
+            .Select(_ => ExecuteCurrentContextRequestWithSharedStartAsync(accessToken, startSignal.Task))
+            .ToArray();
+
+        startSignal.SetResult(true);
+
+        return await Task.WhenAll(tasks).ConfigureAwait(false);
+    }
+
+    private async Task<Exception?> ExecuteCurrentContextRequestWithSharedStartAsync(string accessToken, Task startSignal)
+    {
+        await startSignal.ConfigureAwait(false);
+
+        return await CaptureExceptionAsync(
+            () => LimitsClient.GetLimitsForCurrentContextAsync(accessToken, CancellationToken)).ConfigureAwait(false);
+    }
+
+    private static void AssertRateLimitReached(IReadOnlyList<Exception?> results, string message)
+    {
+        Assert.True(results.Any(exception => exception is KsefRateLimitException), message);
+    }
+
+    private static async Task<Exception?> CaptureExceptionAsync(Func<Task> action)
+    {
+        try
+        {
+            await action().ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception exception)
+        {
+            return exception;
+        }
+    }
+
+    private static async Task AssertNoRateLimitAsync(Func<Task> action, string message)
+    {
+        Exception? exception = await CaptureExceptionAsync(action).ConfigureAwait(false);
+
+        Assert.False(exception is KsefRateLimitException, message);
+
+        if (exception is not null)
+        {
+            throw exception;
+        }
+    }
+
+    private async Task RestoreRateLimitsWithRetryAsync(string accessToken)
+    {
+        await ExecuteWithRateLimitRetryAsync(
+            () => TestDataClient.RestoreRateLimitsAsync(accessToken, CancellationToken)).ConfigureAwait(false);
+    }
+
+    private async Task RevokePermissionsWithRetryAsync(string contextNip, string authorizedNip)
+    {
+        await ExecuteWithRateLimitRetryAsync(
+            () => RevokePermissionsAsync(contextNip, authorizedNip)).ConfigureAwait(false);
+    }
+
+    private static async Task ExecuteWithRateLimitRetryAsync(Func<Task> action)
+    {
+        await AsyncPollingUtils.PollAsync(
+            check: async () =>
+            {
+                await action().ConfigureAwait(false);
+                return true;
+            },
+            description: "Cleanup po teście limitów powinien zakończyć się mimo chwilowego HTTP 429.",
+            delay: RateLimitRetryDelay,
+            maxAttempts: CleanupRateLimitMaxAttempts,
+            shouldRetryOnException: exception => exception is KsefRateLimitException,
+            rateLimitOnException: exception =>
+            {
+                KsefRateLimitException rateLimitException = (KsefRateLimitException)exception;
+                TimeSpan delay = rateLimitException.RecommendedDelay > RateLimitRetryDelay
+                    ? rateLimitException.RecommendedDelay
+                    : RateLimitRetryDelay;
+
+                return new AsyncPollingUtils.RateLimitDecision(IsRateLimited: true, DelayOverride: delay);
+            },
+            cancellationToken: CancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -293,22 +704,5 @@ public class RateLimitsE2ETests : TestBase
         Assert.Equal(expected.Other.PerSecond, actual.Other.PerSecond);
         Assert.Equal(expected.Other.PerMinute, actual.Other.PerMinute);
         Assert.Equal(expected.Other.PerHour, actual.Other.PerHour);
-    }
-
-    /// <summary>
-    /// Struktura przechowująca maksymalne dopuszczalne wartości limitów danej kategorii
-    /// (na sekundę, na minutę, na godzinę).
-    /// </summary>
-    private readonly struct RateMax
-    {
-        public RateMax(int perSecond, int perMinute, int perHour)
-        {
-            PerSecond = perSecond;
-            PerMinute = perMinute;
-            PerHour = perHour;
-        }
-        public int PerSecond { get; }
-        public int PerMinute { get; }
-        public int PerHour { get; }
     }
 }

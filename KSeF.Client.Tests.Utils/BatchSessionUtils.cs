@@ -23,6 +23,7 @@ public static class BatchUtils
     private const int DefaultPageOffset = 0;
     private const int DefaultPageSize = 10;
     private const long MaxPartSizeBytes = 100L * 1000 * 1000; // 100MB
+    private const int TarBlockSize = 512;
 
     /// <summary>
     /// Pobiera metadane faktur przesłanych w ramach sesji wsadowej.
@@ -124,6 +125,47 @@ public static class BatchUtils
     }
 
     /// <summary>
+    /// Buduje TAR.GZ w pamieci z podanych plikow.
+    /// </summary>
+    /// <param name="files">Kolekcja plikow do spakowania.</param>
+    /// <returns>Bajty archiwum TAR.GZ.</returns>
+    public static byte[] BuildTarGzBytes(
+        IEnumerable<(string FileName, byte[] Content)> files)
+    {
+        Guard.ThrowIfNull(files);
+
+        using MemoryStream output = new();
+        using (GZipStream gzip = new(output, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            foreach ((string fileName, byte[] content) in files)
+            {
+                Guard.ThrowIfNullOrWhiteSpace(fileName);
+                Guard.ThrowIfNull(content);
+                WriteTarEntry(gzip, fileName, content);
+            }
+
+            gzip.Write(new byte[TarBlockSize], 0, TarBlockSize);
+            gzip.Write(new byte[TarBlockSize], 0, TarBlockSize);
+        }
+
+        return output.ToArray();
+    }
+
+    /// <summary>
+    /// Buduje TAR.GZ w pamieci z podanych plikow i zwraca bajty oraz metadane.
+    /// </summary>
+    public static (byte[] TarGzBytes, FileMetadata Meta) BuildTarGz(
+        IEnumerable<(string FileName, byte[] Content)> files,
+        ICryptographyService cryptographyService)
+    {
+        Guard.ThrowIfNull(cryptographyService);
+
+        byte[] tarGzBytes = BuildTarGzBytes(files);
+        FileMetadata meta = cryptographyService.GetMetaData(tarGzBytes);
+        return (tarGzBytes, meta);
+    }
+
+    /// <summary>
     /// Oblicza optymalną liczbę części paczki na podstawie rozmiaru ZIP, 
     /// tak aby każda część nie przekraczała 100MB.
     /// </summary>
@@ -220,7 +262,7 @@ public static class BatchUtils
     /// <summary>
     /// Buduje żądanie otwarcia sesji wsadowej z kodem formularza i listą zaszyfrowanych partów.
     /// </summary>
-    /// <param name="zipMeta">Metadane pliku ZIP.</param>
+    /// <param name="zipMeta">Metadane pliku archiwum wsadowego.</param>
     /// <param name="encryption">Dane szyfrowania.</param>
     /// <param name="encryptedParts">Lista zaszyfrowanych partów.</param>
     /// <param name="systemCode">Kod systemowy formularza.</param>
@@ -239,6 +281,48 @@ public static class BatchUtils
             .Create()
             .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: schemaVersion, value: value)
             .WithBatchFile(fileSize: zipMeta.FileSize, fileHash: zipMeta.HashSHA);
+
+        foreach (BatchPartSendingInfo p in encryptedParts)
+        {
+            builder = builder.AddBatchFilePart(
+                ordinalNumber: p.OrdinalNumber,
+                fileSize: p.Metadata.FileSize,
+                fileHash: p.Metadata.HashSHA);
+        }
+
+        return builder
+            .EndBatchFile()
+            .WithEncryption(
+                encryptedSymmetricKey: encryption.EncryptionInfo.EncryptedSymmetricKey,
+                initializationVector: encryption.EncryptionInfo.InitializationVector,
+                publicKeyId: encryption.EncryptionInfo.PublicKeyId)
+            .Build();
+    }
+
+    /// <summary>
+    /// Buduje żądanie otwarcia sesji wsadowej z kodem formularza, typem kompresji i listą zaszyfrowanych partów.
+    /// </summary>
+    /// <param name="zipMeta">Metadane pliku archiwum wsadowego.</param>
+    /// <param name="encryption">Dane szyfrowania.</param>
+    /// <param name="encryptedParts">Lista zaszyfrowanych partów.</param>
+    /// <param name="systemCode">Kod systemowy formularza.</param>
+    /// <param name="schemaVersion">Wersja schematu.</param>
+    /// <param name="value">Wartość formularza.</param>
+    /// <param name="compressionType">Typ kompresji użyty do przygotowania pliku wsadowego.</param>
+    /// <returns>Obiekt żądania otwarcia sesji wsadowej.</returns>
+    public static OpenBatchSessionRequest BuildOpenBatchRequest(
+        FileMetadata zipMeta,
+        EncryptionData encryption,
+        IEnumerable<BatchPartSendingInfo> encryptedParts,
+        SystemCode systemCode,
+        string schemaVersion,
+        string value,
+        CompressionType compressionType)
+    {
+        IOpenBatchSessionRequestBuilderBatchFile builder = OpenBatchSessionRequestBuilder
+            .Create()
+            .WithFormCode(systemCode: SystemCodeHelper.GetSystemCode(systemCode), schemaVersion: schemaVersion, value: value)
+            .WithBatchFile(fileSize: zipMeta.FileSize, fileHash: zipMeta.HashSHA, compressionType: compressionType);
 
         foreach (BatchPartSendingInfo p in encryptedParts)
         {
@@ -381,6 +465,240 @@ public static class BatchUtils
 
         using MemoryStream stream = new(zipBytes);
         return await UnzipAsync(stream, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Rozpakowuje archiwum TAR.GZ do słownika plików.
+    /// </summary>
+    /// <param name="tarGzStream">Strumień zawierający archiwum TAR.GZ.</param>
+    /// <param name="cancellationToken">Token anulowania operacji.</param>
+    /// <returns>Słownik z nazwami plików i ich zawartością tekstową.</returns>
+    public static async Task<Dictionary<string, string>> UnzipTarGzAsync(
+        Stream tarGzStream,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNull(tarGzStream);
+
+        using GZipStream gzip = new(tarGzStream, CompressionMode.Decompress, leaveOpen: true);
+        using MemoryStream tarStream = new();
+
+#if NETFRAMEWORK
+        await Task.Run(() => gzip.CopyTo(tarStream), cancellationToken).ConfigureAwait(false);
+#else
+        await gzip.CopyToAsync(tarStream, cancellationToken).ConfigureAwait(false);
+#endif
+
+        byte[] tarBytes = tarStream.ToArray();
+        Dictionary<string, string> files = new(StringComparer.OrdinalIgnoreCase);
+
+        const int blockSize = TarBlockSize;
+        int offset = 0;
+
+        while (offset + blockSize <= tarBytes.Length)
+        {
+            if (IsTarZeroBlock(tarBytes, offset, blockSize))
+            {
+                break;
+            }
+
+            string name = ReadTarNullTerminatedString(tarBytes, offset, 100);
+            string prefix = ReadTarNullTerminatedString(tarBytes, offset + 345, 155);
+            if (!string.IsNullOrWhiteSpace(prefix))
+            {
+                name = $"{prefix}/{name}";
+            }
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                break;
+            }
+
+            long size = ParseTarOctal(tarBytes, offset + 124, 12);
+            int contentOffset = offset + blockSize;
+
+            if (size > 0)
+            {
+                int contentLength = checked((int)size);
+                byte[] contentBytes = new byte[contentLength];
+                Array.Copy(tarBytes, contentOffset, contentBytes, 0, contentLength);
+                files[name] = Encoding.UTF8.GetString(contentBytes);
+            }
+
+            int paddedSize = (int)(((size + blockSize - 1) / blockSize) * blockSize);
+            offset = contentOffset + paddedSize;
+        }
+
+        return files;
+    }
+
+    /// <summary>
+    /// Rozpakowuje archiwum TAR.GZ zapisane w tablicy bajtów do słownika plików.
+    /// </summary>
+    /// <param name="tarGzBytes">Tablica bajtów zawierająca archiwum TAR.GZ.</param>
+    /// <param name="cancellationToken">Token anulowania operacji.</param>
+    /// <returns>Słownik z nazwami plików i ich zawartością tekstową.</returns>
+    public static async Task<Dictionary<string, string>> UnzipTarGzAsync(
+        byte[] tarGzBytes,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNull(tarGzBytes);
+
+        using MemoryStream stream = new(tarGzBytes);
+        return await UnzipTarGzAsync(stream, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsTarZeroBlock(byte[] bytes, int offset, int length)
+    {
+        for (int i = 0; i < length; i++)
+        {
+            if (bytes[offset + i] != 0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static string ReadTarNullTerminatedString(byte[] bytes, int offset, int length)
+    {
+        int end = offset;
+        int limit = offset + length;
+        while (end < limit && bytes[end] != 0)
+        {
+            end++;
+        }
+        return Encoding.UTF8.GetString(bytes, offset, end - offset);
+    }
+
+    private static long ParseTarOctal(byte[] bytes, int offset, int length)
+    {
+        int end = offset + length;
+        while (end > offset && (bytes[end - 1] == 0 || bytes[end - 1] == (byte)' '))
+        {
+            end--;
+        }
+        if (end <= offset)
+        {
+            return 0;
+        }
+        string octal = Encoding.ASCII.GetString(bytes, offset, end - offset).Trim();
+        return Convert.ToInt64(octal, 8);
+    }
+
+    private static void WriteTarEntry(Stream tarStream, string fileName, byte[] content)
+    {
+        byte[] header = new byte[TarBlockSize];
+        WriteTarPath(header, fileName);
+
+        WriteTarOctal(header, 100, 8, 420); // 0644
+        WriteTarOctal(header, 108, 8, 0);   // uid
+        WriteTarOctal(header, 116, 8, 0);   // gid
+        WriteTarOctal(header, 124, 12, content.LongLength);
+        WriteTarOctal(header, 136, 12, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        for (int i = 148; i < 156; i++)
+        {
+            header[i] = (byte)' ';
+        }
+
+        header[156] = (byte)'0'; // regular file
+        WriteTarString(header, 257, 6, "ustar");
+        WriteTarString(header, 263, 2, "00");
+
+        int checksum = 0;
+        for (int i = 0; i < header.Length; i++)
+        {
+            checksum += header[i];
+        }
+
+        WriteTarChecksum(header, checksum);
+
+        tarStream.Write(header, 0, header.Length);
+        tarStream.Write(content, 0, content.Length);
+
+        int paddingLength = (TarBlockSize - (content.Length % TarBlockSize)) % TarBlockSize;
+        if (paddingLength > 0)
+        {
+            tarStream.Write(new byte[paddingLength], 0, paddingLength);
+        }
+    }
+
+    private static void WriteTarPath(byte[] header, string fileName)
+    {
+        string normalized = fileName.Replace('\\', '/').TrimStart('/');
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            throw new ArgumentException("Nazwa pliku w archiwum TAR.GZ nie moze byc pusta.", nameof(fileName));
+        }
+
+        byte[] nameBytes = Encoding.UTF8.GetBytes(normalized);
+        if (nameBytes.Length <= 100)
+        {
+            WriteTarString(header, 0, 100, normalized);
+            return;
+        }
+
+        string? prefix = null;
+        string name = normalized;
+
+        for (int i = normalized.Length - 1; i > 0; i--)
+        {
+            if (normalized[i] != '/')
+            {
+                continue;
+            }
+
+            string candidatePrefix = normalized[..i];
+            string candidateName = normalized[(i + 1)..];
+
+            if (Encoding.UTF8.GetByteCount(candidatePrefix) <= 155 &&
+                Encoding.UTF8.GetByteCount(candidateName) <= 100)
+            {
+                prefix = candidatePrefix;
+                name = candidateName;
+                break;
+            }
+        }
+
+        if (prefix is null)
+        {
+            throw new ArgumentException(
+                "Nazwa pliku jest zbyt dluga dla formatu USTAR (prefix<=155B i name<=100B).",
+                nameof(fileName));
+        }
+
+        WriteTarString(header, 0, 100, name);
+        WriteTarString(header, 345, 155, prefix);
+    }
+
+    private static void WriteTarString(byte[] header, int offset, int fieldLength, string value)
+    {
+        byte[] valueBytes = Encoding.UTF8.GetBytes(value);
+        int bytesToCopy = Math.Min(valueBytes.Length, fieldLength);
+        Array.Copy(valueBytes, 0, header, offset, bytesToCopy);
+    }
+
+    private static void WriteTarOctal(byte[] header, int offset, int fieldLength, long value)
+    {
+        string octal = Convert.ToString(value, 8);
+        int maxDigits = fieldLength - 1;
+        if (octal.Length > maxDigits)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), $"Wartosc {value} nie miesci sie w polu TAR ({fieldLength}).");
+        }
+
+        string padded = octal.PadLeft(maxDigits, '0');
+        byte[] paddedBytes = Encoding.ASCII.GetBytes(padded);
+        Array.Copy(paddedBytes, 0, header, offset, paddedBytes.Length);
+    }
+
+    private static void WriteTarChecksum(byte[] header, int checksum)
+    {
+        string octal = Convert.ToString(checksum, 8).PadLeft(6, '0');
+        byte[] checksumBytes = Encoding.ASCII.GetBytes(octal);
+        Array.Copy(checksumBytes, 0, header, 148, checksumBytes.Length);
+        header[154] = 0;
+        header[155] = (byte)' ';
     }
 
     /// <summary>

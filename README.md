@@ -119,6 +119,11 @@ Konfiguracja może być wczytana z pliku `appsettings.json`:
     "BaseUrl": "https://ksef-test.mf.gov.pl",
     "CustomHeaders": { 
       "X-Custom-Header": "value"
+    },
+    "CircuitBreaker": {
+      "Enabled": true,
+      "FailureThreshold": 5,
+      "BreakDurationSeconds": 30
     }
   }
 }
@@ -139,6 +144,7 @@ builder.Services.AddKSeFClient(options =>
     options.BaseUrl = apiSettings?.BaseUrl ?? KsefEnvironmentsUris.TEST;
     options.WebProxy = apiSettings?.WebProxy; // opcjonalnie: konfiguracja proxy
     options.CustomHeaders = apiSettings?.CustomHeaders ?? new Dictionary<string, string>();
+    options.CircuitBreaker = apiSettings?.CircuitBreaker ?? new KsefCircuitBreakerOptions();
 });
 // Rejestracja własnej implementacji ICertificateFetcher.
 builder.Services.AddSingleton<ICertificateFetcher, MyCertificateFetcher>();
@@ -148,6 +154,8 @@ builder.Services.AddCryptographyClient(CryptographyServiceWarmupMode.NonBlocking
 ```
 
 **Uwaga:** `AddCryptographyClient` jest wymagany dla operacji wymagających szyfrowania (np. sesje wsadowe, eksport faktur).
+
+**Uwaga (resilience):** `CircuitBreaker` jest domyślnie włączony i zaleca się jego pozostawienie włączonego.
 
 **Uwaga:** `AddCryptographyClient` rejestruje serwis kryptograficzny `CryptographyService` oraz zapewnia dodanie algorytmu kryptograficznego dla ECDSA z SHA-256 do klasy `CryptoConfig`.
 
@@ -201,6 +209,32 @@ public class InvoiceService
         return response.ReferenceNumber;
     }
 }
+```
+
+## Obsługa paczek TAR.GZ w sesjach wsadowych
+
+Sesje wsadowe obsługują wskazanie typu kompresji pliku wsadowego przez `BatchFile.CompressionType`. Dla paczek TAR.GZ należy przygotować zawartość jako `.tar.gz` i przekazać `CompressionType.TarGz` podczas budowania żądania otwarcia sesji.
+
+```csharp
+OpenBatchSessionRequest request = OpenBatchSessionRequestBuilder
+    .Create()
+    .WithFormCode(systemCode, schemaVersion, value)
+    .WithBatchFile(fileSize, fileHash, CompressionType.TarGz)
+    .AddBatchFilePart(ordinalNumber, partFileSize, partFileHash)
+    .EndBatchFile()
+    .WithEncryption(encryptedSymmetricKey, initializationVector, publicKeyId)
+    .Build();
+```
+
+Eksport paczki faktur rowniez obsluguje wskazanie typu kompresji przez `InvoiceExportRequest.CompressionType`. Dla paczek TAR.GZ ustaw `CompressionType.TarGz`, a dla ZIP mozesz wskazac `CompressionType.Zip` jawnie. Brak wartosci zachowuje domyslna kompatybilnosc API.
+
+```csharp
+InvoiceExportRequest request = new()
+{
+    Encryption = encryptionInfo,
+    CompressionType = CompressionType.TarGz,
+    Filters = filters
+};
 ```
 
 ## Testowanie

@@ -85,6 +85,9 @@ node generate-pdf-wrapper.mjs upo .\Externals\ksef-pdf-generator\assets\upo.xml 
 # Faktura z własnego pliku
 node generate-pdf-wrapper.mjs invoice C:\mojefaktury\faktura-2024-01.xml output.pdf
 
+# Wszystkie faktury/UPO z folderu (w zależności od wybranej opcji)
+node generate-pdf-wrapper.mjs <invoice|upo> C:\mojefaktury
+
 # Faktura z dodatkowymi danymi (numer KSeF, QR code)
 node generate-pdf-wrapper.mjs invoice faktura.xml output.pdf '{\"nrKSeF\":\"123-456\",\"qrCode\":\"https://...\"}'
 ```
@@ -119,6 +122,9 @@ dotnet run --framework net10.0 -- upo .\Externals\ksef-pdf-generator\assets\upo.
 
 # Faktura z jawnym określeniem typu
 dotnet run --framework net10.0 -- faktura C:\ścieżka\do\faktury.xml
+
+# Wszystkie faktury/UPO z folderu z jawnym typem (w zależności od wybranej opcji)
+dotnet run --framework net10.0 -- <faktura|upo> C:\mojefaktury
 
 # Faktura z dodatkowymi danymi (numer KSeF, QR code)
 # UWAGA: W PowerShell użyj pojedynczych cudzysłowów dla JSON!

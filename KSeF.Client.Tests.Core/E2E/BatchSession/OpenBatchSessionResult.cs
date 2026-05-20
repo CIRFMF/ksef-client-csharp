@@ -6,6 +6,7 @@ public partial class BatchSessionE2ETests
 {
     private sealed record OpenBatchSessionResult(
         string ReferenceNumber,
+        OpenBatchSessionRequest OpenBatchSessionRequest,
         OpenBatchSessionResponse OpenBatchSessionResponse,
         List<BatchPartSendingInfo> EncryptedParts
     );

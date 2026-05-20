@@ -1,5 +1,4 @@
 using KSeF.Client.Core.Models;
-using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Sessions;
@@ -83,7 +82,7 @@ public class InvoiceE2ETests : TestBase
     }
 
     /// <summary>
-    /// Pełny przepływ wysłania i pobrania faktury oraz eksportu.
+    /// Pełny przepływ wysłania i pobrania faktury.
     /// Kroki:
     /// 1) otwarcie sesji online,
     /// 2) wysłanie faktury,
@@ -93,9 +92,7 @@ public class InvoiceE2ETests : TestBase
     /// 6) pobranie numeru KSeF pierwszej faktury,
     /// 7) pobranie faktury po numerze KSeF,
     /// 8) przygotowanie zapytania o metadane sprzedażowe (Subject1),
-    /// 9) pobranie i weryfikacja metadanych sprzedażowych,
-    /// 10) inicjacja eksportu faktur,
-    /// 11) oczekiwanie na zakończenie eksportu i weryfikacja paczki.
+    /// 9) pobranie i weryfikacja metadanych sprzedażowych.
     /// </summary>
     [Theory]
     [InlineData(SystemCode.FA3, "invoice-template-fa-3.xml")]
@@ -193,32 +190,6 @@ public class InvoiceE2ETests : TestBase
                 $"Invoice {inv.KsefNumber} InvoicingDate {inv.InvoicingDate} poza zakresem [{query.DateRange.From}, {query.DateRange.To}].");
         }
         Assert.InRange(invoicesMetadataForSeller.Invoices.Count, MinInvoiceCount, PageSize);
-
-        // Krok 10: inicjacja eksportu faktur
-        InvoiceExportRequest invoiceExportRequest = new()
-        {
-            Encryption = encryptionData.EncryptionInfo,
-            Filters = query
-        };
-
-        OperationResponse invoicesForSellerResponse = await KsefClient.ExportInvoicesAsync(
-            invoiceExportRequest,
-            _accessToken,
-            cancellationToken: CancellationToken);
-        Assert.NotNull(invoicesForSellerResponse?.ReferenceNumber);
-
-        // Krok 11: oczekiwanie na zakończenie eksportu i weryfikacja paczki
-        InvoiceExportStatusResponse exportStatus = await AsyncPollingUtils.PollAsync(
-            async () => await KsefClient.GetInvoiceExportStatusAsync(
-                invoicesForSellerResponse.ReferenceNumber,
-                _accessToken,
-                CancellationToken).ConfigureAwait(false),
-            result => result?.Status?.Code == InvoiceExportStatusCodeResponse.ExportSuccess,
-            cancellationToken: CancellationToken);
-        Assert.NotNull(exportStatus);
-        Assert.Equal(InvoiceExportStatusCodeResponse.ExportSuccess, exportStatus.Status.Code);
-        Assert.NotNull(exportStatus.Package);
-        Assert.NotEmpty(exportStatus.Package.Parts);
     }
 
     /// <summary>

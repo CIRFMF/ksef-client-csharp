@@ -44,4 +44,11 @@ public static class KsefDateTimeHelper
     /// </summary>
     public static DateTime GetWarsawNow() =>
         TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, WarsawTimeZone.Value);
+
+	public static TimeZoneInfo GetEuropeWarsawTimeZone()
+	{
+		try { return TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw"); } catch { }
+		try { return TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time"); } catch { }
+		throw new TimeZoneNotFoundException("Nie znaleziono strefy czasowej Europe/Warsaw ani Central European Standard Time");
+	}
 }

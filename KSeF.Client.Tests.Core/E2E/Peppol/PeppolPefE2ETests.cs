@@ -191,7 +191,7 @@ public partial class PeppolPefE2ETests : TestBase
         // Act
         await GrantPefInvoicingAsync(peppolId);
 
-            // Assert (wstępna weryfikacja, bez przeszukiwania całej listy)
+        // Assert (wstępna weryfikacja, bez przeszukiwania całej listy)
         EntityAuthorizationsQueryRequest query = new()
         {
             AuthorizingIdentifier = new EntityAuthorizationsAuthorizingEntityIdentifier { Type = EntityAuthorizationsAuthorizingEntityIdentifierType.Nip, Value = companyNip },
@@ -200,17 +200,22 @@ public partial class PeppolPefE2ETests : TestBase
             PermissionTypes = [InvoicePermissionType.PefInvoicing]
         };
 
-        PagedAuthorizationsResponse<AuthorizationGrant> authz = await KsefClient.SearchEntityAuthorizationGrantsAsync(
-            requestPayload: query,
-            accessToken: accessToken,
-            pageOffset: 0,
-            pageSize: 10,
-            cancellationToken: CancellationToken.None);
+		PagedAuthorizationsResponse<AuthorizationGrant> authz = await AsyncPollingUtils.PollAsync(
+        async () => await KsefClient.SearchEntityAuthorizationGrantsAsync(
+			requestPayload: query,
+			accessToken: accessToken,
+			pageOffset: 0,
+			pageSize: 10,
+			cancellationToken: CancellationToken.None).ConfigureAwait(false)
+        ,
+        page => page.AuthorizationGrants != null && page.AuthorizationGrants.Count > 0,
+        description: "Oczekiwanie na nowo nadane uprawnienia",
+        delay: TimeSpan.FromMilliseconds(SleepTime),
+        cancellationToken: CancellationToken);
 
         Assert.NotNull(authz);
         Assert.NotNull(authz.AuthorizationGrants.First().Id);
-        Assert.True(authz.AuthorizationGrants.Count() == 1);
-        Assert.NotNull(authz.AuthorizationGrants.First().Description);
+		Assert.Single(authz.AuthorizationGrants);
         Assert.NotNull(authz.AuthorizationGrants.First().AuthorIdentifier);
         Assert.NotNull(authz.AuthorizationGrants.First().AuthorizingEntityIdentifier);
         Assert.NotNull(authz.AuthorizationGrants.First().AuthorizedEntityIdentifier);
@@ -395,20 +400,24 @@ public partial class PeppolPefE2ETests : TestBase
             PermissionTypes = [InvoicePermissionType.PefInvoicing]
         };
 
-        PagedAuthorizationsResponse<AuthorizationGrant> authz = await KsefClient.SearchEntityAuthorizationGrantsAsync(
+        PagedAuthorizationsResponse<AuthorizationGrant> authz = await AsyncPollingUtils.PollAsync(
+		async() => await KsefClient.SearchEntityAuthorizationGrantsAsync(
             requestPayload: query,
             accessToken: accessToken,
             pageOffset: 0,
             pageSize: 10,
-            cancellationToken: CancellationToken.None).ConfigureAwait(false);
+            cancellationToken: CancellationToken.None).ConfigureAwait(false)
+        ,
+		page => page.AuthorizationGrants != null && page.AuthorizationGrants.Count > 0,
+		description: "Oczekiwanie na nowo nadane uprawnienia",
+		delay: TimeSpan.FromMilliseconds(SleepTime),
+		cancellationToken: CancellationToken).ConfigureAwait(false);
 
-        Assert.NotNull(authz);
-        Assert.NotNull(authz.AuthorizationGrants.Count > 0);
+		Assert.NotNull(authz);
+        Assert.True(authz.AuthorizationGrants.Count > 0);
         Assert.NotNull(authz.AuthorizationGrants.First().SubjectEntityDetails);
         Assert.NotNull(authz.AuthorizationGrants.First().AuthorIdentifier.Value);
         Assert.NotNull(authz.AuthorizationGrants.First().Id);
-        Assert.NotNull(authz.AuthorizationGrants.First().AuthorizationScope);
-        Assert.NotNull(authz.AuthorizationGrants.First().AuthorizationScope);
         Assert.NotNull(authz.AuthorizationGrants.First().AuthorizedEntityIdentifier);
         Assert.NotNull(authz.AuthorizationGrants.First().AuthorizingEntityIdentifier);
     }

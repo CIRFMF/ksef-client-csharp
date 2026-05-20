@@ -4,5 +4,6 @@ bin/
 obj/
 appsettings.Development.json
 *.csproj.user
+*.lscache
 /KSeF.DemoWebApp/public-key-dev-new.pem
 /KSeF.DemoWebApp/faktura.xml

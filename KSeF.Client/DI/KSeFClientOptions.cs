@@ -51,4 +51,10 @@ public class KSeFClientOptions
     /// Na .NET Standard 2.0 ustawienie jest ignorowane (HttpClient nie udostępnia tych API).
     /// </remarks>
     public bool UseHttp2 { get; set; } = true;
+
+    /// <summary>
+    /// Konfiguracja Circuit Breakera dla wywołań HTTP do KSeF.
+    /// Domyślnie mechanizm jest włączony.
+    /// </summary>
+    public KsefCircuitBreakerOptions CircuitBreaker { get; set; } = new KsefCircuitBreakerOptions();
 }

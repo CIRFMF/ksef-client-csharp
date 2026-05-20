@@ -1,3 +1,21 @@
+## Rejestr zmian: Wersja 2.6.0
+### Nowe
+- Tryb wsadowy generowania PDF, możliwość podania folderu zamiast pojedynczego pliku XML;
+  wszystkie pliki *.xml z folderu są przetwarzane w ramach jednego procesu Node.js, co znacząco skraca czas generowania przy dużej liczbie faktur.
+- `CompressionType` – nowy enum (`Zip`, `TarGz`) umożliwiający wybór typu kompresji paczki wysyłanej w sesji wsadowej (`POST /sessions/batch`) oraz eksportowanej paczki faktur (`POST /invoices/exports`). Format `TarGz` jest rekomendowany dla paczek zawierających wiele podobnych dokumentów XML ze względu na lepszy współczynnik kompresji. Domyślnym typem pozostaje `Zip` w celu zachowania kompatybilności wstecznej.
+  - `BatchFileInfo`: dodano pole `CompressionType?`.
+  - `InvoiceExportRequest`: dodano pole `CompressionType?`.
+  - `OpenBatchSessionRequestBuilder`: dodano przeciążenie `WithBatchFile(fileSize, fileHash, compressionType)` umożliwiające wskazanie typu kompresji przy budowaniu żądania.
+- `KsefCircuitBreakerHandler` – nowy mechanizm odporności (Circuit Breaker) dla wywołań HTTP do KSeF:
+  - Blokuje kolejne żądania (fail-fast), gdy liczba kolejnych błędów przejściowych osiągnie próg `FailureThreshold`.
+  - Automatycznie przechodzi w stan półotwarty po upływie `BreakDurationSeconds` i weryfikuje dostępność usługi.
+  - W przypadku otwartego obwodu rzucany jest wyjątek `KsefCircuitBreakerOpenException` (z polem `RetryAfter`).
+  - Konfiguracja dostępna przez `KSeFClientOptions.CircuitBreaker` (`KsefCircuitBreakerOptions`): `Enabled` (domyślnie `true`), `FailureThreshold` (domyślnie `5`), `BreakDurationSeconds` (domyślnie `30`).
+- Dodano obsługę nagłówka odpowiedzi `X-System-Warning`, pozwalającego przekazać ostrzeżenia techniczne bez wpływu na wynik operacji. Na środowisku TEST ostrzeżenie można wymusić nagłówkiem `X-Test-System-Warning`.
+
+### Poprawki
+- Naprawiono ścieżki tras `TestData.BlockContext` oraz `TestData.UnblockContext` – usunięto błędnie zdublowany człon `/testdata/` w adresach URL.
+
 ## Rejestr zmian: Wersja 2.5.0
 ### Zmodyfikowane
 - `PemCertificateInfo`: dodano pola `CertificateId` oraz `PublicKeyId` zgodnie z założeniami opisanymi w [#737](https://github.com/CIRFMF/ksef-docs/issues/737),
@@ -10,6 +28,7 @@
 - `CryptographyService`: rozszerzono mechanizm cache (materials) o pola `SymmetricKeyPublicKeyId` oraz `KsefTokenPublicKeyId`; naprawiono błąd, który powodował nieodświeżanie certyfikatów po wywołaniu `ForceRefreshAsync()`; dostosowano kod do rotacji planowej wymiany kluczy, gdzie możliwe jest wystąpienie dwóch kluczy o nakładających się datach ważności.
 - `SignatureService`:  poprawiono działanie serwisu w przypadku użycia .NET Framework 4.7.2+ [#215](https://github.com/CIRFMF/ksef-client-csharp/issues/215), dziękujemy użytkownikowi [@Marmelada100](https://github.com/Marmelada100) za zgłoszony problem,
 -  Podniesiono wersję paczki zależnej `System.Security.Cryptography.Xml` do wersji `10.0.7`, dziękujemy użytkownikowi [@DawidBartniczak](https://github.com/DawidBartniczak) za zgłoszony problem,
+- `KSeFClientOptions.UseHttp2` – nowa opcja (domyślnie `true`) włączająca preferencję HTTP/2 z automatycznym fallbackiem do HTTP/1.1. Ustawienie ignorowane na .NET Standard 2.0.
 
 ## Rejestr zmian: Wersja 2.4.0
 ### Nowe

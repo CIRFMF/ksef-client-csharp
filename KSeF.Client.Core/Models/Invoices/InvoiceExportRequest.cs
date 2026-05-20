@@ -1,4 +1,5 @@
 using KSeF.Client.Core.Models.Sessions;
+using KSeF.Client.Core.Models.Sessions.BatchSession;
 
 namespace KSeF.Client.Core.Models.Invoices
 {
@@ -12,10 +13,15 @@ namespace KSeF.Client.Core.Models.Invoices
         /// </summary>
         public EncryptionInfo Encryption { get; set; }
 
+        /// <summary>
+        /// Typ kompresji paczki eksportu faktur. Domyslnie API zachowuje kompatybilnosc i uzywa ZIP.
+        /// </summary>
+        public CompressionType? CompressionType { get; set; }
+
 		/// <summary>
 		/// Określa, czy zwrócić tylko metadane faktur (plik _metadata.json bez faktur).
 		/// </summary>
-		public bool OnlyMetadata{ get; set; }
+		public bool OnlyMetadata { get; set; }
 
         /// <summary>
         /// Filtry wyboru faktur do eksportu (dedykowany model dla eksportu).
