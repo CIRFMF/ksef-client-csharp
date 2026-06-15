@@ -54,7 +54,7 @@ public class IndirectSelectivePermissionGrantTests : KsefIntegrationTestBase
     /// <summary>
     /// Scenariusz kompletnej obsługi selektywnych uprawnień pośrednich E2E:
     /// 1. Nadanie uprawnień z delegacją pośrednikowi przez dwóch właścicieli
-    /// 2. Nadanie selektywnych uprawnień pośrednich (PESEL → firstOwner, NIP → secondOwner)
+    /// 2. Nadanie selektywnych uprawnień pośrednich (PESEL -> firstOwner, NIP → secondOwner)
     /// 3. Weryfikacja dostępu w odpowiednich kontekstach oraz braku dostępu w pozostałych
     /// </summary>
     [Fact]

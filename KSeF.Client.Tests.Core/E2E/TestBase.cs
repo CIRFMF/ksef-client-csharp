@@ -20,6 +20,7 @@ public abstract class TestBase : IDisposable
 
     private readonly IServiceScope _scope;
     private readonly ServiceProvider _root;
+    private readonly bool _disableClientSideCircuitBreaker;
 
     protected IServiceProvider Services => _scope.ServiceProvider;
     protected T Get<T>() where T : notnull => Services.GetRequiredService<T>();
@@ -38,8 +39,15 @@ public abstract class TestBase : IDisposable
     protected IRestClient RestClient => Get<IRestClient>();
 
 
-    public TestBase()
+    /// <summary>
+    /// Inicjalizuje bazę testów E2E.
+    /// Ustaw <paramref name="disableClientSideCircuitBreaker"/> na <see langword="true"/>,
+    /// gdy test ma weryfikować surowe odpowiedzi API (np. HTTP 429) bez fail-fast po stronie klienta.
+    /// </summary>
+    protected TestBase(bool disableClientSideCircuitBreaker = false)
     {
+        _disableClientSideCircuitBreaker = disableClientSideCircuitBreaker;
+
         CryptographyConfigInitializer.EnsureInitialized();
         ServiceCollection services = new();
 
@@ -62,8 +70,8 @@ public abstract class TestBase : IDisposable
         {
             options.BaseUrl = apiSettings.BaseUrl!;
             options.CustomHeaders = apiSettings.CustomHeaders ?? [];
-
             options.UseCamelCaseForRequests = useCamelCaseForRequestsApiSettings;
+            options.CircuitBreaker.Enabled = ShouldEnableClientSideCircuitBreaker();
         });
 
         services.AddLighthouseClient(options =>
@@ -93,6 +101,8 @@ public abstract class TestBase : IDisposable
         _scope.ServiceProvider.GetRequiredService<CryptographyWarmupHostedService>()
                 .StartAsync(CancellationToken.None).GetAwaiter().GetResult();               
     }
+
+    private bool ShouldEnableClientSideCircuitBreaker() => !_disableClientSideCircuitBreaker;
 
     public Task DisposeAsync() => Task.Run(() => Dispose());
 

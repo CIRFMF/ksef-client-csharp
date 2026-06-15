@@ -66,7 +66,7 @@ public class PersonPermissionsOwnerNipMyPermissionsE2ETests : TestBase
         Assert.NotNull(page);
         Assert.NotNull(page.Permissions);
 
-        // Jesteśmy właścicielem w tym kontekście NIP → w tokenie musi być "Owner"
+        // Jesteśmy właścicielem w tym kontekście NIP -> w tokenie musi być "Owner"
         Assert.Equal("ContextToken", token.TokenType);
         Assert.Equal("Nip", token.ContextIdType);
         Assert.Equal(ownerNip, token.ContextIdValue);

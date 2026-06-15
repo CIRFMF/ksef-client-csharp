@@ -5,7 +5,7 @@ using System.Net;
 namespace KSeF.Client.Http;
 
 /// <summary>
-/// Prosty Circuit Breaker dla wywołań HTTP.
+/// Circuit Breaker dla wywołań HTTP.
 /// </summary>
 public sealed class KsefCircuitBreakerHandler : DelegatingHandler
 {

@@ -17,7 +17,7 @@ internal static class CryptoCompat
 
     /// <summary>
     /// Eksportuje klucz prywatny ECDsa w formacie PKCS#8 PrivateKeyInfo zakodowanym jako PEM.
-    /// Buduje strukturę: SEC1 ECPrivateKey DER → opakowuje w PKCS#8 → koduje Base64 z nagłówkami PEM.
+    /// Buduje strukturę: SEC1 ECPrivateKey DER -> opakowuje w PKCS#8 → koduje Base64 z nagłówkami PEM.
     /// Polyfill dla <c>ECDsa.ExportPkcs8PrivateKeyPem()</c> dostępnego od .NET 7.
     /// </summary>
     public static string ExportPkcs8PrivateKeyPemCompat(this ECDsa ecdsa)

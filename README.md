@@ -226,7 +226,22 @@ OpenBatchSessionRequest request = OpenBatchSessionRequestBuilder
     .Build();
 ```
 
-Eksport paczki faktur rowniez obsluguje wskazanie typu kompresji przez `InvoiceExportRequest.CompressionType`. Dla paczek TAR.GZ ustaw `CompressionType.TarGz`, a dla ZIP mozesz wskazac `CompressionType.Zip` jawnie. Brak wartosci zachowuje domyslna kompatybilnosc API.
+## Obsługa paczek TAR.GZ w sesjach wsadowych
+
+Sesje wsadowe obsługują wskazanie typu kompresji pliku wsadowego przez `BatchFile.CompressionType`. Dla paczek TAR.GZ należy przygotować zawartość jako `.tar.gz` i przekazać `CompressionType.TarGz` podczas budowania żądania otwarcia sesji.
+
+```csharp
+OpenBatchSessionRequest request = OpenBatchSessionRequestBuilder
+    .Create()
+    .WithFormCode(systemCode, schemaVersion, value)
+    .WithBatchFile(fileSize, fileHash, CompressionType.TarGz)
+    .AddBatchFilePart(ordinalNumber, partFileSize, partFileHash)
+    .EndBatchFile()
+    .WithEncryption(encryptedSymmetricKey, initializationVector, publicKeyId)
+    .Build();
+```
+
+Eksport paczki faktur również obsługuje wskazanie typu kompresji przez `InvoiceExportRequest.CompressionType`. Dla paczek TAR.GZ ustaw `CompressionType.TarGz`, a dla ZIP możesz jawnie wskazać `CompressionType.Zip`. Brak wartości zachowuje domyślną kompatybilność API.
 
 ```csharp
 InvoiceExportRequest request = new()
@@ -286,7 +301,7 @@ string privateKeyPem = File.ReadAllText("key.pem");
 X509Certificate2 cert = publicCert.MergeWithPemKey(privateKeyPem, "TwojeHaslo");
 ```
 
-### Generowania kodów QR na środowisku Linux / Błąd: wyjątek inicjalizacji SkiaSharp (`libfontconfig.so.1`)
+### Generowanie kodów QR na środowisku Linux / Błąd: wyjątek inicjalizacji SkiaSharp (`libfontconfig.so.1`)
 
 Jeśli podczas generowania kodów QR pojawia się wyjątek podobny do:
 
@@ -299,7 +314,7 @@ SkiaSharp korzysta z natywnych bibliotek, których obecność jest wymagana już
 
 #### Rozwiązanie
 
-Doinstalować bibliotekę `libfontconfig` w środowisku uruchomieniowym, np. w obrazie Docker:
+Doinstaluj bibliotekę `libfontconfig` w środowisku uruchomieniowym, np. w obrazie Docker:
 
 ```
 dockerfile

@@ -16,7 +16,7 @@ public class PersonPermissionsOwnerNipGrantedFilterAuthorizedPeselE2ETests : Tes
     /// </summary>
     /// <remarks>
     /// <list type="number">
-    /// <item><description>Nadanie uprawnienia osobie z PESEL → poll (200).</description></item>
+    /// <item><description>Nadanie uprawnienia osobie z PESEL -> poll (200).</description></item>
     /// <item><description>Zapytanie: nadane w bieżącym kontekście + filtr PESEL.</description></item>
     /// <item><description>Asercja: istnieje wpis z dokładnie tym PESEL.</description></item>
     /// <item><description>Sprzątanie: odebranie uprawnienia (200).</description></item>

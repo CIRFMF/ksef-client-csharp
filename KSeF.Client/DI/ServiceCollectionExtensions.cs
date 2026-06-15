@@ -25,9 +25,13 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">Rozszerzany interfejs</param>
     /// <param name="configure">Opcje klienta KSeF</param>
+    /// <param name="configureHttpClientBuilder">Dodatkowe możliwości rozszerzenia klienta KSeF</param>
     /// <exception cref="ArgumentException"></exception>
-    public static IServiceCollection AddKSeFClient(this IServiceCollection services,
-        Action<KSeFClientOptions> configure)
+    public static IServiceCollection AddKSeFClient(
+        this IServiceCollection services,
+        Action<KSeFClientOptions> configure,
+        Action<IHttpClientBuilder> configureHttpClientBuilder = null
+        )
     {
         KSeFClientOptions options = new();
         configure(options);
@@ -74,12 +78,23 @@ public static class ServiceCollectionExtensions
             })
             .ConfigurePrimaryHttpMessageHandler(() =>
             {
-                HttpClientHandler handler = new();
+#if NET5_0_OR_GREATER
+                System.Net.Http.SocketsHttpHandler handler = new()
+                {
+                    PooledConnectionLifetime = options.PooledConnectionLifetime,
+                    PooledConnectionIdleTimeout = options.PooledConnectionIdleTimeout,
+                    ConnectTimeout = options.ConnectTimeout,
+                };
+#else
+                System.Net.Http.HttpClientHandler handler = new();
+#endif
+
                 if (options.WebProxy != null)
                 {
                     handler.Proxy = options.WebProxy;
                     handler.UseProxy = true;
                 }
+
                 return handler;
             });
 
@@ -87,6 +102,8 @@ public static class ServiceCollectionExtensions
         {
             httpClientBuilder.AddHttpMessageHandler(() => new KsefCircuitBreakerHandler(options.CircuitBreaker ?? new KsefCircuitBreakerOptions()));
         }
+
+        configureHttpClientBuilder?.Invoke(httpClientBuilder);
 
         services.AddSingleton<IRouteBuilder>(sp =>
         {
@@ -104,7 +121,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPersonTokenService, PersonTokenService>();
         services.AddScoped<IVerificationLinkService, VerificationLinkService>();
 
-        if(!string.IsNullOrEmpty( options.ResourcesPath))
+        if (!string.IsNullOrEmpty(options.ResourcesPath))
         {
             services.AddLocalization(localizationOptions =>
             {

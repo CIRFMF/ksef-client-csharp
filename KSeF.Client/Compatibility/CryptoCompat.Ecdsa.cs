@@ -210,7 +210,7 @@ internal static class EcdsaCompat
         string curveOid = algId.ReadObjectIdentifier();
         ECCurve curve = CurveFromOid(curveOid);
 
-        // SubjectPublicKey BIT STRING → nieskompresowany punkt EC (04 || X || Y)
+        // SubjectPublicKey BIT STRING -> nieskompresowany punkt EC (04 || X || Y)
         byte[] publicKeyBits = spkiSequence.ReadBitString(out _);
 
         ECParameters parameters = new ECParameters
@@ -276,7 +276,7 @@ internal static class EcdsaCompat
         string curveOid = algId.ReadObjectIdentifier();
         ECCurve curve = CurveFromOid(curveOid);
 
-        // PrivateKey OCTET STRING → zawiera SEC1 ECPrivateKey (bez parametrów krzywej)
+        // PrivateKey OCTET STRING -> zawiera SEC1 ECPrivateKey (bez parametrów krzywej)
         byte[] ecPrivateKeyDer = sequence.ReadOctetString();
 
         // Parsuj wewnętrzny SEC1 ECPrivateKey

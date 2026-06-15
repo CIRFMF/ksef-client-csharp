@@ -15,12 +15,12 @@ public class PersonPermissionsOwnerNipGrantedFilterAuthorizedNipE2ETests : TestB
 
     /// <summary>
     /// E2E: „Nadane uprawnienia” (właściciel, kontekst NIP) z filtrowaniem po NIP uprawnionego.
-    /// Przebieg: utwórz podmiot i osobę → nadaj uprawnienie → uwierzytelnij właściciela → zapytaj o nadane (z filtrem NIP) → asercje → odbierz uprawnienie → porządki.
+    /// Przebieg: utwórz podmiot i osobę -> nadaj uprawnienie -> uwierzytelnij właściciela -> zapytaj o nadane (z filtrem NIP) -> asercje -> odbierz uprawnienie -> porządki.
     /// </summary>
     /// <remarks>
     /// <list type="number">
     /// <item><description>Seed: Subject (NIP właściciela) + Person (NIP+PESEL) przez testdata.</description></item>
-    /// <item><description>GRANT (real API persons) NIPowi uprawnionemu → poll (200).</description></item>
+    /// <item><description>GRANT (real API persons) NIPowi uprawnionemu -> poll (200).</description></item>
     /// <item><description>QUERY: nadane w bieżącym kontekście + filtr NIP uprawnionego.</description></item>
     /// <item><description>ASSERT: dopasowanie po AuthorizedIdentifier=NIP oraz AuthorIdentifier=NIP właściciela.</description></item>
     /// <item><description>Cleanup: REVOKE (real API) + remove person/subject (testdata).</description></item>

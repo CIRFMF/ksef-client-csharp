@@ -1,3 +1,4 @@
+using KSeF.Client.Validation;
 using KSeF.Client.Core.Models.Sessions;
 
 namespace KSeF.Client.Api.Builders.Online
@@ -16,6 +17,41 @@ namespace KSeF.Client.Api.Builders.Online
         /// Interfejs pozwalający ustawić hash zaszyfrowanej faktury.
         /// </returns>
         ISendInvoiceOnlineSessionRequestBuilderWithInvoiceHash WithInvoiceHash(string documentHash, long documentSize);
+
+        /// <summary>
+        /// Waliduje NIP podmiotu 1.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot1Nip(string nip);
+
+        /// <summary>
+        /// Waliduje NIP podmiotu 2.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot2Nip(string nip);
+
+        /// <summary>
+        /// Waliduje NIP podmiotu 3.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot3Nip(string nip);
+
+        /// <summary>
+        /// Waliduje NIP podmiotu upoważnionego, jeśli występuje.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiotUpowaznionyNip(string nip);
+
+        /// <summary>
+        /// #617: Ustawia wewnętrzny identyfikator NIP podmiotu 3 (jeśli identyfikator występuje).
+        /// Dodano weryfikację sumy kontrolnej NIP w InternalId (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot3InternalId(string internalId);
     }
 
     /// <summary>
@@ -84,12 +120,14 @@ namespace KSeF.Client.Api.Builders.Online
     }
 
     /// <inheritdoc />
-    internal class SendInvoiceOnlineSessionRequestBuilderImpl
+    public class SendInvoiceOnlineSessionRequestBuilderImpl
         : ISendInvoiceOnlineSessionRequestBuilder
         , ISendInvoiceOnlineSessionRequestBuilderWithInvoiceHash
         , ISendInvoiceOnlineSessionRequestBuilderWithEncryptedDocumentHash
         , ISendInvoiceOnlineSessionRequestBuilderBuild
-    {
+    {        
+        private readonly bool _nonProdEnvironment;
+
         private string _documentHash;
         private long _documentSize;
         private string _encryptedDocumentHash;
@@ -98,13 +136,75 @@ namespace KSeF.Client.Api.Builders.Online
         private string _hashOfCorrectedInvoice;
         private bool _offlineMode;
 
-        private SendInvoiceOnlineSessionRequestBuilderImpl() { }
+        
+        private string _podmiot1Nip;
+        private string _podmiot2Nip;
+        private string _podmiot3Nip;
+        private string _podmiotUpowaznionyNip;
+        private string _podmiot3InternalId;
+
+        /// <summary>
+        /// Konstruktor buildera.
+        /// 
+        /// Domyślnie nonProdEnvironment = false => traktujemy jak PROD (walidacja checksum NIP włączona).
+        /// </summary>
+        public SendInvoiceOnlineSessionRequestBuilderImpl(bool nonProdEnvironment = false)
+        {
+            _nonProdEnvironment = nonProdEnvironment;
+        }        
 
         /// <summary>
         /// Tworzy nową instancję buildera żądania wysłania faktury online.
+        /// 
+        /// Domyślnie: nonProdEnvironment = false => PROD-like => walidacja checksum włączona.
         /// </summary>
+        /// <param name="nonProdEnvironment">
+        /// Jeśli true => NON-PROD => wyłącza walidację checksum NIP.
+        /// Jeśli false => PROD-like => włącza walidację checksum NIP.
+        /// </param>
         /// <returns>Interfejs startowy buildera.</returns>
-        public static ISendInvoiceOnlineSessionRequestBuilder Create() => new SendInvoiceOnlineSessionRequestBuilderImpl();
+        public static ISendInvoiceOnlineSessionRequestBuilder Create(bool nonProdEnvironment = false)
+            => new SendInvoiceOnlineSessionRequestBuilderImpl(nonProdEnvironment);
+
+        private bool ShouldValidateChecksums() => !_nonProdEnvironment;
+
+        private void ValidateNipChecksumIfNeeded(string nip, string fieldName)
+        {
+            if (!ShouldValidateChecksums())
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(nip))
+            {
+                throw new ArgumentException($"{fieldName} jest wymagany.");
+            }
+
+            if (!IdentifierValidators.IsValidNip(nip))
+            {
+                throw new ArgumentException($"{fieldName} ma nieprawidłowy format lub sumę kontrolną.");
+            }
+        }
+
+        private void ValidateInternalIdIfNeeded(string internalId, string fieldName)
+        {
+            if (!ShouldValidateChecksums())
+            {
+                return;
+            }
+
+            // "jeśli identyfikator występuje"
+            if (string.IsNullOrWhiteSpace(internalId))
+            {
+                return;
+            }
+
+            // internalId ma swój format w repo (np. 123-456-7890124)
+            if (!IdentifierValidators.IsValidInternalId(internalId))
+            {
+                throw new ArgumentException($"{fieldName} ma nieprawidłowy format lub sumę kontrolną.");
+            }
+        }
 
         /// <inheritdoc />
         public ISendInvoiceOnlineSessionRequestBuilderWithInvoiceHash WithInvoiceHash(string documentHash, long documentSize)
@@ -163,6 +263,71 @@ namespace KSeF.Client.Api.Builders.Online
             return this;
         }
 
+        /// <summary>
+        /// Waliduje NIP podmiotu 1.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        public ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot1Nip(string nip)
+        {
+            ValidateNipChecksumIfNeeded(nip, nameof(_podmiot1Nip));
+            _podmiot1Nip = nip;
+            return this;
+        }
+
+        /// <summary>
+        /// Waliduje NIP podmiotu 2.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        public ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot2Nip(string nip)
+        {
+            ValidateNipChecksumIfNeeded(nip, nameof(_podmiot2Nip));
+            _podmiot2Nip = nip;
+            return this;
+        }
+
+        /// <summary>
+        /// Waliduje NIP podmiotu 3.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        public ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot3Nip(string nip)
+        {
+            ValidateNipChecksumIfNeeded(nip, nameof(_podmiot3Nip));
+            _podmiot3Nip = nip;
+            return this;
+        }
+
+        /// <summary>
+        /// Waliduje NIP podmiotu upoważnionego, jeśli występuje.
+        /// Dodano weryfikację sumy kontrolnej NIP (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        public ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiotUpowaznionyNip(string nip)
+        {
+            // "jeśli występuje"
+            if (!string.IsNullOrWhiteSpace(nip))
+            {
+                ValidateNipChecksumIfNeeded(nip, nameof(_podmiotUpowaznionyNip));
+            }
+
+            _podmiotUpowaznionyNip = nip;
+            return this;
+        }
+
+        /// <summary>
+        /// #617: Ustawia wewnętrzny identyfikator NIP podmiotu 3 (jeśli identyfikator występuje).
+        /// Dodano weryfikację sumy kontrolnej NIP w InternalId (tylko PROD-like).
+        /// Walidacja wyłącznie w builderze.
+        /// </summary>
+        public ISendInvoiceOnlineSessionRequestBuilderBuild WithPodmiot3InternalId(string internalId)
+        {
+            ValidateInternalIdIfNeeded(internalId, nameof(_podmiot3InternalId));
+            _podmiot3InternalId = internalId;
+            return this;
+        }
+
         /// <inheritdoc />
         public SendInvoiceRequest Build()
         {
@@ -201,9 +366,25 @@ namespace KSeF.Client.Api.Builders.Online
     {
         /// <summary>
         /// Tworzy nowy builder żądania wysłania faktury w ramach sesji online.
+        /// 
+        /// Domyślnie: nonProdEnvironment = false => PROD-like => walidacja checksum NIP włączona.
+        /// Aby wyłączyć walidację na non-prod, użyj Create(true).
+        /// </summary>
+        /// <param name="nonProdEnvironment">
+        /// Jeśli true => NON-PROD => wyłącza walidację checksum NIP.
+        /// Jeśli false => PROD-like => włącza walidację checksum NIP.
+        /// </param>
+        /// <returns>Interfejs startowy buildera.</returns>
+        public static ISendInvoiceOnlineSessionRequestBuilder Create(bool nonProdEnvironment)
+            => SendInvoiceOnlineSessionRequestBuilderImpl.Create(nonProdEnvironment);
+
+        /// <summary>
+        /// Tworzy nowy builder żądania wysłania faktury w ramach sesji online.
+        /// 
+        /// Domyślnie: nonProdEnvironment = false => PROD-like => walidacja checksum NIP włączona.
         /// </summary>
         /// <returns>Interfejs startowy buildera.</returns>
         public static ISendInvoiceOnlineSessionRequestBuilder Create() =>
-            SendInvoiceOnlineSessionRequestBuilderImpl.Create();
+            SendInvoiceOnlineSessionRequestBuilderImpl.Create(false);
     }
 }

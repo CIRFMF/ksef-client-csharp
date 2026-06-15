@@ -67,7 +67,7 @@ public class QrCodeE2ETests : TestBase
 #endif
 
         // Act
-        // Brak jawnego klucza prywatnego → użycie wbudowanego klucza
+        // Brak jawnego klucza prywatnego -> użycie wbudowanego klucza
         string url = linkService.BuildCertificateVerificationUrl(Nip, QRCodeContextIdentifierType.Nip, Nip, invoiceHash, certWithKey);
         byte[] qrBytes = QrCodeService.GenerateQrCode(url, PixelsPerModule);
         byte[] labeled = QrCodeService.AddLabelToQrCode(qrBytes, GeneratedQrCodeLabel);
@@ -162,7 +162,7 @@ public class QrCodeE2ETests : TestBase
 #endif
 
         // Act
-        // Brak jawnego klucza prywatnego → użycie osadzonego klucza ECDSA
+        // Brak jawnego klucza prywatnego -> użycie osadzonego klucza ECDSA
         string url = linkService.BuildCertificateVerificationUrl(Nip, QRCodeContextIdentifierType.Nip, Nip, invoiceHash, certWithKey);
         byte[] qrBytes = QrCodeService.GenerateQrCode(url, PixelsPerModule);
         byte[] labeled = QrCodeService.AddLabelToQrCode(qrBytes, GeneratedQrCodeLabel);

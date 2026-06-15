@@ -232,7 +232,8 @@ public sealed partial class RestClient
                 responseMessage.StatusCode);
         }
 
-        if (TryDeserializeJson(responseBody, out GoneProblemDetails goneDetails) && goneDetails?.Title is not null)
+        if (TryDeserializeJson(responseBody, out GoneProblemDetails goneDetails)
+            && (!string.IsNullOrWhiteSpace(goneDetails?.Title) || !string.IsNullOrWhiteSpace(goneDetails?.Detail)))
         {
             string detailsText = string.IsNullOrWhiteSpace(goneDetails.Detail)
                 ? goneDetails.Title ?? GoneText

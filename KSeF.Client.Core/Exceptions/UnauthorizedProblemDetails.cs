@@ -7,5 +7,6 @@
         public string Detail { get; set; }
         public string Instance { get; set; }
         public string TraceId { get; set; }
+        public string Timestamp { get; set; }
     }
 }

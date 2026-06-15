@@ -173,7 +173,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         byte[] hashBytes = ComputeSha256(Encoding.UTF8.GetBytes(xml));
         invoiceHash = Convert.ToBase64String(hashBytes);
 
-        // Act & Assert: próba podpisania bez klucza prywatnego → wyjątek
+        // Act & Assert: próba podpisania bez klucza prywatnego -> wyjątek
         InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
         {
             // przekazujemy pusty ciąg Base64 jako "brakujący" klucz prywatny
@@ -217,7 +217,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
             certWithKey
         );
 
-        // Assert: URL powinien zawierać URL-encoded Base64 podpisu (końcówka "==" → "%3D%3D")
+        // Assert: URL powinien zawierać URL-encoded Base64 podpisu (końcówka "==" -> "%3D%3D")
         Assert.NotNull(url);
         Uri uri = new(url);
         string[] segments = uri.AbsolutePath.Split('/');
@@ -228,7 +228,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
     // =============================================
     // Rekomendowane testy ECC (ECDSA P-256):
     // • Bezpieczeństwo jak RSA-2048, ale mniejsze i szybsze klucze
-    // • Krótsze podpisane URL-e → lepszy UX w QR i linkach
+    // • Krótsze podpisane URL-e -> lepszy UX w QR i linkach
     // =============================================
 
     [Theory]

@@ -188,6 +188,195 @@ public class KsefTokenE2ETests : TestBase
     }
 
     /// <summary>
+    /// Test E2E weryfikujący, że aktywny token KSeF może unieważnić sam siebie bez uprawnienia CredentialsManage.
+    /// DELETE /tokens/{referenceNumber} jest dozwolone dla właściciela tokenu.
+    /// </summary>
+    /// <remarks>
+    /// Kroki:
+    /// 1) Generuje token KSeF z uprawnieniami (InvoiceRead, InvoiceWrite) — bez CredentialsManage.
+    /// 2) Czeka aż status tokenu zmieni się na Active.
+    /// 3) Uwierzytelnia się do KSeF przy użyciu tego tokenu i pobiera jego własny access token.
+    /// 4) Unieważnia token używając jego własnego access tokenu (bez CredentialsManage).
+    /// 5) Sprawdza czy token ma status Revoked.
+    /// </remarks>
+    [Fact]
+    public async Task KsefToken_SelfRevoke_WithoutCredentialsManage_ShouldSucceed()
+    {
+        KsefTokenRequest createTokenRequest = new KsefTokenRequest
+        {
+            Permissions = [
+                KsefTokenPermissionType.InvoiceRead,
+                KsefTokenPermissionType.InvoiceWrite
+            ],
+            Description = "Self-revoke E2E token"
+        };
+
+        KsefTokenResponse tokenResponse = await KsefClient.GenerateKsefTokenAsync(
+            createTokenRequest,
+            AccessToken,
+            CancellationToken);
+        Assert.NotNull(tokenResponse);
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.ReferenceNumber));
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.Token));
+
+        int activationAttempts = Math.Max(1, (TokenActivationTimeoutSeconds * 1000) / SleepTime);
+        AuthenticationKsefToken activeToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(tokenResponse.ReferenceNumber, AccessToken, CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Active,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(activeToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Active, activeToken.Status);
+
+        AuthenticationOperationStatusResponse tokenAuthResult = await AuthenticateWithKsefTokenAsync(tokenResponse.Token, Nip);
+        Assert.NotNull(tokenAuthResult);
+        Assert.False(string.IsNullOrWhiteSpace(tokenAuthResult.AccessToken?.Token));
+
+        await KsefClient.RevokeKsefTokenAsync(
+            tokenResponse.ReferenceNumber,
+            tokenAuthResult.AccessToken.Token,
+            CancellationToken);
+
+        AuthenticationKsefToken revokedToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(
+                tokenResponse.ReferenceNumber,
+                AccessToken,
+                CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Revoked,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(revokedToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Revoked, revokedToken.Status);
+    }
+
+    /// <summary>
+    /// Test E2E weryfikujący, że token KSeF może pobrać informacje o samym sobie bez uprawnienia CredentialsManage.
+    /// GET /tokens/{referenceNumber} jest dozwolone dla właściciela tokenu.
+    /// </summary>
+    /// <remarks>
+    /// Kroki:
+    /// 1) Generuje token KSeF z uprawnieniami (InvoiceRead, InvoiceWrite) — bez CredentialsManage.
+    /// 2) Czeka aż status tokenu zmieni się na Active.
+    /// 3) Uwierzytelnia się do KSeF przy użyciu tego tokenu i pobiera jego własny access token.
+    /// 4) Pobiera informacje o własnym tokenie używając access tokenu z kroku 3 (bez CredentialsManage).
+    /// 5) Weryfikuje poprawność zwróconych danych tokenu.
+    /// </remarks>
+    [Fact]
+    public async Task KsefToken_GetSelf_WithoutCredentialsManage_ShouldSucceed()
+    {
+        KsefTokenRequest createTokenRequest = new KsefTokenRequest
+        {
+            Permissions = [
+                KsefTokenPermissionType.InvoiceRead,
+                KsefTokenPermissionType.InvoiceWrite
+            ],
+            Description = "Self-get E2E token"
+        };
+
+        KsefTokenResponse tokenResponse = await KsefClient.GenerateKsefTokenAsync(
+            createTokenRequest,
+            AccessToken,
+            CancellationToken);
+        Assert.NotNull(tokenResponse);
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.ReferenceNumber));
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.Token));
+
+        int activationAttempts = Math.Max(1, (TokenActivationTimeoutSeconds * 1000) / SleepTime);
+        AuthenticationKsefToken activeToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(tokenResponse.ReferenceNumber, AccessToken, CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Active,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(activeToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Active, activeToken.Status);
+
+        AuthenticationOperationStatusResponse tokenAuthResult = await AuthenticateWithKsefTokenAsync(tokenResponse.Token, Nip);
+        Assert.NotNull(tokenAuthResult);
+        Assert.False(string.IsNullOrWhiteSpace(tokenAuthResult.AccessToken?.Token));
+
+        AuthenticationKsefToken selfToken = await KsefClient.GetKsefTokenAsync(
+            tokenResponse.ReferenceNumber,
+            tokenAuthResult.AccessToken.Token,
+            CancellationToken);
+
+        Assert.NotNull(selfToken);
+        Assert.Equal(tokenResponse.ReferenceNumber, selfToken.ReferenceNumber);
+        Assert.Equal(AuthenticationKsefTokenStatus.Active, selfToken.Status);
+        Assert.Equal("Self-get E2E token", selfToken.Description);
+
+        await KsefClient.RevokeKsefTokenAsync(
+            tokenResponse.ReferenceNumber,
+            AccessToken,
+            CancellationToken);
+    }
+
+    /// <summary>
+    /// Test E2E weryfikujący, że token KSeF może pobrać listę tokenów zawierającą samego siebie bez uprawnienia CredentialsManage.
+    /// /tokens jest dozwolone dla właściciela tokenu i zwraca co najmniej jego własny token.
+    /// </summary>
+    /// <remarks>
+    /// Kroki:
+    /// 1) Generuje token KSeF z uprawnieniami (InvoiceRead, InvoiceWrite) — bez CredentialsManage.
+    /// 2) Czeka aż status tokenu zmieni się na Active.
+    /// 3) Uwierzytelnia się do KSeF przy użyciu tego tokenu i pobiera jego własny access token.
+    /// 4) Pobiera listę tokenów używając access tokenu z kroku 3 (bez CredentialsManage).
+    /// 5) Weryfikuje, że lista zawiera własny token z poprawnymi danymi.
+    /// </remarks>
+    [Fact]
+    public async Task KsefToken_QuerySelf_WithoutCredentialsManage_ShouldReturnOwnToken()
+    {
+        KsefTokenRequest createTokenRequest = new KsefTokenRequest
+        {
+            Permissions = [
+                KsefTokenPermissionType.InvoiceRead,
+                KsefTokenPermissionType.InvoiceWrite
+            ],
+            Description = "Self-query E2E token"
+        };
+
+        KsefTokenResponse tokenResponse = await KsefClient.GenerateKsefTokenAsync(
+            createTokenRequest,
+            AccessToken,
+            CancellationToken);
+        Assert.NotNull(tokenResponse);
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.ReferenceNumber));
+        Assert.False(string.IsNullOrWhiteSpace(tokenResponse.Token));
+
+        int activationAttempts = Math.Max(1, (TokenActivationTimeoutSeconds * 1000) / SleepTime);
+        AuthenticationKsefToken activeToken = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetKsefTokenAsync(tokenResponse.ReferenceNumber, AccessToken, CancellationToken).ConfigureAwait(false),
+            result => result is not null && result.Status == AuthenticationKsefTokenStatus.Active,
+            maxAttempts: activationAttempts,
+            cancellationToken: CancellationToken);
+
+        Assert.NotNull(activeToken);
+        Assert.Equal(AuthenticationKsefTokenStatus.Active, activeToken.Status);
+
+        AuthenticationOperationStatusResponse tokenAuthResult = await AuthenticateWithKsefTokenAsync(tokenResponse.Token, Nip);
+        Assert.NotNull(tokenAuthResult);
+        Assert.False(string.IsNullOrWhiteSpace(tokenAuthResult.AccessToken?.Token));
+
+        QueryKsefTokensResponse queryResult = await KsefClient.QueryKsefTokensAsync(tokenAuthResult.AccessToken.Token);
+
+        Assert.NotNull(queryResult);
+        Assert.NotNull(queryResult.Tokens);
+        Assert.Contains(queryResult.Tokens, t => t.ReferenceNumber == tokenResponse.ReferenceNumber);
+
+        AuthenticationKsefToken? ownTokenInList = queryResult.Tokens.FirstOrDefault(t => t.ReferenceNumber == tokenResponse.ReferenceNumber);
+        Assert.NotNull(ownTokenInList);
+        Assert.Equal("Self-query E2E token", ownTokenInList.Description);
+        Assert.Equal(AuthenticationKsefTokenStatus.Active, ownTokenInList.Status);
+
+        await KsefClient.RevokeKsefTokenAsync(
+            tokenResponse.ReferenceNumber,
+            AccessToken,
+            CancellationToken);
+    }
+
+    /// <summary>
     /// Przeprowadza pełny proces uwierzytelnienia przy użyciu tokena KSeF.
     /// </summary>
     /// <remarks>

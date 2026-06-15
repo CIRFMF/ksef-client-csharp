@@ -1,3 +1,5 @@
+using System;
+
 namespace KSeF.Client.DI;
 
 /// <summary>

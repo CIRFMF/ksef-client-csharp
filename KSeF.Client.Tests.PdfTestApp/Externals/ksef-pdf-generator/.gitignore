@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.log
+*.lock
+.DS_Store
+
+.vite/
+coverage
+.vitest
+.cache
+temp
+out
+*.tsbuildinfo
+
+.idea
+.vscode
+*.swp

@@ -21,7 +21,7 @@ public class PersonalPermissions_AuthorizedPesel_InNipContext_E2ETests : TestBas
     /// <remarks>
     /// <list type="number">
     ///   <item><description>Subject (NIP właściciela) – utworzenie (testdata).</description></item>
-    ///   <item><description>Uwierzytelnienie właściciela (kontekst NIP) → nadanie uprawnień (PESEL) przez publiczne API.</description></item>
+    ///   <item><description>Uwierzytelnienie właściciela (kontekst NIP) -> nadanie uprawnień (PESEL) przez publiczne API.</description></item>
     ///   <item><description>Uwierzytelnienie osoby (PESEL) certyfikatem w kontekście NIP właściciela.</description></item>
     ///   <item><description>Zapytanie: personal/grants, stan = Active, cel = NIP; asercje.</description></item>
     ///   <item><description>Sprzątanie: odebranie uprawnień (publiczne API) + usunięcie subject (testdata).</description></item>

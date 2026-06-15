@@ -245,7 +245,7 @@ internal static class RsaCompat
         if (algId.HasData)
             algId.ReadNull();
 
-        // SubjectPublicKey BIT STRING → zawiera PKCS#1 RSAPublicKey
+        // SubjectPublicKey BIT STRING -> zawiera PKCS#1 RSAPublicKey
         byte[] publicKeyBits = spkiSequence.ReadBitString(out _);
         ImportRsaPublicKeyCore(rsa, publicKeyBits);
     }
@@ -307,7 +307,7 @@ internal static class RsaCompat
         if (oid != RsaEncryptionOid)
             throw new CryptographicException($"PKCS#8 zawiera algorytm '{oid}', oczekiwano RSA ({RsaEncryptionOid}).");
 
-        // PrivateKey OCTET STRING → zawiera PKCS#1 RSAPrivateKey
+        // PrivateKey OCTET STRING -> zawiera PKCS#1 RSAPrivateKey
         byte[] privateKeyOctets = sequence.ReadOctetString();
         ImportRsaPrivateKeyCore(rsa, privateKeyOctets);
     }

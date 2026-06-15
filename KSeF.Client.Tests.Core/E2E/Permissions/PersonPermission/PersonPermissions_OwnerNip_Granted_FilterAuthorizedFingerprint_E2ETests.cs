@@ -18,8 +18,8 @@ public class PersonPermissionsOwnerNipGrantedFilterAuthorizedFingerprintE2ETests
     /// <remarks>  
     /// <list type="number">
     /// <item><description>Właściciel podmiotu – pełen dostęp w kontekście własnego NIP; powiązanie NIP–PESEL.</description></item>
-    /// <item><description>Generujemy cert testowy → fingerprint (SHA-256, HEX, UPPER).</description></item>
-    /// <item><description>GRANT dla fingerprint → poll (200) → QUERY z filtrem fingerprint.</description></item>
+    /// <item><description>Generujemy cert testowy -> fingerprint (SHA-256, HEX, UPPER).</description></item>
+    /// <item><description>GRANT dla fingerprint -> poll (200) -> QUERY z filtrem fingerprint.</description></item>
     /// <item><description>Asercja dopasowania fingerprint.</description></item>
     /// </list>
     /// </remarks>
@@ -30,8 +30,8 @@ public class PersonPermissionsOwnerNipGrantedFilterAuthorizedFingerprintE2ETests
         string ownerNip = MiscellaneousUtils.GetRandomNip();
         string fingerprintNipIdentifier = MiscellaneousUtils.GetRandomNip();
 
-		// cert testowy → fingerprint (SHA256 HEX, uppercase)
-		X509Certificate2 personCert = CertificateUtils.GetPersonalCertificate(
+        // cert testowy -> fingerprint (SHA256 HEX, uppercase)
+        X509Certificate2 personCert = CertificateUtils.GetPersonalCertificate(
             givenName: "PL",
             surname: "Person",
             serialNumberPrefix: "TINPL",
@@ -44,7 +44,7 @@ public class PersonPermissionsOwnerNipGrantedFilterAuthorizedFingerprintE2ETests
             await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, ownerNip);
         string ownerAccessToken = ownerAuth.AccessToken.Token;
 
-        // GRANT → nadaj np. InvoiceRead fingerprintowi
+        // GRANT -> nadaj np. InvoiceRead fingerprintowi
         GrantPermissionsPersonRequest grantRequest = new GrantPermissionsPersonRequest
         {
             SubjectIdentifier = new GrantPermissionsPersonSubjectIdentifier

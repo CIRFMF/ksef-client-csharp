@@ -25,9 +25,9 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
     /// Uwierzytelnienie na uprawnienia nadane w sposób pośredni (selektywnie) bez kompletnego łańcucha (brak wspólnego zakresu).
     /// </summary>
     /// <remarks>
-    /// 1) Owner NIP → GRANT dla NIP biura: InvoiceRead.  
-    /// 2) Biuro (własny kontekst NIP) → GRANT dla PESEL pracownika: TaxRepresentative.  
-    /// 3) Osoba (PESEL) uwierzytelnia się certyfikatem w kontekście NIP właściciela → QUERY personal/grants (Active).  
+    /// 1) Owner NIP -> GRANT dla NIP biura: InvoiceRead.  
+    /// 2) Biuro (własny kontekst NIP) -> GRANT dla PESEL pracownika: TaxRepresentative.  
+    /// 3) Osoba (PESEL) uwierzytelnia się certyfikatem w kontekście NIP właściciela -> QUERY personal/grants (Active).  
     /// Oczekiwane: brak efektywnych uprawnień (pusta lista) + token bez wspólnego scope.
     /// </remarks>
     [Fact]
@@ -58,7 +58,7 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
             await AuthenticationUtils.AuthenticateAsync(KsefClient, ownerNip);
         string ownerAccessToken = ownerAuth.AccessToken.Token;
 
-        // 1) OWNER → INTERMEDIARY (NIP biura): grant "TaxRepresentative" (publiczne API podmiotowe)
+        // 1) OWNER -> INTERMEDIARY (NIP biura): grant "TaxRepresentative" (publiczne API podmiotowe)
         GrantPermissionsAuthorizationRequest ownerToIntermediary =
             GrantAuthorizationPermissionsRequestBuilder
                 .Create()
@@ -82,7 +82,7 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(opGrantOwnerToInterm.ReferenceNumber, ownerAccessToken),
                 condition: r => r.Status.Code == OperationSuccessfulStatusCode,
-                "Czekam na GRANT Owner→Intermediary (200)",
+                "Czekam na GRANT Owner->Intermediary (200)",
                 TimeSpan.FromMilliseconds(SleepTime), 60,
                 cancellationToken: CancellationToken);
 
@@ -91,7 +91,7 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
             await AuthenticationUtils.AuthenticateAsync(KsefClient, intermediaryNip);
         string intermediaryAccessToken = intermAuth.AccessToken.Token;
 
-        // 2) INTERMEDIARY → PERSON(PESEL): grant "InvoiceWrite" (brak wspólnego scope z Owner→Intermediary)
+        // 2) INTERMEDIARY -> PERSON(PESEL): grant "InvoiceWrite" (brak wspólnego scope z Owner->Intermediary)
         GrantPermissionsPersonRequest intermToPerson = new()
         {
             SubjectIdentifier = new GrantPermissionsPersonSubjectIdentifier
@@ -119,7 +119,7 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(opGrantIntermToPerson.ReferenceNumber, intermediaryAccessToken),
                 r => r.Status.Code == OperationSuccessfulStatusCode,
-                "Czekam na GRANT Intermediary→Person (200)",
+                "Czekam na GRANT Intermediary->Person (200)",
                 TimeSpan.FromMilliseconds(SleepTime), 60,
                 cancellationToken: CancellationToken);
 
@@ -227,11 +227,11 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.OperationsStatusAsync(revoke.ReferenceNumber, intermediaryAccessToken),
                 condition: r => r.Status.Code == OperationSuccessfulStatusCode,
-                "Czekam na REVOKE Intermediary→Person (200)",
+                "Czekam na REVOKE Intermediary->Person (200)",
                 TimeSpan.FromMilliseconds(SleepTime), 60, cancellationToken: CancellationToken);
         }
 
-        // revoke Owner→Intermediary
+        // revoke Owner->Intermediary
         // (jeśli API zwraca id grantu podmiotowego w osobnym query, tu pomijamy — środowiska różnią się ekspozycją;
         // na potrzeby testu wystarczy sprzątnięcie subjectów)
         await TestDataClient.RemoveSubjectAsync(new SubjectRemoveRequest { SubjectNip = intermediaryNip }, CancellationToken);

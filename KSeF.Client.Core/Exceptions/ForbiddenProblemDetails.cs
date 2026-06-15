@@ -11,5 +11,6 @@ namespace KSeF.Client.Core.Exceptions
         public string ReasonCode { get; set; }
         public Dictionary<string, object> Security { get; set; }
         public string TraceId { get; set; }
+        public string Timestamp { get; set; }
     }
 }

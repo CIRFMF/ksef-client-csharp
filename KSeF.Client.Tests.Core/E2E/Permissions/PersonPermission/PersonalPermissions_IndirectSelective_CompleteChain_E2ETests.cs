@@ -25,9 +25,9 @@ public class PersonalPermissions_IndirectSelective_CompleteChain_E2ETests : Test
     /// Uwierzytelnienie na uprawnienia nadane w sposób pośredni (selektywnie) z kompletnym łańcuchem (wspólny zakres).
     /// </summary>
     /// <remarks>
-    /// 1) Owner NIP → GRANT dla NIP biura: InvoiceRead.  
-    /// 2) Biuro (własny kontekst NIP) → GRANT dla PESEL pracownika: InvoiceRead.  
-    /// 3) Osoba (PESEL) w kontekście NIP właściciela → QUERY personal/grants (Active) + token: jest „InvoiceRead”.
+    /// 1) Owner NIP -> GRANT dla NIP biura: InvoiceRead.  
+    /// 2) Biuro (własny kontekst NIP) -> GRANT dla PESEL pracownika: InvoiceRead.  
+    /// 3) Osoba (PESEL) w kontekście NIP właściciela -> QUERY personal/grants (Active) + token: jest „InvoiceRead”.
     /// </remarks>
     [Fact]
     public async Task AuthIndirectSelectiveCompleteChainShouldExposeMatchingEffectivePermission()
@@ -68,7 +68,7 @@ public class PersonalPermissions_IndirectSelective_CompleteChain_E2ETests : Test
         await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(opGrantOwnerToInterm.ReferenceNumber, ownerAccessToken),
             condition: r => r.Status.Code == OperationSuccessfulStatusCode,
-            "Czekam na GRANT Owner→Intermediary (200)",
+            "Czekam na GRANT Owner->Intermediary (200)",
             TimeSpan.FromMilliseconds(SleepTime), 60, cancellationToken: CancellationToken);
 
         AuthenticationOperationStatusResponse intermAuth =
@@ -101,7 +101,7 @@ public class PersonalPermissions_IndirectSelective_CompleteChain_E2ETests : Test
         await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.OperationsStatusAsync(opGrantIntermToPerson.ReferenceNumber, intermediaryAccessToken),
             condition: r => r.Status.Code == OperationSuccessfulStatusCode,
-            "Czekam na GRANT Intermediary→Person (200)",
+            "Czekam na GRANT Intermediary->Person (200)",
             TimeSpan.FromMilliseconds(SleepTime), 60, cancellationToken: CancellationToken);
 
         // AUTH: osoba (PESEL) w kontekście NIP właściciela

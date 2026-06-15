@@ -16,7 +16,7 @@ namespace KSeF.Client.Tests.Features.Invoice;
 /// <summary>
 /// Testy integracyjne weryfikujące scenariusze zamknięcia sesji online w systemie KSeF.
 /// Sesję może zamknąć wyłącznie właściciel sesji lub właściciel kontekstu.
-/// Każdy test obejmuje pełny cykl: otwarcie sesji → zamknięcie sesji → weryfikacja statusu sesji.
+/// Każdy test obejmuje pełny cykl: otwarcie sesji -> zamknięcie sesji → weryfikacja statusu sesji.
 /// </summary>
 public class InvoiceCloseSessionTests : KsefIntegrationTestBase
 {

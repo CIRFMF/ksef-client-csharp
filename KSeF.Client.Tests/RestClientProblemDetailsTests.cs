@@ -428,6 +428,101 @@ public class RestClientProblemDetailsTests
         Assert.Equal(HttpStatusCode.Gone, ex.StatusCode);
     }
 
+    [Fact]
+    public async Task SendAsync_WhenHttp410WithGoneProblemDetailsWithoutTitle_UsesDetail()
+    {
+        // Arrange
+        string problemDetailsJson = """
+            {
+                "status": 410,
+                "instance": "/api/resource/123",
+                "detail": "Zasób został trwale usunięty.",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "traceId": "00-abc123-def456-01"
+            }
+            """;
+        RestClient client = CreateClient(HttpStatusCode.Gone, problemDetailsJson);
+
+        // Act
+        KsefApiException ex = await Assert.ThrowsAsync<KsefApiException>(() =>
+            client.SendAsync<object, object>(HttpMethod.Post, "https://localhost/test", (object)null, null, "application/json", CancellationToken.None));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Gone, ex.StatusCode);
+        Assert.Contains("Zasób został trwale usunięty.", ex.Message);
+        Assert.NotNull(ex.ErrorResponse);
+        Assert.NotNull(ex.ErrorResponse.Exception);
+        Assert.Equal("00-abc123-def456-01", ex.ErrorResponse.Exception.ReferenceNumber);
+        Assert.Contains("Zasób został trwale usunięty.", ex.ErrorResponse.Exception.ExceptionDetailList[0].Details[0]);
+    }
+
+    [Fact]
+    public void GoneProblemDetails_DeserializesTimestampAsString()
+    {
+        // Arrange
+        string json = """
+            {
+                "title": "Gone",
+                "status": 410,
+                "instance": "/api/resource/123",
+                "detail": "Zasób został trwale usunięty.",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "traceId": "00-abc123-def456-01"
+            }
+            """;
+
+        // Act
+        GoneProblemDetails result = JsonUtil.Deserialize<GoneProblemDetails>(json);
+
+        // Assert
+        Assert.Equal("2024-01-15T10:30:00Z", result.Timestamp);
+    }
+
+    [Fact]
+    public void UnauthorizedProblemDetails_DeserializesTimestampAsString()
+    {
+        // Arrange
+        string json = """
+            {
+                "title": "Unauthorized",
+                "status": 401,
+                "detail": "Brak autoryzacji.",
+                "instance": "/api/v2/auth/token/redeem",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "traceId": "trace-401"
+            }
+            """;
+
+        // Act
+        UnauthorizedProblemDetails result = JsonUtil.Deserialize<UnauthorizedProblemDetails>(json);
+
+        // Assert
+        Assert.Equal("2024-01-15T10:30:00Z", result.Timestamp);
+    }
+
+    [Fact]
+    public void ForbiddenProblemDetails_DeserializesTimestampAsString()
+    {
+        // Arrange
+        string json = """
+            {
+                "title": "Forbidden",
+                "status": 403,
+                "detail": "Brak uprawnień.",
+                "instance": "/api/v2/tokens",
+                "reasonCode": "context-type-not-allowed",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "traceId": "trace-403"
+            }
+            """;
+
+        // Act
+        ForbiddenProblemDetails result = JsonUtil.Deserialize<ForbiddenProblemDetails>(json);
+
+        // Assert
+        Assert.Equal("2024-01-15T10:30:00Z", result.Timestamp);
+    }
+
     // =====================
     // Pomocnicze metody
     // =====================

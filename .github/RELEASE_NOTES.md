@@ -1,3 +1,14 @@
+## Rejestr zmian: Wersja 2.6.1
+### Zmodyfikowane
+- `ServiceCollectionExtensions`: zastąpiono `HttpClientHandler` przez `SocketsHttpHandler` (dla platform `NET5_0_OR_GREATER`) z fallbackiem do `HttpClientHandler` dla starszych targetów.
+- Dodano konfigurację połączeń HTTP przez opcje klienta:
+  - `PooledConnectionLifetime`,
+  - `PooledConnectionIdleTimeout`,
+  - `ConnectTimeout`.
+- Rozszerzono punkt integracji `AddKSeFClient(...)` o hook konfiguracyjny `Action<IHttpClientBuilder>`, umożliwiający rozszerzanie pipeline HTTP (np. retry, logging, Polly, telemetry) bez forka biblioteki.
+- Dodano przełącznik `UseHttp2` (domyślnie włączony) dla preferencji HTTP/2 z automatycznym fallbackiem do HTTP/1.1 na platformach .NET 5+.
+- Rozszerzenie testów wysyłki i pobierania faktur o scenariusze z uzyciem formatu TAR.GZ
+
 ## Rejestr zmian: Wersja 2.6.0
 ### Nowe
 - Tryb wsadowy generowania PDF, możliwość podania folderu zamiast pojedynczego pliku XML;

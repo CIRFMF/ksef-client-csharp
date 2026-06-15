@@ -213,9 +213,9 @@ public static partial class MiscellaneousUtils
     /// </summary>
     /// <remarks>
     /// Zasady:
-    /// - jeśli wejście MA już prefiks (2 litery, np. PL/DE) → zwracamy znormalizowane,
+    /// - jeśli wejście MA już prefiks (2 litery, np. PL/DE) -> zwracamy znormalizowane,
     /// - rozpoznajemy jednoznaczne wzorce z literami: AT (U########), NL (#########B##), CY (########L),
-    ///   IE, FR, ES; Polska: poprawny NIP (10 cyfr z sumą) → PL+NIP,
+    ///   IE, FR, ES; Polska: poprawny NIP (10 cyfr z sumą) -> PL+NIP,
     /// - 12 cyfr (LT/SE) traktujemy domyślnie jako SE (zob. <see cref="GuessSeOrLtFor12Digits"/>),
     /// - dla czysto cyfrowych, niejednoznacznych długości (8/9/10/11) rzucamy wyjątek (bez zgadywania).
     /// </remarks>
@@ -546,15 +546,15 @@ public static partial class MiscellaneousUtils
 	/// Generuje polski IBAN (PL) z prawidłowymi cyframi kontrolnymi (ISO 13616 / mod 97)
 	/// na podstawie 26 cyfr NRB: 8 cyfr bank/oddział + 16 cyfr rachunku (losowo, jeśli null).
 	/// </summary>
-	/// <param name="bankBranch8">8 cyfr bank/oddział; null → losowe.</param>
-	/// <param name="account16">16 cyfr rachunku; null → losowe.</param>
+	/// <param name="bankBranch8">8 cyfr bank/oddział; null -> losowe.</param>
+	/// <param name="account16">16 cyfr rachunku; null -> losowe.</param>
 	/// <returns>IBAN w formacie: PLkkBBBBBBBBAAAAAAAAAAAAAAAA.</returns>    
 	public static string GeneratePolishIban(string bankBranch8 = "", string account16 = "")
     {
         // Zbuduj 26-cyfrowy BBAN (NRB): 8 cyfr bank/oddział + 16 cyfr numeru rachunku
         string bban = (!string.IsNullOrEmpty(bankBranch8) ? bankBranch8 : RandomDigits(8)) + (!string.IsNullOrEmpty(account16) ? account16 : RandomDigits(16));
 
-        // IBAN check digits: policz dla "PL00" + BBAN → przenieś "PL00" na koniec → mod 97
+        // IBAN check digits: policz dla "PL00" + BBAN -> przenieś "PL00" na koniec -> mod 97
         string rearranged = bban + LettersToDigits("PL") + "00";
         int mod = Mod97(rearranged);
         int check = 98 - mod;

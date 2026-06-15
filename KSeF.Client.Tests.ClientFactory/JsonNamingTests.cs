@@ -88,7 +88,7 @@ namespace KSeF.Client.Tests.ClientFactory
         }
 
         [Fact]
-        public void RegisterKSeFClientFactory_WhenCalledWithFalseAfterTrue_JsonReturnsToPascalCase()
+        public void RegisterKSeFClientFactory_WhenCalledWithFalseAfterTrue_KeepsCurrentJsonPolicyForBackwardCompatibility()
         {
             // Arrange
             JsonUtil.ResetConfigurationForCasePropertyName(true);
@@ -100,7 +100,7 @@ namespace KSeF.Client.Tests.ClientFactory
                 // Act
                 services.RegisterKSeFClientFactory(useCamelCase: false);
 
-                AssertJsonPropertyName("\"SomeValue\"", "\"someValue\"");
+                AssertJsonPropertyName("\"someValue\"", "\"SomeValue\"");
             }
             finally
             {

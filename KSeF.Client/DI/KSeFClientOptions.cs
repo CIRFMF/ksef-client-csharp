@@ -31,6 +31,21 @@ public class KSeFClientOptions
     public string[] SupportedCultures { get; set; }
     public string DefaultCulture { get; set; }
 
+    /// <summary>
+    /// Maksymalny czas życia połączenia w puli HTTP.
+    /// </summary>
+    public TimeSpan PooledConnectionLifetime { get; set; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// Maksymalny czas bezczynności połączenia w puli HTTP.
+    /// </summary>
+    public TimeSpan PooledConnectionIdleTimeout { get; set; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// Maksymalny czas na nawiązanie połączenia HTTP.
+    /// </summary>
+    public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
     public ApiConfiguration ApiConfiguration { get; set; } = new ApiConfiguration();
 
     /// <summary>

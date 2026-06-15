@@ -1,0 +1,9 @@
+# Ignore artifacts:
+build
+/dist
+/coverage
+.angular
+/api
+README.md
+/src/app/core/services/api-deprecated.service.ts
+/src/app/core/services/api.service.ts

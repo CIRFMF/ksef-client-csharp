@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Faktura
+        xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+    <Naglowek>
+        <KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+        <WariantFormularza>3</WariantFormularza>
+        <DataWytworzeniaFa>2026-03-22T03:27:54.0792168Z</DataWytworzeniaFa>
+        <SystemInfo>Generator danych</SystemInfo>
+    </Naglowek>
+    <Podmiot1>
+        <DaneIdentyfikacyjne>
+            <NIP>5265877635</NIP>
+            <Nazwa>Bartkowiak, Dróżdż and Górecki</Nazwa>
+        </DaneIdentyfikacyjne>
+        <Adres>
+            <KodKraju>PL</KodKraju>
+            <AdresL1>ul. Kępa 332</AdresL1>
+            <AdresL2>20-892 Tyszowce</AdresL2>
+        </Adres>
+        <DaneKontaktowe>
+            <Email>Prokop77@example.com</Email>
+            <Telefon>17-756-90-14</Telefon>
+        </DaneKontaktowe>
+    </Podmiot1>
+    <Podmiot2>
+        <DaneIdentyfikacyjne>
+            <NIP>6808208874</NIP>
+            <Nazwa>Strzelczyk LLC</Nazwa>
+        </DaneIdentyfikacyjne>
+        <Adres>
+            <KodKraju>PL</KodKraju>
+            <AdresL1>ul. Wójcik 7255</AdresL1>
+            <AdresL2>28-068 Pobiedziska</AdresL2>
+        </Adres>
+        <DaneKontaktowe>
+            <Email>Lidia.Olszewski77@yahoo.com</Email>
+            <Telefon>76-113-42-55</Telefon>
+        </DaneKontaktowe>
+        <NrKlienta>KL-7615</NrKlienta>
+        <JST>2</JST>
+        <GV>2</GV>
+    </Podmiot2>
+    <Fa>
+        <KodWaluty>PLN</KodWaluty>
+        <P_1>2025-10-31</P_1>
+        <P_1M>Czarnków</P_1M>
+        <P_2>FA/YUCFO-4342344706/03/2026</P_2>
+        <P_6>2025-10-03</P_6>
+        <P_13_1>27292.28</P_13_1>
+        <P_14_1>6277.22</P_14_1>
+        <P_15>33569.50</P_15>
+        <Adnotacje>
+            <P_16>2</P_16>
+            <P_17>2</P_17>
+            <P_18>2</P_18>
+            <P_18A>2</P_18A>
+            <Zwolnienie>
+                <P_19N>1</P_19N>
+            </Zwolnienie>
+            <NoweSrodkiTransportu>
+                <P_22N>1</P_22N>
+            </NoweSrodkiTransportu>
+            <P_23>2</P_23>
+            <PMarzy>
+                <P_PMarzyN>1</P_PMarzyN>
+            </PMarzy>
+        </Adnotacje>
+        <RodzajFaktury>VAT</RodzajFaktury>
+        <FaWiersz>
+            <NrWierszaFa>1</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>1</P_8B>
+            <P_9A>20.41</P_9A>
+            <P_11>20.41</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>2</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>7</P_8B>
+            <P_9A>130.83</P_9A>
+            <P_11>915.81</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>3</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>1</P_8B>
+            <P_9A>637.15</P_9A>
+            <P_11>637.15</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>4</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>7</P_8B>
+            <P_9A>944.48</P_9A>
+            <P_11>6611.36</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>5</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>2</P_8B>
+            <P_9A>660.60</P_9A>
+            <P_11>1321.20</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>6</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>4</P_8B>
+            <P_9A>558.93</P_9A>
+            <P_11>2235.72</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>7</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>1</P_8B>
+            <P_9A>670.77</P_9A>
+            <P_11>670.77</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>8</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>1</P_8B>
+            <P_9A>698.02</P_9A>
+            <P_11>698.02</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>9</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>6</P_8B>
+            <P_9A>298.84</P_9A>
+            <P_11>1793.04</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>10</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>6</P_8B>
+            <P_9A>336.65</P_9A>
+            <P_11>2019.90</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>11</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>8</P_8B>
+            <P_9A>408.55</P_9A>
+            <P_11>3268.40</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>12</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>6</P_8B>
+            <P_9A>13.51</P_9A>
+            <P_11>81.06</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <FaWiersz>
+            <NrWierszaFa>13</NrWierszaFa>
+            <P_7>Handcrafted Wooden Gloves Handcrafted Rubber Bike Incredible Granite Shirt Ergonomic Soft Soap Licensed
+                Metal Soap Sleek Wooden Chips Licensed Soft Soap Unbranded Steel Towels Ergonomic Concrete Keyboard
+                Awesome Metal Computer Refined Metal Chair Generic Wooden Shoes Fantastic Plastic Sausages Generic
+                Plastic Computer Gorgeous Plastic Gloves Fantastic Frozen Ball Fantastic Granite Sausages Rustic Soft
+                Shoes Gorgeous Plastic Cheese Small Granite Gloves Practical Concrete Fish Licensed Concrete Ba
+            </P_7>
+            <P_8A>szt.</P_8A>
+            <P_8B>8</P_8B>
+            <P_9A>877.43</P_9A>
+            <P_11>7019.44</P_11>
+            <P_12>23</P_12>
+        </FaWiersz>
+        <Platnosc>
+            <Zaplacono>1</Zaplacono>
+            <DataZaplaty>2025-10-31</DataZaplaty>
+            <FormaPlatnosci>7</FormaPlatnosci>
+        </Platnosc>
+    </Fa>
+</Faktura> 

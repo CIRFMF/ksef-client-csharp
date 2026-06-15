@@ -21,11 +21,17 @@ public partial class BatchSessionE2ETests : TestBase
     private const int ExpectedSessionStatusCode = 200;
     private const int ExportMaxAttempts = 45;
     private const int ExportMetadataMaxAttempts = 60;
+    private const int TotalInvoices10k = 10_000;
+    private const int SessionMaxAttempts10k = 120;
+    private const int ExportMaxAttempts10k = 120;
     private const string MetadataEntryName = "_metadata.json";
     private const string XmlFileExtension = ".xml";
     private static readonly TimeSpan ExportPollingDelay = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ExportMetadataPollingDelay = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ExportOperationTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan SessionTimeout10k = TimeSpan.FromMinutes(20);
+    private static readonly TimeSpan ExportTimeout10k = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan ExportMetadataPollingDelay10k = TimeSpan.FromSeconds(10);
 
     private readonly string accessToken = string.Empty;
     private readonly string sellerNip = string.Empty;
@@ -124,7 +130,9 @@ public partial class BatchSessionE2ETests : TestBase
 
     /// <summary>
     /// Sprawdza, czy format paczki użyty przy wysyłce batch nie ogranicza formatu późniejszego eksportu.
-    /// Brak compressionType oznacza domyślny ZIP po stronie API.
+    /// Eksport paczki faktur również obsługuje wskazanie typu kompresji przez InvoiceExportRequest.CompressionType.
+    /// Dla paczek TAR.GZ ustawiamy CompressionType.TarGz, dla ZIP można jawnie wskazać CompressionType.Zip.
+    /// Brak wartości zachowuje domyślną kompatybilność API (ZIP).
     /// </summary>
     /// <remarks>
     /// Kroki:
@@ -218,6 +226,15 @@ public partial class BatchSessionE2ETests : TestBase
         Assert.True(exportStatus.Package.InvoiceCount > 0, $"Eksport faktur powinien zawierać fakturę {ksefNumber}.");
         Assert.NotEmpty(exportStatus.Package.Parts);
 
+        Assert.False(
+            exportStatus.Package.IsTruncated,
+            $"Paczka eksportu nie powinna być obcięta (IsTruncated=true) dla {exportStatus.Package.InvoiceCount} faktur. " +
+            $"LastPermanentStorageDate={exportStatus.Package.LastPermanentStorageDate}, " +
+            $"PermanentStorageHwmDate={exportStatus.Package.PermanentStorageHwmDate}");
+
+        Assert.Null(exportStatus.Package.LastPermanentStorageDate);
+        Assert.Null(exportStatus.Package.PermanentStorageHwmDate);
+
         using MemoryStream decryptedStream = await BatchUtils.DownloadAndDecryptPackagePartsAsync(
             exportStatus.Package.Parts,
             encryptionData,
@@ -225,6 +242,7 @@ public partial class BatchSessionE2ETests : TestBase
             cancellationToken: exportCancellationToken).ConfigureAwait(false);
 
         CompressionType actualCompressionType = await DetectPackageCompressionTypeAsync(decryptedStream, exportCancellationToken).ConfigureAwait(false);
+        // Gdy CompressionType nie jest podany, API zwraca paczkę ZIP (zachowanie wstecznie kompatybilne).
         CompressionType expectedCompressionType = exportCompressionType ?? CompressionType.Zip;
         Assert.Equal(expectedCompressionType, actualCompressionType);
 
@@ -237,7 +255,9 @@ public partial class BatchSessionE2ETests : TestBase
 
     private async Task WaitForInvoiceVisibleForExportAsync(
         InvoiceQueryFilters query,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TimeSpan? pollingDelay = null,
+        int? maxAttempts = null)
     {
         await AsyncPollingUtils.PollAsync(
             async () => await KsefClient.QueryInvoiceMetadataAsync(
@@ -248,8 +268,8 @@ public partial class BatchSessionE2ETests : TestBase
             result => result?.Invoices is not null
                 && result.Invoices.Any(invoice => string.Equals(invoice.KsefNumber, ksefNumber, StringComparison.OrdinalIgnoreCase)),
             description: $"Faktura {ksefNumber} powinna być widoczna w metadanych przed eksportem.",
-            delay: ExportMetadataPollingDelay,
-            maxAttempts: ExportMetadataMaxAttempts,
+            delay: pollingDelay ?? ExportMetadataPollingDelay,
+            maxAttempts: maxAttempts ?? ExportMetadataMaxAttempts,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -416,7 +436,7 @@ public partial class BatchSessionE2ETests : TestBase
         Assert.NotNull(statusResponse.Upo.Pages);
         // Porównanie z DateTime.UtcNow — data wygaśnięcia URL UPO z API jest w UTC.
         // DateTime.Now zwraca czas lokalny maszyny, co może dawać fałszywe wyniki
-        // (np. +2h w CEST → asercja przepuszcza większy zakres niż zamierzony).
+        // (np. +2h w CEST -> asercja przepuszcza większy zakres niż zamierzony).
         Assert.True(statusResponse.Upo.Pages.First().DownloadUrlExpirationDate < DateTime.UtcNow.AddDays(4));
         Assert.NotNull(statusResponse.Upo.Pages.First().DownloadUrl);
         Assert.False(string.IsNullOrWhiteSpace(statusResponse.Upo.Pages.First().ReferenceNumber));
@@ -435,7 +455,7 @@ public partial class BatchSessionE2ETests : TestBase
 
         ksefNumber = documents.Invoices.First().KsefNumber;
 
-        // 6. pobranie UPO faktury z URL zawartego w metadanych faktury
+        // 6. Pobranie UPO faktury z URL zawartego w metadanych faktury
         Uri upoDownloadUrl = documents.Invoices.First().UpoDownloadUrl;
         string invoiceUpoXml = await UpoUtils.GetUpoAsync(KsefClient, upoDownloadUrl).ConfigureAwait(false);
         Assert.False(string.IsNullOrWhiteSpace(invoiceUpoXml));
@@ -529,5 +549,158 @@ public partial class BatchSessionE2ETests : TestBase
             invoiceTemplatePath,
             accessToken,
             CompressionType.TarGz).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Eksport paczki dokładnie 10 000 faktur nie powinien zwracać IsTruncated=true.
+    /// </summary>
+    /// <remarks>
+    /// Kroki:
+    /// 1. Wysyła 10 000 faktur w paczce TAR.GZ przez sesję wsadową.
+    /// 2. Czeka na zakończenie przetwarzania sesji.
+    /// 3. Eksportuje faktury z żądaniem formatu TAR.GZ.
+    /// 4. Weryfikuje, że IsTruncated=false, a LastPermanentStorageDate i PermanentStorageHwmDate są null.
+    /// </remarks>
+    [Theory]
+    [InlineData(SystemCode.FA3, "invoice-template-fa-3.xml", CompressionType.TarGz, CompressionType.TarGz)]
+    public async Task BatchSession_ExportOf10kInvoices_ShouldNotBeTruncated(
+        SystemCode systemCode,
+        string invoiceTemplatePath,
+        CompressionType? inputCompressionType,
+        CompressionType? exportCompressionType)
+    {
+        // 1. Wysyła 10 000 faktur w paczce TAR.GZ przez sesję wsadową.
+        EncryptionData encryptionData = CryptographyService.GetEncryptionData();
+
+        List<(string FileName, byte[] Content)> invoices = BatchUtils.GenerateInvoicesInMemory(
+            count: TotalInvoices10k,
+            nip: sellerNip,
+            templatePath: invoiceTemplatePath);
+
+        (byte[] packageBytes, FileMetadata packageMetadata) = inputCompressionType == CompressionType.TarGz
+            ? BatchUtils.BuildTarGz(invoices, CryptographyService)
+            : BatchUtils.BuildZip(invoices, CryptographyService);
+
+        List<BatchPartSendingInfo> encryptedParts =
+            BatchUtils.EncryptAndSplit(packageBytes, encryptionData, CryptographyService);
+
+        OpenBatchSessionRequest openBatchRequest = BatchUtils.BuildOpenBatchRequest(
+            packageMetadata,
+            encryptionData,
+            encryptedParts,
+            systemCode,
+            SystemCodeHelper.GetSchemaVersion(systemCode),
+            SystemCodeHelper.GetValue(systemCode),
+            inputCompressionType!.Value);
+
+        OpenBatchSessionResponse openBatchSessionResponse =
+            await BatchUtils.OpenBatchAsync(KsefClient, openBatchRequest, accessToken);
+
+        batchSessionReferenceNumber = openBatchSessionResponse.ReferenceNumber;
+
+        await KsefClient.SendBatchPartsAsync(openBatchSessionResponse, encryptedParts);
+
+        await AsyncPollingUtils.PollAsync(
+            action: async () =>
+            {
+                await BatchUtils.CloseBatchAsync(KsefClient, batchSessionReferenceNumber, accessToken).ConfigureAwait(false);
+                return true;
+            },
+            condition: closed => closed,
+            delay: TimeSpan.FromSeconds(2),
+            maxAttempts: 30,
+            shouldRetryOnException: _ => true,
+            cancellationToken: CancellationToken);
+
+        // 2. Czeka na zakończenie przetwarzania sesji.
+        using CancellationTokenSource sessionCts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken);
+        sessionCts.CancelAfter(SessionTimeout10k);
+
+        SessionStatusResponse statusResponse = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetSessionStatusAsync(batchSessionReferenceNumber, accessToken, sessionCts.Token).ConfigureAwait(false),
+            s => s?.Status?.Code == ExpectedSessionStatusCode,
+            delay: TimeSpan.FromSeconds(5),
+            maxAttempts: SessionMaxAttempts10k,
+            cancellationToken: sessionCts.Token);
+
+        Assert.NotNull(statusResponse);
+        Assert.Equal(TotalInvoices10k, statusResponse.SuccessfulInvoiceCount);
+        Assert.Equal(ExpectedFailedInvoiceCount, statusResponse.FailedInvoiceCount);
+
+        // 3. Eksportuje faktury z żądaniem formatu TAR.GZ.
+        using CancellationTokenSource exportCts = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken);
+        exportCts.CancelAfter(ExportTimeout10k);
+
+        SessionInvoicesResponse documents = await BatchUtils.GetSessionInvoicesAsync(
+            KsefClient, batchSessionReferenceNumber, accessToken, pageSize: 10);
+        ksefNumber = documents.Invoices.First().KsefNumber;
+
+        DateRange exportDateRange = new()
+        {
+            From = DateTime.UtcNow.AddDays(-1),
+            To = DateTime.UtcNow.AddDays(1),
+            DateType = DateType.Invoicing
+        };
+
+        InvoiceQueryFilters visibilityQuery = new()
+        {
+            DateRange = exportDateRange,
+            SubjectType = InvoiceSubjectType.Subject1,
+            KsefNumber = ksefNumber
+        };
+
+        await WaitForInvoiceVisibleForExportAsync(
+            visibilityQuery,
+            exportCts.Token,
+            pollingDelay: ExportMetadataPollingDelay10k,
+            maxAttempts: ExportMaxAttempts10k);
+
+        InvoiceQueryFilters exportQuery = new()
+        {
+            DateRange = exportDateRange,
+            SubjectType = InvoiceSubjectType.Subject1
+        };
+
+        InvoiceExportRequest invoiceExportRequest = new()
+        {
+            Encryption = encryptionData.EncryptionInfo,
+            CompressionType = exportCompressionType,
+            Filters = exportQuery
+        };
+
+        OperationResponse exportResponse = await KsefClient.ExportInvoicesAsync(
+            invoiceExportRequest,
+            accessToken,
+            cancellationToken: exportCts.Token);
+        Assert.NotNull(exportResponse?.ReferenceNumber);
+
+        InvoiceExportStatusResponse exportStatus = await AsyncPollingUtils.PollAsync(
+            async () => await KsefClient.GetInvoiceExportStatusAsync(
+                exportResponse.ReferenceNumber,
+                accessToken,
+                exportCts.Token).ConfigureAwait(false),
+            IsInvoiceExportFinished,
+            description: $"Eksport 10k faktur {exportResponse.ReferenceNumber} powinien zakończyć się statusem terminalnym.",
+            delay: TimeSpan.FromSeconds(5),
+            maxAttempts: ExportMaxAttempts10k,
+            cancellationToken: exportCts.Token);
+
+        // 4. Weryfikuje, że IsTruncated=false, a LastPermanentStorageDate i PermanentStorageHwmDate są null.
+        Assert.Equal(InvoiceExportStatusCodeResponse.ExportSuccess, exportStatus.Status.Code);
+        Assert.NotNull(exportStatus.Package);
+        Assert.True(
+            exportStatus.Package.InvoiceCount >= TotalInvoices10k,
+            $"Eksport powinien zawierać co najmniej {TotalInvoices10k} faktur, zwrócił {exportStatus.Package.InvoiceCount}.");
+        Assert.NotEmpty(exportStatus.Package.Parts);
+
+        Assert.False(
+            exportStatus.Package.IsTruncated,
+            $"Paczka eksportu 10 000 faktur nie powinna być obcięta (IsTruncated=true). " +
+            $"InvoiceCount={exportStatus.Package.InvoiceCount}, " +
+            $"LastPermanentStorageDate={exportStatus.Package.LastPermanentStorageDate}, " +
+            $"PermanentStorageHwmDate={exportStatus.Package.PermanentStorageHwmDate}");
+
+        Assert.Null(exportStatus.Package.LastPermanentStorageDate);
+        Assert.Null(exportStatus.Package.PermanentStorageHwmDate);
     }
 }

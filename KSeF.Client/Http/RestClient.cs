@@ -83,7 +83,7 @@ public sealed partial class RestClient(HttpClient httpClient) : IRestClient
             throw new ArgumentException("Adres URL nie może być pusty.", nameof(url));
         }
 
-        using HttpRequestMessage httpRequestMessage = new(method, url);
+        using HttpRequestMessage httpRequestMessage = new(method, httpClient.BaseAddress.Combine(url));
 
         bool shouldSendBody = method != HttpMethod.Get &&
                               !EqualityComparer<TRequest>.Default.Equals(requestBody, default);
@@ -132,7 +132,7 @@ public sealed partial class RestClient(HttpClient httpClient) : IRestClient
 
         Guard.ThrowIfNull(content);
 
-        using HttpRequestMessage httpRequestMessage = new(method, url)
+        using HttpRequestMessage httpRequestMessage = new(method, httpClient.BaseAddress.Combine(url))
         {
             Content = content
         };
@@ -175,7 +175,7 @@ public sealed partial class RestClient(HttpClient httpClient) : IRestClient
             throw new ArgumentException("Adres URL nie może być pusty.", nameof(url));
         }
 
-        using HttpRequestMessage httpRequestMessage = new(method, url);
+        using HttpRequestMessage httpRequestMessage = new(method, httpClient.BaseAddress.Combine(url));
 
         if (!string.IsNullOrWhiteSpace(token))
         {
