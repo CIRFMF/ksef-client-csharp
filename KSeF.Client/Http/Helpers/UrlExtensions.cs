@@ -16,7 +16,7 @@ internal static class UrlExtensions
             // Only allow an absolute path if it targets the same host as the configured base address,
             // preventing the request from being redirected to an attacker-controlled server (SSRF).
             if (baseAddress != null && Uri.TryCreate(path, UriKind.Absolute, out Uri absolutePath) && Uri.Compare(absolutePath, baseAddress, UriComponents.SchemeAndServer, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) == 0) {
-                uri = path;
+                return path;
             } else {
                 throw new InvalidOperationException($"Request path [{path}] does not match the configured base address and was rejected.");
             }
