@@ -11,11 +11,18 @@ internal static class UrlExtensions
     /// </summary>
     public static string Combine(this Uri baseAddress, string path)
     {
-        if (Uri.IsWellFormedUriString(path, UriKind.Absolute))
-            return path;
-
         string baseUri = baseAddress?.AbsoluteUri.TrimEnd('/');
-        return baseUri is null ? path : baseUri + "/" + path.TrimStart('/');
+        if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) {
+            // Only allow an absolute path if it targets the same host as the configured base address,
+            // preventing the request from being redirected to an attacker-controlled server (SSRF).
+            if (baseAddress != null && Uri.TryCreate(path, UriKind.Absolute, out Uri absolutePath) && Uri.Compare(absolutePath, baseAddress, UriComponents.SchemeAndServer, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) == 0) {
+                uri = path;
+            } else {
+                throw new InvalidOperationException($"Request path [{path}] does not match the configured base address and was rejected.");
+            }
+        } else {
+            return baseUri is null ? path : baseUri + "/" + path.TrimStart('/');
+        }
     }
 
     public static string WithQuery(this string path, IDictionary<string, string> query, Uri baseAddress)
