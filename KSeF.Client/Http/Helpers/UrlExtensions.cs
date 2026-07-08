@@ -13,6 +13,11 @@ internal static class UrlExtensions
     {
         string baseUri = baseAddress?.AbsoluteUri.TrimEnd('/');
         if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) {
+            // When no base address is configured, there is no host to validate against, so allow the absolute path through.
+            if (baseAddress is null) {
+                return path;
+            }
+            
             // Only allow an absolute path if it targets the same host as the configured base address,
             // preventing the request from being redirected to an attacker-controlled server (SSRF).
             if (baseAddress != null && Uri.TryCreate(path, UriKind.Absolute, out Uri absolutePath) && Uri.Compare(absolutePath, baseAddress, UriComponents.SchemeAndServer, UriFormat.UriEscaped, StringComparison.OrdinalIgnoreCase) == 0) {
