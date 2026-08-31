@@ -22,7 +22,7 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
     [HttpPost("open-session")]
     public async Task<ActionResult> OpenBatchSessionAsync(string accessToken, CancellationToken cancellationToken)
     {
-        string invoicePath = "faktura-template-fa(3).xml";
+        string invoicePath = Path.Combine(AppContext.BaseDirectory, "Templates", "invoice-template-fa-3.xml");
 
         List<string> invoices = [];
         if (!Directory.Exists(InvoicesDirectory))
@@ -95,7 +95,7 @@ public class BatchSessionController(ICryptographyService cryptographyService, IK
         // 6. Buduj request
         IOpenBatchSessionRequestBuilderBatchFile batchFileInfoBuilder = OpenBatchSessionRequestBuilder
             .Create()
-            .WithFormCode(systemCode: "FA (2)", schemaVersion: "1-0E", value: "FA")
+            .WithFormCode(systemCode: "FA (3)", schemaVersion: "1-0E", value: "FA")
             .WithOfflineMode(false)
             .WithBatchFile(
                 fileSize: zipMetadata.FileSize,
