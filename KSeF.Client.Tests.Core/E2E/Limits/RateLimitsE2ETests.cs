@@ -661,21 +661,14 @@ public class RateLimitsE2ETests : TestBase
 
     private static bool AreRateLimitsEqual(EffectiveApiRateLimits expected, EffectiveApiRateLimits actual)
     {
-        return AreRateLimitValuesEqual(expected.OnlineSession, actual.OnlineSession)
-            && AreRateLimitValuesEqual(expected.BatchSession, actual.BatchSession)
-            && AreRateLimitValuesEqual(expected.InvoiceSend, actual.InvoiceSend)
-            && AreRateLimitValuesEqual(expected.InvoiceStatus, actual.InvoiceStatus)
-            && AreRateLimitValuesEqual(expected.SessionList, actual.SessionList)
-            && AreRateLimitValuesEqual(expected.SessionInvoiceList, actual.SessionInvoiceList)
-            && AreRateLimitValuesEqual(expected.SessionMisc, actual.SessionMisc)
-            && AreRateLimitValuesEqual(expected.InvoiceMetadata, actual.InvoiceMetadata)
-            && AreRateLimitValuesEqual(expected.InvoiceExport, actual.InvoiceExport)
-            && AreRateLimitValuesEqual(expected.InvoiceExportStatus, actual.InvoiceExportStatus)
-            && AreRateLimitValuesEqual(expected.InvoiceDownload, actual.InvoiceDownload)
-            && AreRateLimitValuesEqual(expected.CollectiveIdentifier, actual.CollectiveIdentifier)
-            && AreRateLimitValuesEqual(expected.Other, actual.Other);
-    }
+        IReadOnlyDictionary<KsefClientRateLimitGroup, EffectiveApiRateLimitValues> expectedGroups = expected.GetAllRateLimitValues();
+        IReadOnlyDictionary<KsefClientRateLimitGroup, EffectiveApiRateLimitValues> actualGroups = actual.GetAllRateLimitValues();
 
+        return expectedGroups.Count == actualGroups.Count
+            && expectedGroups.All(pair =>
+                actualGroups.TryGetValue(pair.Key, out EffectiveApiRateLimitValues? actualValues)
+                && AreRateLimitValuesEqual(pair.Value, actualValues));
+    }
     private static bool AreRateLimitValuesEqual(EffectiveApiRateLimitValues? expected, EffectiveApiRateLimitValues? actual)
     {
         if (expected is null || actual is null)
@@ -711,55 +704,17 @@ public class RateLimitsE2ETests : TestBase
         Assert.NotNull(expected);
         Assert.NotNull(actual);
 
-        // OnlineSession
-        Assert.Equal(expected.OnlineSession.PerSecond, actual.OnlineSession.PerSecond);
-        Assert.Equal(expected.OnlineSession.PerMinute, actual.OnlineSession.PerMinute);
-        Assert.Equal(expected.OnlineSession.PerHour, actual.OnlineSession.PerHour);
-        // BatchSession
-        Assert.Equal(expected.BatchSession.PerSecond, actual.BatchSession.PerSecond);
-        Assert.Equal(expected.BatchSession.PerMinute, actual.BatchSession.PerMinute);
-        Assert.Equal(expected.BatchSession.PerHour, actual.BatchSession.PerHour);
-        // InvoiceSend
-        Assert.Equal(expected.InvoiceSend.PerSecond, actual.InvoiceSend.PerSecond);
-        Assert.Equal(expected.InvoiceSend.PerMinute, actual.InvoiceSend.PerMinute);
-        Assert.Equal(expected.InvoiceSend.PerHour, actual.InvoiceSend.PerHour);
-        // InvoiceStatus
-        Assert.Equal(expected.InvoiceStatus.PerSecond, actual.InvoiceStatus.PerSecond);
-        Assert.Equal(expected.InvoiceStatus.PerMinute, actual.InvoiceStatus.PerMinute);
-        Assert.Equal(expected.InvoiceStatus.PerHour, actual.InvoiceStatus.PerHour);
-        // SessionList
-        Assert.Equal(expected.SessionList.PerSecond, actual.SessionList.PerSecond);
-        Assert.Equal(expected.SessionList.PerMinute, actual.SessionList.PerMinute);
-        Assert.Equal(expected.SessionList.PerHour, actual.SessionList.PerHour);
-        // SessionInvoiceList
-        Assert.Equal(expected.SessionInvoiceList.PerSecond, actual.SessionInvoiceList.PerSecond);
-        Assert.Equal(expected.SessionInvoiceList.PerMinute, actual.SessionInvoiceList.PerMinute);
-        Assert.Equal(expected.SessionInvoiceList.PerHour, actual.SessionInvoiceList.PerHour);
-        // SessionMisc
-        Assert.Equal(expected.SessionMisc.PerSecond, actual.SessionMisc.PerSecond);
-        Assert.Equal(expected.SessionMisc.PerMinute, actual.SessionMisc.PerMinute);
-        Assert.Equal(expected.SessionMisc.PerHour, actual.SessionMisc.PerHour);
-        // InvoiceMetadata
-        Assert.Equal(expected.InvoiceMetadata.PerSecond, actual.InvoiceMetadata.PerSecond);
-        Assert.Equal(expected.InvoiceMetadata.PerMinute, actual.InvoiceMetadata.PerMinute);
-        Assert.Equal(expected.InvoiceMetadata.PerHour, actual.InvoiceMetadata.PerHour);
-        // InvoiceExport
-        Assert.Equal(expected.InvoiceExport.PerSecond, actual.InvoiceExport.PerSecond);
-        Assert.Equal(expected.InvoiceExport.PerMinute, actual.InvoiceExport.PerMinute);
-        Assert.Equal(expected.InvoiceExport.PerHour, actual.InvoiceExport.PerHour);
-        // InvoiceExportStatus
-        AssertRateLimitValuesEqual(expected.InvoiceExportStatus, actual.InvoiceExportStatus);
-        // InvoiceDownload
-        Assert.Equal(expected.InvoiceDownload.PerSecond, actual.InvoiceDownload.PerSecond);
-        Assert.Equal(expected.InvoiceDownload.PerMinute, actual.InvoiceDownload.PerMinute);
-        Assert.Equal(expected.InvoiceDownload.PerHour, actual.InvoiceDownload.PerHour);
-		// CollectiveIdentifier
-		Assert.Equal(expected.CollectiveIdentifier.PerSecond, actual.CollectiveIdentifier.PerSecond);
-		Assert.Equal(expected.CollectiveIdentifier.PerMinute, actual.CollectiveIdentifier.PerMinute);
-		Assert.Equal(expected.CollectiveIdentifier.PerHour, actual.CollectiveIdentifier.PerHour);
-		// Other
-		Assert.Equal(expected.Other.PerSecond, actual.Other.PerSecond);
-        Assert.Equal(expected.Other.PerMinute, actual.Other.PerMinute);
-        Assert.Equal(expected.Other.PerHour, actual.Other.PerHour);
+        IReadOnlyDictionary<KsefClientRateLimitGroup, EffectiveApiRateLimitValues> expectedGroups = expected.GetAllRateLimitValues();
+        IReadOnlyDictionary<KsefClientRateLimitGroup, EffectiveApiRateLimitValues> actualGroups = actual.GetAllRateLimitValues();
+
+        Assert.Equal(expectedGroups.Count, actualGroups.Count);
+
+        foreach (KeyValuePair<KsefClientRateLimitGroup, EffectiveApiRateLimitValues> pair in expectedGroups)
+        {
+            Assert.True(
+                actualGroups.TryGetValue(pair.Key, out EffectiveApiRateLimitValues? actualValues),
+                $"Brak grupy limitów '{pair.Key}' w aktualnych wartościach.");
+            AssertRateLimitValuesEqual(pair.Value, actualValues);
+        }
     }
 }
