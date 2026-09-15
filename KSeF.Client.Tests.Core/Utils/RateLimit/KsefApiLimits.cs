@@ -12,7 +12,9 @@ public static class KsefApiLimits
     private static readonly ApiLimits InvoiceExportStatus = new() { RequestsPerSecond = 10, RequestsPerMinute = 60, RequestsPerHour = 600 };
     private static readonly ApiLimits InvoiceDownload = new() { RequestsPerSecond = 8, RequestsPerMinute = 16, RequestsPerHour = 64 };
     private static readonly ApiLimits BatchSession = new() { RequestsPerSecond = 10, RequestsPerMinute = 20, RequestsPerHour = 60 };
+    private static readonly ApiLimits BatchSessionClose = new() { RequestsPerSecond = 20, RequestsPerMinute = 40, RequestsPerHour = 120 };
     private static readonly ApiLimits OnlineSession = new() { RequestsPerSecond = 10, RequestsPerMinute = 30, RequestsPerHour = 120 };
+    private static readonly ApiLimits OnlineSessionClose = new() { RequestsPerSecond = 20, RequestsPerMinute = 60, RequestsPerHour = 240 };
     private static readonly ApiLimits InvoiceSend = new() { RequestsPerSecond = 10, RequestsPerMinute = 30, RequestsPerHour = 180 };
     private static readonly ApiLimits InvoiceStatus = new() { RequestsPerSecond = 30, RequestsPerMinute = 120, RequestsPerHour = 1200 };
     private static readonly ApiLimits SessionList = new() { RequestsPerSecond = 5, RequestsPerMinute = 10, RequestsPerHour = 60 };
@@ -28,10 +30,10 @@ public static class KsefApiLimits
         [KsefApiEndpoint.InvoiceExportStatus] = InvoiceExportStatus,
         [KsefApiEndpoint.InvoiceGetByNumber] = InvoiceDownload,
         [KsefApiEndpoint.SessionBatchOpen] = BatchSession,
-        [KsefApiEndpoint.SessionBatchClose] = BatchSession,
+        [KsefApiEndpoint.SessionBatchClose] = BatchSessionClose,
         [KsefApiEndpoint.SessionOnlineOpen] = OnlineSession,
         [KsefApiEndpoint.SessionOnlineSendInvoice] = InvoiceSend,
-        [KsefApiEndpoint.SessionOnlineClose] = OnlineSession,
+        [KsefApiEndpoint.SessionOnlineClose] = OnlineSessionClose,
         [KsefApiEndpoint.SessionInvoiceStatus] = InvoiceStatus,
         [KsefApiEndpoint.SessionList] = SessionList,
         [KsefApiEndpoint.SessionInvoiceList] = SessionInvoiceList,

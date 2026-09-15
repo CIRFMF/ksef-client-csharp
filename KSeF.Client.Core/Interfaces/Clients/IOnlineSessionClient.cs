@@ -8,24 +8,25 @@ namespace KSeF.Client.Core.Interfaces.Clients
 {
     public interface IOnlineSessionClient
     {
-		/// <summary>
-		/// Otwarcie sesji interaktywnej
-		/// </summary>
-		/// <remarks>
-		/// Inicjalizacja wysyłki interaktywnej faktur.
-		/// </remarks>
-		/// <param name="accessToken">Access token.</param>
-		/// <param name="requestPayload"><see cref="OpenOnlineSessionRequest"/></param>
-		/// <param name="upoVersion">
-		/// Opcjonalna wersja formatu UPO. Dostępne wartości: "upo-v4-3".
-		/// Generuje nagłówek X-KSeF-Feature z odpowiednią wartością. 
-		/// Domyślnie: v4-2 (v4-3 od 05.01.2026).
-		/// </param>				
-		/// <param name="cancellationToken">Cancellation token.</param>
-		/// <returns><see cref="OpenOnlineSessionResponse"/></returns>
-		/// <exception cref="KsefApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
-		/// <exception cref="KsefApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-		Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default);
+        /// <summary>
+        /// Otwarcie sesji interaktywnej
+        /// </summary>
+        /// <remarks>
+        /// Inicjalizacja wysyłki interaktywnej faktur.
+        /// </remarks>
+        /// <param name="accessToken">Access token.</param>
+        /// <param name="requestPayload"><see cref="OpenOnlineSessionRequest"/></param>
+        /// <param name="feature">
+        /// Opcjonalna wartość nagłówka <c>X-KSeF-Feature</c>.
+        /// Dostępna wartość: <see cref="KsefFeatures.SubjectIdentifierValidation"/> - włącza walidację numerów NIP
+        /// oraz identyfikatorów wewnętrznych podmiotów wskazanych na fakturze.
+        /// Funkcjonalność dostępna jedynie na środowisku testowym.
+        /// </param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns><see cref="OpenOnlineSessionResponse"/></returns>
+        /// <exception cref="KsefApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
+        /// <exception cref="KsefApiException">Brak autoryzacji. (401 Unauthorized)</exception>
+        Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string feature = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Wysłanie faktury

@@ -31,6 +31,6 @@ public class IndirectPermissionsEntityController(IKSeFClient ksefClient) : Contr
     string accessToken,
     CancellationToken cancellationToken)
     {
-        return await ksefClient.RevokeAuthorizationsPermissionAsync(permissionId, accessToken, cancellationToken).ConfigureAwait(false);
+        return await ksefClient.RevokeCommonPermissionAsync(permissionId, accessToken, cancellationToken).ConfigureAwait(false);
     }
 }

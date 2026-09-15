@@ -11,7 +11,7 @@ public class OnlineSessionClient(IRestClient restClient, IRouteBuilder routeBuil
     : ClientBase(restClient, routeBuilder), IOnlineSessionClient
 {
     /// <inheritdoc />
-    public Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default)
+    public Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string feature = null, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNull(requestPayload);
         Guard.ThrowIfNullOrWhiteSpace(accessToken);
@@ -20,9 +20,9 @@ public class OnlineSessionClient(IRestClient restClient, IRouteBuilder routeBuil
             Routes.Sessions.Online.Open,
             requestPayload,
             accessToken,
-			!string.IsNullOrEmpty(upoVersion) ?
+			!string.IsNullOrEmpty(feature) ?
             new Dictionary<string, string> 
-                { { "X-KSeF-Feature", upoVersion } } : null,
+                { { KsefFeatures.HeaderName, feature } } : null,
 			cancellationToken);
     }
 

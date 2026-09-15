@@ -20,7 +20,7 @@ public class AuthCoordinator(
         string contextIdentifierValue,
         string tokenKsef,
         ICryptographyService cryptographyService,
-        EncryptionMethodEnum encryptionMethod = EncryptionMethodEnum.ECDsa,
+        EncryptionMethodEnum encryptionMethod = EncryptionMethodEnum.Rsa,
         AuthenticationTokenAuthorizationPolicy authorizationPolicy = default,
         CancellationToken cancellationToken = default)
     {
@@ -128,73 +128,57 @@ public class AuthCoordinator(
         return accessTokenResponse;
     }
 
-
     /// <summary>
-    /// Oczekuje na zakończenie operacji uwierzytelnienia, sprawdzając status co sekundę.
+    /// Odpytuje status operacji uwierzytelnienia aż do uzyskania kodu 200
+    /// (<see cref="AuthenticationStatusCodeResponse.AuthenticationSuccess"/>).
+    /// Po przekroczeniu <paramref name="timeout"/> zgłasza <see cref="TimeoutException"/> z ostatnim znanym statusem.
     /// </summary>
     private async Task WaitForAuthCompletionAsync(
         SignatureResponse authOperationInfo,
         CancellationToken cancellationToken,
         TimeSpan? timeout = null)
     {
-        TimeSpan effectiveTimeout = timeout ?? TimeSpan.FromMinutes(2);
-        DateTime startTime = DateTime.UtcNow;
-        AuthStatus authStatus;
+        TimeSpan effectiveTimeout = timeout ?? TimeSpan.FromMinutes(1);
+        TimeSpan pollInterval = TimeSpan.FromSeconds(2);
+        DateTime deadline = DateTime.UtcNow + effectiveTimeout;
 
+        AuthStatus authStatus;
         do
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             authStatus = await authorizationClient.GetAuthStatusAsync(
                 authOperationInfo.ReferenceNumber,
                 authOperationInfo.AuthenticationToken.Token,
                 cancellationToken).ConfigureAwait(false);
 
-            // (4xx) - błąd po stronie danych/żądania
-            if (authStatus.Status.Code >= AuthenticationStatusCodeResponse.BadRequest && authStatus.Status.Code < AuthenticationStatusCodeResponse.UnknownError)
-            {
-                string details = authStatus.Status.Details != null && authStatus.Status.Details?.Count > 0
-                    ? string.Join(", ", authStatus.Status.Details)
-                    : "brak szczegółów";
-
-                throw new InvalidOperationException(
-                    $"Błąd autoryzacji KSeF. " +
-                    $"Status: {authStatus.Status.Code}, " +
-                    $"Opis: {authStatus.Status.Description}, " +
-                    $"Szczegóły: {details}");
-            }
-
-            // Sukces - wyjście z pętli
             if (authStatus.Status.Code == AuthenticationStatusCodeResponse.AuthenticationSuccess)
             {
                 return;
             }
 
-            // Status 100 (Processing) lub inne - czekamy przed kolejną próbą
-            if (!cancellationToken.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
-            }
+            await Task.Delay(pollInterval, cancellationToken).ConfigureAwait(false);
         }
-        while (authStatus.Status.Code != AuthenticationStatusCodeResponse.AuthenticationSuccess
-            && !cancellationToken.IsCancellationRequested
-            && (DateTime.UtcNow - startTime) < effectiveTimeout);
+        while (DateTime.UtcNow < deadline);
 
-        // Timeout lub nieoczekiwany status
-        if (authStatus.Status.Code != AuthenticationStatusCodeResponse.AuthenticationSuccess)
-        {
-            string details = authStatus.Status.Details != null && authStatus.Status.Details.Count > 0
-                ? string.Join(", ", authStatus.Status.Details)
-                : "brak szczegółów";
-
-            throw new TimeoutException(
-                $"Timeout uwierzytelniania: Brak tokena po {effectiveTimeout.TotalSeconds}s. " +
-                $"Status: {authStatus.Status.Code}, " +
-                $"Opis: {authStatus.Status.Description}, " +
-                $"Szczegóły: {details}");
-        }
+        throw new TimeoutException(
+            $"Uwierzytelnianie nie zakończyło się kodem 200 w ciągu {effectiveTimeout.TotalSeconds}s. " +
+            $"Ostatni status: {authStatus.Status.Code}, " +
+            $"Opis: {authStatus.Status.Description}, " +
+            $"Szczegóły: {FormatDetails(authStatus)}");
     }
 
     /// <inheritdoc />
-    public Task<TokenInfo> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
-        => authorizationClient.RefreshAccessTokenAsync(refreshToken, cancellationToken)
-                         .ContinueWith(t => t.Result.AccessToken, cancellationToken);
+    public async Task<TokenInfo> RefreshAccessTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+    {
+        RefreshTokenResponse response = await authorizationClient
+            .RefreshAccessTokenAsync(refreshToken, cancellationToken).ConfigureAwait(false);
+
+        return response.AccessToken;
+    }
+
+	private static string FormatDetails(AuthStatus authStatus) =>
+	authStatus.Status.Details != null && authStatus.Status.Details.Count > 0
+		? string.Join(", ", authStatus.Status.Details)
+		: "brak szczegółów";
 }

@@ -53,7 +53,7 @@ namespace KSeF.Client.Core.Interfaces
         /// <param name="refreshToken">Ważny refresh token.</param>
         /// <param name="cancellationToken">Token anulowania.</param>
         /// <returns>
-        /// Nowy obiekt <see cref="TokenInfo"/> zawierający odświeżony accessToken i refreshToken.
+        /// Nowy <see cref="TokenInfo"/> z odświeżonym accessToken oraz jego czasem ważności.
         /// </returns>
         Task<TokenInfo> RefreshAccessTokenAsync(
             string refreshToken,
@@ -65,19 +65,20 @@ namespace KSeF.Client.Core.Interfaces
         /// Kroki:
         /// 1. Pobiera <c>AuthChallenge</c> z systemu KSeF.
         /// 2. Łączy token KSeF z timestampem z challenge.
-        /// 3. Szyfruje ciąg przy użyciu <paramref name="cryptographyService"/> i wybranej metody <paramref name="encryptionMethod"/>.
+        /// 3. Szyfruje ciąg przy użyciu <paramref name="cryptographyService"/> wybraną metodą <paramref name="encryptionMethod"/>.
         /// 4. Wysyła zaszyfrowany token do KSeF.
         /// 5. Zwraca wynik uwierzytelnienia (access/refresh tokeny).
         /// </summary>
         /// <param name="contextIdentifierType">Typ identyfikatora kontekstu (np. NIP).</param>
         /// <param name="contextIdentifierValue">Wartość identyfikatora kontekstu.</param>
         /// <param name="tokenKsef">Token KSeF (sekret uwierzytelniający).</param>
-        /// <param name="cryptographyService">Usługa odpowiedzialna za szyfrowanie RSA/ECDSA.</param>
-        /// <param name="encryptionMethod">Metoda szyfrowania (domyślnie ECDsa).</param>
+        /// <param name="cryptographyService">Usługa kryptograficzna dostarczająca klucz publiczny KSeF do szyfrowania tokenu.</param>
+        /// <param name="encryptionMethod">
+        /// Metoda szyfrowania tokenu (domyślnie RSA-OAEP SHA-256).</param>
         /// <param name="authorizationPolicy">Polityka walidacji autoryzacji (opcjonalna).</param>
         /// <param name="cancellationToken">Token anulowania.</param>
         /// <returns>
-        /// Obiekt <see cref="AuthenticationOperationStatusResponse"/> zawierający dane access/refresh tokenów 
+        /// Obiekt <see cref="AuthenticationOperationStatusResponse"/> zawierający dane access/refresh tokenów
         /// oraz status operacji.
         /// </returns>
         Task<AuthenticationOperationStatusResponse> AuthKsefTokenAsync(
@@ -85,7 +86,7 @@ namespace KSeF.Client.Core.Interfaces
             string contextIdentifierValue,
             string tokenKsef,
             ICryptographyService cryptographyService,
-            EncryptionMethodEnum encryptionMethod = EncryptionMethodEnum.ECDsa,
+            EncryptionMethodEnum encryptionMethod = EncryptionMethodEnum.Rsa,
             AuthenticationTokenAuthorizationPolicy authorizationPolicy = default,
             CancellationToken cancellationToken = default);
     }

@@ -13,7 +13,7 @@ public class SessionController(IKSeFClient ksefClient) : ControllerBase
     private readonly IKSeFClient ksefClient = ksefClient;
 
     [HttpGet("online-sessions")]
-    public async Task<ActionResult<ICollection<Session>>> GetOnlineSessionsAsync([FromForm] string accessToken, [FromForm] SessionsFilter sessionsFilter, CancellationToken cancellationToken)
+    public async Task<ActionResult<ICollection<Session>>> GetOnlineSessionsAsync([FromQuery] string accessToken, [FromQuery] SessionsFilter sessionsFilter, CancellationToken cancellationToken)
     {
         List<Session> sessions = [];
         const int pageSize = 20;
@@ -29,7 +29,7 @@ public class SessionController(IKSeFClient ksefClient) : ControllerBase
     }
 
     [HttpGet("batch-sessions")]
-    public async Task<ActionResult<ICollection<Session>>> GetbatchSessionsAsync([FromForm] string accessToken, [FromForm] SessionsFilter sessionsFilter, CancellationToken cancellationToken)
+    public async Task<ActionResult<ICollection<Session>>> GetbatchSessionsAsync([FromQuery] string accessToken, [FromQuery] SessionsFilter sessionsFilter, CancellationToken cancellationToken)
     {
         List<Session> sessions = [];
         const int pageSize = 20;
@@ -81,6 +81,13 @@ public class SessionController(IKSeFClient ksefClient) : ControllerBase
     {
         SessionInvoicesResponse failedInvoices = await ksefClient.GetSessionFailedInvoicesAsync(sessionReferenceNumber, accessToken, null, null, cancellationToken).ConfigureAwait(false);
         return Ok(failedInvoices);
+    }
+
+    [HttpGet("invoice")]
+    public async Task<ActionResult<SessionInvoice>> GetSessionInvoiceAsync(string sessionReferenceNumber, string invoiceReferenceNumber, string accessToken, CancellationToken cancellationToken)
+    {
+        SessionInvoice invoice = await ksefClient.GetSessionInvoiceAsync(sessionReferenceNumber, invoiceReferenceNumber, accessToken, cancellationToken).ConfigureAwait(false);
+        return Ok(invoice);
     }
 
     [HttpGet("invoice-upo-by-invoice-reference-number")]

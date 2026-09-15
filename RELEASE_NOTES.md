@@ -1,5 +1,17 @@
 # Rejestr zmian
 
+## Wersja 2.8.0
+### Nowe
+- `EffectiveApiRateLimits`: dodano pola `OnlineSessionClose`, `BatchSessionClose`, `Anonymous` oraz `Global` zgodnie z kontraktem API 2.8.0 (domyślne limity zamykania sesji: `20/60/240` i `20/40/120`).
+- `ApiRateLimitsChangeRequest`: dodano model nadpisywalnych limitów dla POST `/testdata/rate-limits` (bez grup `OnlineSessionClose`, `BatchSessionClose`, `Anonymous`, `Global`).
+- `KsefFeatures`: dodano stałe nagłówka `X-KSeF-Feature` (m.in. `SubjectIdentifierValidation`).
+- `KSeF.DemoWebApp`: Uzupełniono brakujące wywołania endpointów
+
+### Zmodyfikowane
+- Zaktualizowano mapowanie limitów zamykania sesji w narzędziach testowych: `SessionOnlineClose` i `SessionBatchClose` korzystają z osobnych grup `OnlineSessionClose` oraz `BatchSessionClose`.
+- `OpenOnlineSessionAsync` / `OpenBatchSessionAsync`: parametr `upoVersion` przemianowano na `feature`; dokumentacja i przeznaczenie nagłówka `X-KSeF-Feature` odpowiadają teraz `subject-identifier-validation` (walidacja NIP/IdWew), a nie wersji UPO. Wywołania z named argument `upoVersion:` wymagają aktualizacji.
+- `EffectiveApiRateLimitsRequest.RateLimits`: typ zmieniono z `EffectiveApiRateLimits` na `ApiRateLimitsChangeRequest`, zgodnie z kontraktem POST `/testdata/rate-limits`.
+
 ## Wersja 2.7.1
 ### Nowe
 - `KSeF.DemoWebApp`: dodano przykładową implementację `BackgroundService` korzystającą z `IKSeFClientFactory` (`KsefClientBackgroundService`, `IKsefBackgroundJob`, `KsefAuthenticationBackgroundJob`, `KsefInvoiceUpoBackgroundJob`, konfiguracja `BackgroundKsef`).

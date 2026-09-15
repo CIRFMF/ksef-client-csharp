@@ -23,6 +23,6 @@ namespace KSeF.Client.Core.Models.Invoices.Common
         UGX, USD, USN, UYI, UYU, UYW, UZS, VES, VND, VUV,
         WST, XAF, XAG, XAU, XBA, XBB, XBC, XBD, XCD, XCG,
         XDR, XOF, XPD, XPF, XPT, XSU, XUA, XXX, YER, ZAR, 
-        ZMW, ZWL
+        ZMW, ZWL, CNH, VED, XTS, ZWG, SLE
     }
 }

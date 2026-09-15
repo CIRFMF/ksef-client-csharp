@@ -158,7 +158,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
-    public async Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default)
+    public async Task<OpenOnlineSessionResponse> OpenOnlineSessionAsync(OpenOnlineSessionRequest requestPayload, string accessToken, string feature = null, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNull(requestPayload);
         Guard.ThrowIfNullOrWhiteSpace(accessToken);
@@ -168,8 +168,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                                                                                                requestPayload,
                                                                                                accessToken,
                                                                                                RestClient.DefaultContentType,                                                                                               
-																							   !string.IsNullOrEmpty(upoVersion) ? 
-                                                                                                    new Dictionary<string, string> { { "X-KSeF-Feature", upoVersion } } : null,
+																							   !string.IsNullOrEmpty(feature) ? 
+                                                                                                    new Dictionary<string, string> { { KsefFeatures.HeaderName, feature } } : null,
                                                                                                cancellationToken).ConfigureAwait(false);
     }
 
@@ -202,7 +202,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
-    public async Task<OpenBatchSessionResponse> OpenBatchSessionAsync(OpenBatchSessionRequest requestPayload, string accessToken, string upoVersion = null, CancellationToken cancellationToken = default)
+    public async Task<OpenBatchSessionResponse> OpenBatchSessionAsync(OpenBatchSessionRequest requestPayload, string accessToken, string feature = null, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNull(requestPayload);
         Guard.ThrowIfNullOrWhiteSpace(accessToken);
@@ -212,8 +212,8 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                                                                                              requestPayload, 
                                                                                              accessToken, 
                                                                                              RestClient.DefaultContentType,                                                                                             
-																							 !string.IsNullOrEmpty(upoVersion) ?
-																									new Dictionary<string, string> { { "X-KSeF-Feature", upoVersion } } : null ,
+																							 !string.IsNullOrEmpty(feature) ?
+																									new Dictionary<string, string> { { KsefFeatures.HeaderName, feature } } : null ,
                                                                                              cancellationToken)
                                                                                              .ConfigureAwait(false);
     }

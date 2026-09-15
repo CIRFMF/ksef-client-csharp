@@ -94,5 +94,31 @@ public class SearchPermissionController(IKSeFClient ksefClient) : ControllerBase
     {
         return Ok(await ksefClient.SearchGrantedEuEntityPermissionsAsync(request, accessToken, pageOffset, pageSize).ConfigureAwait(false));
     }
+
+    /// <summary>
+    /// Pobranie listy uprawnień do pracy w KSeF nadanych zalogowanemu użytkownikowi / Search personal (own) permissions
+    /// </summary>
+    [HttpPost("personal/grants")]
+    public async Task<IActionResult> SearchGrantedPersonalPermissionsAsync(
+        [FromQuery] int pageOffset,
+        [FromQuery] int pageSize,
+        [FromQuery] string accessToken,
+        [FromBody] PersonalPermissionsQueryRequest request)
+    {
+        return Ok(await ksefClient.SearchGrantedPersonalPermissionsAsync(request, accessToken, pageOffset, pageSize).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Pobranie listy uprawnień do obsługi faktur w bieżącym kontekście / Query entity invoice permission grants
+    /// </summary>
+    [HttpPost("entities/grants")]
+    public async Task<IActionResult> QueryEntitiesGrantsAsync(
+        [FromQuery] int pageOffset,
+        [FromQuery] int pageSize,
+        [FromQuery] string accessToken,
+        [FromBody] EntityPermissionGrantQueryRequest request)
+    {
+        return Ok(await ksefClient.QueryEntitiesGrantsAsync(request, accessToken, pageOffset, pageSize).ConfigureAwait(false));
+    }
 }
 

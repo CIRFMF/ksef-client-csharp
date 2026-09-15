@@ -14,7 +14,7 @@ public class PeppolController(IKSeFClient client) : ControllerBase
     [HttpGet("query")]
     [ProducesResponseType(typeof(QueryPeppolProvidersResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<QueryPeppolProvidersResponse>> QueryProviders(
-        [FromHeader(Name = "Authorization")] string accessToken,
+        string accessToken,
         [FromQuery] int? pageOffset,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)

@@ -1,5 +1,6 @@
 using KSeF.Client.Core.Infrastructure.Rest;
 using KSeF.Client.Core.Interfaces.Rest;
+using KSeF.Client.Core.Models.Sessions;
 using KSeF.Client.Core.Models.Sessions.BatchSession;
 using KSeF.Client.Helpers;
 using KSeF.Client.Core.Interfaces.Clients;
@@ -11,7 +12,7 @@ public class BatchSessionClient(IRestClient restClient, IRouteBuilder routeBuild
     : ClientBase(restClient, routeBuilder), IBatchSessionClient
 {
     /// <inheritdoc />
-    public Task<OpenBatchSessionResponse> OpenBatchSessionAsync(OpenBatchSessionRequest requestPayload, string accessToken, string upoVersion, CancellationToken cancellationToken = default)
+    public Task<OpenBatchSessionResponse> OpenBatchSessionAsync(OpenBatchSessionRequest requestPayload, string accessToken, string feature = null, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNull(requestPayload);
         Guard.ThrowIfNullOrWhiteSpace(accessToken);
@@ -20,9 +21,9 @@ public class BatchSessionClient(IRestClient restClient, IRouteBuilder routeBuild
             Routes.Sessions.Batch.Open,
             requestPayload,
             accessToken,
-			!string.IsNullOrEmpty(upoVersion) ?
+			!string.IsNullOrEmpty(feature) ?
             new Dictionary<string, string> 
-                { { "X-KSeF-Feature", upoVersion } } : null,
+                { { KsefFeatures.HeaderName, feature } } : null,
 			cancellationToken);
     }
 

@@ -40,7 +40,7 @@ public class InvoicesController(IKSeFClient ksefClient) : ControllerBase
     [ProducesResponseType(typeof(OperationResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<OperationResponse>> ExportInvoices(
         [FromBody] InvoiceExportRequest request,
-        [FromHeader(Name = "Authorization")] string accessToken,
+        string accessToken,
         CancellationToken cancellationToken)
     {
         OperationResponse result = await ksefClient.ExportInvoicesAsync(request, accessToken, cancellationToken:cancellationToken).ConfigureAwait(false);
@@ -54,7 +54,7 @@ public class InvoicesController(IKSeFClient ksefClient) : ControllerBase
     [ProducesResponseType(typeof(InvoiceExportStatusResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<InvoiceExportStatusResponse>> GetInvoiceExportStatus(
         string operationReferenceNumber,
-        [FromHeader(Name = "Authorization")] string accessToken,
+        string accessToken,
         CancellationToken cancellationToken)
     {
         InvoiceExportStatusResponse result = await ksefClient.GetInvoiceExportStatusAsync(operationReferenceNumber, accessToken, cancellationToken).ConfigureAwait(false);

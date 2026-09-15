@@ -1,9 +1,9 @@
-﻿namespace KSeF.Client.Core.Models.RateLimits
+namespace KSeF.Client.Core.Models.RateLimits
 {
     /// <summary>
-    /// Aktualnie obowiązujące limity ilości żądań przesyłanych do API.
+    /// Nadpisywalne limity żądań API używane w żądaniu POST /testdata/rate-limits.
     /// </summary>
-    public class EffectiveApiRateLimits
+    public class ApiRateLimitsChangeRequest
     {
         /// <summary>
         /// Limity otwierania sesji interaktywnych.
@@ -11,19 +11,9 @@
         public EffectiveApiRateLimitValues OnlineSession { get; set; }
 
         /// <summary>
-        /// Limity zamykania sesji interaktywnych.
-        /// </summary>
-        public EffectiveApiRateLimitValues OnlineSessionClose { get; set; }
-
-        /// <summary>
         /// Limity otwierania sesji wsadowych.
         /// </summary>
         public EffectiveApiRateLimitValues BatchSession { get; set; }
-
-        /// <summary>
-        /// Limity zamykania sesji wsadowych.
-        /// </summary>
-        public EffectiveApiRateLimitValues BatchSessionClose { get; set; }
 
         /// <summary>
         /// Limity wysyłki faktur.
@@ -61,7 +51,7 @@
         public EffectiveApiRateLimitValues InvoiceExport { get; set; }
 
         /// <summary>
-        /// Limity eksportu paczki faktur.
+        /// Limity statusu eksportu paczki faktur.
         /// </summary>
         public EffectiveApiRateLimitValues InvoiceExportStatus { get; set; }
 
@@ -71,23 +61,13 @@
         public EffectiveApiRateLimitValues InvoiceDownload { get; set; }
 
         /// <summary>
-        /// Limity pozostałych operacji API.
-        /// </summary>
-        public EffectiveApiRateLimitValues Other { get; set; }
-
-        /// <summary>
         /// Limity generowania identyfikatorów zbiorczych.
         /// </summary>
         public EffectiveApiRateLimitValues CollectiveIdentifier { get; set; }
 
         /// <summary>
-        /// Limity anonimowych (nieuwierzytelnionych) operacji API.
+        /// Limity pozostałych operacji API.
         /// </summary>
-        public EffectiveApiRateLimitValues Anonymous { get; set; }
-
-        /// <summary>
-        /// Limity globalne API naliczane per adres IP. Mechanizm może być wyłączony (wartości -1).
-        /// </summary>
-        public EffectiveApiRateLimitValues Global { get; set; }
+        public EffectiveApiRateLimitValues Other { get; set; }
     }
 }

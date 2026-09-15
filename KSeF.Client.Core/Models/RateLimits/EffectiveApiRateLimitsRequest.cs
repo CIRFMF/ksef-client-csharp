@@ -1,14 +1,13 @@
-﻿
-namespace KSeF.Client.Core.Models.RateLimits
+﻿namespace KSeF.Client.Core.Models.RateLimits
 {
     /// <summary>
-    /// Limity żądań przesyłanych do API.
+    /// Żądanie ustawienia limitów żądań API dla bieżącego kontekstu.
     /// </summary>
     public class EffectiveApiRateLimitsRequest
     {
         /// <summary>
-        /// Lista limitów żądań API.
+        /// Nadpisywalne limity żądań API.
         /// </summary>
-        public EffectiveApiRateLimits RateLimits { get; set; }
+        public ApiRateLimitsChangeRequest RateLimits { get; set; }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using KSeF.Client.ClientFactory.DI;
 using KSeF.Client.DI;
+using KSeF.DemoWebApp.Infrastructure;
 using KSeF.DemoWebApp.Services;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.OpenApi;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -68,6 +70,22 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+	// Umożliwia jednorazowe ustawienie tokenu KSeF w Swaggerze za pomocą „Authorize".
+	// Token jest przekazywany w nagłówku Authorization, a AccessTokenMiddleware
+	// wykorzystuje go jako wartość parametrów accessToken/token.
+	const string securitySchemeId = "ksef-access-token";
+    c.AddSecurityDefinition(securitySchemeId, new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Description = "Access token KSeF (z prefiksem \"Bearer \" lub bez).",
+    });
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference(securitySchemeId, document, null)] = new List<string>()
+    });
+
     c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "KSeF.DemoWebApp.xml"));
     c.CustomSchemaIds(t =>
    (t.Namespace + "_" + t.Name)
@@ -100,6 +118,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseMiddleware<AccessTokenMiddleware>();
 
 app.UseAuthorization();
 

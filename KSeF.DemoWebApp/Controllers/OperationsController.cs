@@ -14,7 +14,7 @@ namespace KSeF.DemoWebApp.Controllers
         [HttpGet("attachments/status")]
         [ProducesResponseType(typeof(PermissionsAttachmentAllowedResponse), StatusCodes.Status200OK)]
         public async Task<ActionResult<PermissionsAttachmentAllowedResponse>> GetAttachmentPermissionStatus(
-            [FromHeader(Name = "Authorization")] string accessToken,
+            string accessToken,
             CancellationToken cancellationToken)
         {
             PermissionsAttachmentAllowedResponse result = await client.GetAttachmentPermissionStatusAsync(accessToken, cancellationToken).ConfigureAwait(false);

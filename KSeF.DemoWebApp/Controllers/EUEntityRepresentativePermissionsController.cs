@@ -19,6 +19,6 @@ public class EUEntityRepresentativePermissionsController(IKSeFClient ksefClient)
     public async Task<ActionResult<OperationResponse>> RevokePermissionsEntity(string accessToken, string permissionId, CancellationToken cancellationToken)
     {
   
-        return await ksefClient.RevokeAuthorizationsPermissionAsync(permissionId, accessToken, cancellationToken).ConfigureAwait(false);
+        return await ksefClient.RevokeCommonPermissionAsync(permissionId, accessToken, cancellationToken).ConfigureAwait(false);
     }
 }
