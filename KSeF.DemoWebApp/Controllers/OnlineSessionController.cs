@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using KSeF.Client.Core.Models.Sessions;
 using KSeF.Client.Core.Models.Sessions.OnlineSession;
 using Microsoft.AspNetCore.Mvc;
@@ -10,19 +11,22 @@ namespace KSeF.DemoWebApp.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class OnlineSessionController(IKSeFClient ksefClient, ICryptographyService cryptographyService) : ControllerBase
+public class OnlineSessionController(IKSeFClient ksefClient, ICryptographyService cryptographyService, IConfiguration configuration) : ControllerBase
 {
     private readonly ICryptographyService cryptographyService = cryptographyService;
-    private static EncryptionData? encryptionData;
     private readonly IKSeFClient ksefClient = ksefClient;
+    private readonly string contextIdentifier = configuration["Tools:contextIdentifier"]!;
+
+    private static readonly string InvoiceTemplatePath = Path.Combine(AppContext.BaseDirectory, "Templates", "invoice-template-fa-3.xml");
+    private static readonly ConcurrentDictionary<string, EncryptionData> SessionEncryption = new();
 
     [HttpPost("open-session")]
     public async Task<ActionResult<OpenOnlineSessionResponse>> OpenOnlineSessionAsync(string accessToken, CancellationToken cancellationToken)
     {
-        encryptionData = cryptographyService.GetEncryptionData();
+        EncryptionData encryptionData = cryptographyService.GetEncryptionData();
         OpenOnlineSessionRequest request = OpenOnlineSessionRequestBuilder
          .Create()
-         .WithFormCode(systemCode: "FA (2)", schemaVersion: "1-0E", value: "FA")
+         .WithFormCode(systemCode: "FA (3)", schemaVersion: "1-0E", value: "FA")
          .WithEncryption(
              encryptedSymmetricKey: encryptionData.EncryptionInfo.EncryptedSymmetricKey,
              initializationVector: encryptionData.EncryptionInfo.InitializationVector,
@@ -30,15 +34,22 @@ public class OnlineSessionController(IKSeFClient ksefClient, ICryptographyServic
          .Build();
 
         OpenOnlineSessionResponse openSessionResponse = await ksefClient.OpenOnlineSessionAsync(request, accessToken, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        SessionEncryption[openSessionResponse.ReferenceNumber] = encryptionData;
+
         return Ok(openSessionResponse);
     }
 
     [HttpPost("send-invoice")]
     public async Task<ActionResult<SendInvoiceResponse>> SendInvoiceOnlineSessionAsync(string sessionReferenceNumber, string accessToken, CancellationToken cancellationToken)
     {
-        byte[] invoice = System.IO.File.ReadAllBytes("faktura-online-fa(3).xml");
+        if (!SessionEncryption.TryGetValue(sessionReferenceNumber, out EncryptionData? encryptionData))
+        {
+            return BadRequest($"Nie znaleziono otwartej sesji o numerze referencyjnym '{sessionReferenceNumber}'. Otwórz sesję przez open-session.");
+        }
 
-        byte[] encryptedInvoice = cryptographyService.EncryptBytesWithAES256(invoice, encryptionData!.CipherKey, encryptionData!.CipherIv);
+        byte[] invoice = ReadInvoiceTemplate();
+        byte[] encryptedInvoice = cryptographyService.EncryptBytesWithAES256(invoice, encryptionData.CipherKey, encryptionData.CipherIv);
 
         FileMetadata invoiceMetadata = cryptographyService.GetMetaData(invoice);
         FileMetadata encryptedInvoiceMetadata = cryptographyService.GetMetaData(encryptedInvoice);
@@ -61,8 +72,13 @@ public class OnlineSessionController(IKSeFClient ksefClient, ICryptographyServic
     [HttpPost("send-technical-correction")]
     public async Task<ActionResult<SendInvoiceResponse>> SendTechnicalCorrectionAsync(string sessionReferenceNumber, string hashOfCorrectedInvoice, string accessToken, CancellationToken cancellationToken)
     {
-        byte[] invoice = System.IO.File.ReadAllBytes("faktura-online-fa(3).xml");
-        byte[] encryptedInvoice = cryptographyService.EncryptBytesWithAES256(invoice, encryptionData!.CipherKey, encryptionData!.CipherIv);
+        if (!SessionEncryption.TryGetValue(sessionReferenceNumber, out EncryptionData? encryptionData))
+        {
+            return BadRequest($"Nie znaleziono otwartej sesji o numerze referencyjnym '{sessionReferenceNumber}'. Otwórz sesję przez open-session.");
+        }
+
+        byte[] invoice = ReadInvoiceTemplate();
+        byte[] encryptedInvoice = cryptographyService.EncryptBytesWithAES256(invoice, encryptionData.CipherKey, encryptionData.CipherIv);
 
         FileMetadata invoiceMetadata = cryptographyService.GetMetaData(invoice);
         FileMetadata encryptedInvoiceMetadata = cryptographyService.GetMetaData(encryptedInvoice);
@@ -88,5 +104,16 @@ public class OnlineSessionController(IKSeFClient ksefClient, ICryptographyServic
     {
         await ksefClient.CloseOnlineSessionAsync(sessionReferenceNumber, accessToken, cancellationToken)
             .ConfigureAwait(false);
+
+        SessionEncryption.TryRemove(sessionReferenceNumber, out _);
+    }
+
+    private byte[] ReadInvoiceTemplate()
+    {
+        string invoice = System.IO.File.ReadAllText(InvoiceTemplatePath)
+            .Replace("#nip#", contextIdentifier, StringComparison.Ordinal)
+            .Replace("#invoice_number#", Guid.NewGuid().ToString(), StringComparison.Ordinal);
+
+        return System.Text.Encoding.UTF8.GetBytes(invoice);
     }
 }
