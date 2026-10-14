@@ -1,5 +1,12 @@
 # Rejestr zmian
 
+## Wersja 2.9.0
+### Nowe
+- `PersonalPermissionsQueryResponse` (dziedziczy po `PagedPermissionsResponse<PersonalPermission>`): dodaje pole `OwnerPermissions` (`List<PersonPermissionType>`), zwracające listę uprawnień właścicielskich uwierzytelnionego podmiotu. Nowy typ odpowiedzi `POST /permissions/query/personal/grants`.
+
+### Zmodyfikowane
+- `ISearchPermissionClient.SearchGrantedPersonalPermissionsAsync` / `SearchPermissionClient` / `KSeFClient`: typ zwracany zmieniono z `PagedPermissionsResponse<PersonalPermission>` na `PersonalPermissionsQueryResponse`. Wywołania przypisujące wynik do zmiennej typowanej jawnie jako `PagedPermissionsResponse<PersonalPermission>` wymagają zmiany.
+
 ## Wersja 2.8.1
 ### Nowe
 - Dodano wartość `CollectiveIdentifierManage` do enumów uprawnień dla podmiotów oraz uprawnień pośrednich:

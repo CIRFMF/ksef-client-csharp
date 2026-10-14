@@ -162,7 +162,7 @@ internal sealed partial class FakeOnlineSessionKsefClient
     public Task<OperationResponse> RevokeAuthorizationsPermissionAsync(string permissionId, string accessToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
-    public Task<PagedPermissionsResponse<PersonalPermission>> SearchGrantedPersonalPermissionsAsync(PersonalPermissionsQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default)
+    public Task<PersonalPermissionsQueryResponse> SearchGrantedPersonalPermissionsAsync(PersonalPermissionsQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
     public Task<PagedPermissionsResponse<PersonPermission>> SearchGrantedPersonPermissionsAsync(PersonPermissionsQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default)

@@ -74,7 +74,9 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
     }
 
     /// <summary>
-    /// Potwierdza że podmiot któremu nadano uprawnienia widzi je w swoim kontekście.
+    /// Potwierdza że podmiot któremu nadano uprawnienia widzi je w swoim kontekście
+    /// (<c>Permissions</c>), a jednocześnie - jako właściciel własnego kontekstu NIP -
+    /// widzi swoje uprawnienia właścicielskie (<c>OwnerPermissions</c>).
     /// </summary>
     /// <returns></returns>
     [Fact]
@@ -113,7 +115,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
         AuthenticationOperationStatusResponse entityAuthorizationInfo = await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, subjectNip);
 
         PersonalPermissionsQueryRequest queryForAllPermissions = new();
-        PagedPermissionsResponse<PersonalPermission> queryForAllPermissionsResponse =
+        PersonalPermissionsQueryResponse queryForAllPermissionsResponse =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(
                     queryForAllPermissions, entityAuthorizationInfo.AccessToken.Token),
@@ -123,7 +125,13 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
         Assert.NotNull(queryForAllPermissionsResponse);
         Assert.NotEmpty(queryForAllPermissionsResponse.Permissions);
         Assert.Equal(ExpectedPermissionsCount, queryForAllPermissionsResponse.Permissions.Count);
-		
+
+        // entityAuthorizationInfo uwierzytelnia subjectNip jako właściciela jego własnego kontekstu NIP,
+        // więc odpowiedź powinna jednocześnie zawierać uprawnienia nadane przez inny podmiot (Permissions)
+        // oraz uprawnienia właścicielskie (OwnerPermissions).
+        Assert.NotNull(queryForAllPermissionsResponse.OwnerPermissions);
+        Assert.NotEmpty(queryForAllPermissionsResponse.OwnerPermissions);
+
         Assert.Contains(queryForAllPermissionsResponse.Permissions,
 			x => x.PermissionScope == PersonalPermission.PersonalPermissionScopeType.InvoiceWrite);
 		Assert.Contains(queryForAllPermissionsResponse.Permissions,
@@ -229,7 +237,7 @@ public class EntityPermissionsE2ETestsScenarios : TestBase
             new();
 
         // uprawnienia biura rachunkowego w kontekście jdg
-        PagedPermissionsResponse<PersonalPermission>
+        PersonalPermissionsQueryResponse
             queryForContextPermissionsResponse =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(

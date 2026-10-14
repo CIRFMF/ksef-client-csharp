@@ -23,7 +23,7 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
     }
 
     /// <inheritdoc />
-    public Task<PagedPermissionsResponse<PersonalPermission>> SearchGrantedPersonalPermissionsAsync(
+    public Task<PersonalPermissionsQueryResponse> SearchGrantedPersonalPermissionsAsync(
         PersonalPermissionsQueryRequest requestPayload,
         string accessToken,
         int? pageOffset = null,
@@ -34,7 +34,7 @@ public class SearchPermissionClient(IRestClient restClient, IRouteBuilder routeB
         Guard.ThrowIfNullOrWhiteSpace(accessToken);
 
         string endpoint = WithPagination(Routes.Permissions.Query.PersonalGrants, pageOffset, pageSize);
-        return ExecuteAsync<PagedPermissionsResponse<PersonalPermission>, PersonalPermissionsQueryRequest>(
+        return ExecuteAsync<PersonalPermissionsQueryResponse, PersonalPermissionsQueryRequest>(
             endpoint,
             requestPayload,
             accessToken,

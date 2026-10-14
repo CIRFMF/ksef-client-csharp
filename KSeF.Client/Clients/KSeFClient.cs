@@ -493,7 +493,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
-    public async Task<PagedPermissionsResponse<PersonalPermission>> SearchGrantedPersonalPermissionsAsync(
+    public async Task<PersonalPermissionsQueryResponse> SearchGrantedPersonalPermissionsAsync(
         PersonalPermissionsQueryRequest requestPayload,
               string accessToken,
               int? pageOffset = null,
@@ -507,7 +507,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
 
         PaginationHelper.AppendPagination(pageOffset, pageSize, urlBuilder);
 
-        return await restClient.SendAsync<PagedPermissionsResponse<PersonalPermission>, PersonalPermissionsQueryRequest>(
+        return await restClient.SendAsync<PersonalPermissionsQueryResponse, PersonalPermissionsQueryRequest>(
             HttpMethod.Post,
             urlBuilder.ToString(),
             requestPayload,

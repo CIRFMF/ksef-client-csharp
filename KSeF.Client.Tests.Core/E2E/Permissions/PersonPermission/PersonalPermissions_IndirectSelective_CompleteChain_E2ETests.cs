@@ -124,7 +124,7 @@ public class PersonalPermissions_IndirectSelective_CompleteChain_E2ETests : Test
         #endregion
 
         #region Act
-        PagedPermissionsResponse<PersonalPermission> page =
+        PersonalPermissionsQueryResponse page =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(query, personAccessToken, 0, 50, CancellationToken),
                 condition: r => r.Permissions != null && r.Permissions.Any(p => p.PermissionScope == PersonalPermissionScopeType.InvoiceRead),

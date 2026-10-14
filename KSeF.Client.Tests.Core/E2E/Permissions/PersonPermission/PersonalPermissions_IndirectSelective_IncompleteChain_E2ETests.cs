@@ -198,7 +198,7 @@ public class PersonalPermissionsIndirectSelectiveIncompleteChainE2ETests : TestB
         #endregion
 
         #region Act
-        PagedPermissionsResponse<PersonalPermission> page =
+        PersonalPermissionsQueryResponse page =
             await KsefClient.SearchGrantedPersonalPermissionsAsync(
                 query, personAccessToken, pageOffset: 0, pageSize: 50, cancellationToken: CancellationToken);
 

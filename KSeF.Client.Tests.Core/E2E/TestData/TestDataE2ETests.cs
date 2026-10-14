@@ -319,7 +319,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
             // Act - Pobranie wszystkich uprawnień uprawnionego podmiotu
             PersonalPermissionsQueryRequest permissionsQuery = new();
 
-            PagedPermissionsResponse<PersonalPermission> grantedPermissions = await AsyncPollingUtils.PollAsync(
+            PersonalPermissionsQueryResponse grantedPermissions = await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(
                     permissionsQuery,
                     authOperationStatusResponse.AccessToken.Token),
@@ -355,7 +355,7 @@ namespace KSeF.Client.Tests.Core.E2E.TestData
             await TestDataClient.RevokePermissionsAsync(revokeRequest);
 
             // Pobranie uprawnień ponownie po cofnięciu
-            PagedPermissionsResponse<PersonalPermission> revokedPermissions = await AsyncPollingUtils.PollAsync(
+            PersonalPermissionsQueryResponse revokedPermissions = await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(
                     permissionsQuery,
                     authOperationStatusResponse.AccessToken.Token),

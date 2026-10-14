@@ -192,7 +192,7 @@ public class PersonalPermissionsWithInternalIdFilterE2ETests : TestBase
         // 6) Weryfikacja listy uprawnień bez filtra
         PersonalPermissionsQueryRequest queryWithoutFilter = new();
 
-        PagedPermissionsResponse<PersonalPermission> personalPermissions =
+        PersonalPermissionsQueryResponse personalPermissions =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(
                     queryWithoutFilter,
@@ -221,7 +221,7 @@ public class PersonalPermissionsWithInternalIdFilterE2ETests : TestBase
             }
         };
 
-        PagedPermissionsResponse<PersonalPermission> permissionsWithInternalIdFilter =
+        PersonalPermissionsQueryResponse permissionsWithInternalIdFilter =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(
                     queryWithInternalIdFilter,

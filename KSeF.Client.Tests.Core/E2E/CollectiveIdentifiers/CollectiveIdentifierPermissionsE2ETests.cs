@@ -289,7 +289,7 @@ public class CollectiveIdentifierPermissionsE2ETests : TestBase
         // 5. Odpytanie o uprawnienia nadane w kontekście właściciela
         PersonalPermissionsQueryRequest personalQuery = new PersonalPermissionsQueryRequest();
 
-        PagedPermissionsResponse<PersonalPermission> permissionsResponse = await AsyncPollingUtils.PollAsync(
+        PersonalPermissionsQueryResponse permissionsResponse = await AsyncPollingUtils.PollAsync(
             action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(personalQuery, targetToken),
             condition: r => r?.Permissions is not null && r.Permissions.Any(p => p.PermissionScope == PersonalPermission.PersonalPermissionScopeType.CollectiveIdentifierManage),
             delay: PermissionPropagationDelay,

@@ -85,7 +85,7 @@ public class PersonalPermissionsPeselInNipContextE2ETests : TestBase
             }
         };
 
-        PagedPermissionsResponse<PersonalPermission> personalPermissions =
+        PersonalPermissionsQueryResponse personalPermissions =
             await AsyncPollingUtils.PollAsync(
                 action: () => KsefClient.SearchGrantedPersonalPermissionsAsync(
                     query,

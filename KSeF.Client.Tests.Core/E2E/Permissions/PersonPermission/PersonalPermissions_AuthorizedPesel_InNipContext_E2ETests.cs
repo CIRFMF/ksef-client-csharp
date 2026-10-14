@@ -121,7 +121,7 @@ public class PersonalPermissions_AuthorizedPesel_InNipContext_E2ETests : TestBas
         #endregion
 
         #region Act
-        PagedPermissionsResponse<PersonalPermission> page =
+        PersonalPermissionsQueryResponse page =
             await AsyncPollingUtils.PollAsync(
                 async () => await KsefClient.SearchGrantedPersonalPermissionsAsync(
                     query, personAccessToken, pageOffset: 0, pageSize: 50, cancellationToken: CancellationToken).ConfigureAwait(false),

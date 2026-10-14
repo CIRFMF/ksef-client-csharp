@@ -22,10 +22,10 @@ namespace KSeF.Client.Core.Interfaces.Clients
         /// <param name="pageSize">Ilość elementów na stronie (domyślnie 10)</param>
         /// <param name="pageOffset">Index strony wyników (domyślnie 0)</param>
         /// <param name="cancellationToken"></param>
-        /// <returns><see cref="PagedPermissionsResponse{PersonalPermission}"/></returns>
+        /// <returns><see cref="PersonalPermissionsQueryResponse"/></returns>
         /// <exception cref="KsefApiException">Nieprawidłowe żądanie. (400 Bad request)</exception>
         /// <exception cref="KsefApiException">Brak autoryzacji. (401 Unauthorized)</exception>
-        Task<PagedPermissionsResponse<PersonalPermission>> SearchGrantedPersonalPermissionsAsync(PersonalPermissionsQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default);
+        Task<PersonalPermissionsQueryResponse> SearchGrantedPersonalPermissionsAsync(PersonalPermissionsQueryRequest requestPayload, string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Pobranie listy uprawnień do pracy w KSeF nadanych osobom fizycznym lub podmiotom.
