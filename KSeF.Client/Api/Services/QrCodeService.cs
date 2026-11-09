@@ -104,13 +104,11 @@ public static class QrCodeService
         using SKPaint textPaint = new SKPaint
         {
             Color = SKColors.Black,
-            TextSize = fontSizePx,
             IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            Typeface = SKTypeface.FromFamilyName("Arial")
         };
+        using SKFont textFont = new(SKTypeface.FromFamilyName("Arial"), fontSizePx);
         SKRect textBounds = new SKRect();
-        textPaint.MeasureText(label, ref textBounds);
+        textFont.MeasureText(label, out textBounds, textPaint);
         float labelHeight = textBounds.Height + 4;
 
         SKImageInfo info = new(width, height + (int)labelHeight);
@@ -119,7 +117,7 @@ public static class QrCodeService
 
         canvas.Clear(SKColors.White);
         canvas.DrawBitmap(skBitmap, 0, 0);
-        canvas.DrawText(label, width / 2f, height + labelHeight - 2, textPaint);
+        canvas.DrawText(label, width / 2f, height + labelHeight - 2, SKTextAlign.Center, textFont, textPaint);
 #else
         IImage qrImage = new SkiaImage(skBitmap);
 

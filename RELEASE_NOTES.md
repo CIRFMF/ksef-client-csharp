@@ -1,5 +1,10 @@
 # Rejestr zmian
 
+## Wersja 2.9.0.1
+### Zmodyfikowane
+- Zaktualizowano wszystkie zależności NuGet do najnowszych stabilnych wersji.
+- Usunięto znane podatności zgłaszane przez `dotnet list package --vulnerable --include-transitive`.
+
 ## Wersja 2.9.0
 ### Nowe
 - `PersonalPermissionsQueryResponse` (dziedziczy po `PagedPermissionsResponse<PersonalPermission>`): dodaje pole `OwnerPermissions` (`List<PersonPermissionType>`), zwracające listę uprawnień właścicielskich uwierzytelnionego podmiotu. Nowy typ odpowiedzi `POST /permissions/query/personal/grants`.

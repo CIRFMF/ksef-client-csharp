@@ -24,6 +24,7 @@ namespace KSeF.Client.Validation
         public const string KsefNumberPattern = "^([1-9](\\d[1-9]|[1-9]\\d)\\d{7})-(20[2-9][0-9]|2[1-9]\\d{2}|[3-9]\\d{3})(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])-([0-9A-F]{6})-?([0-9A-F]{6})-([0-9A-F]{2})$";
 
         public const string CertificateNamePattern = @"^[a-zA-Z0-9_\-\ ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$";
+        public const string CertificateSerialNumberPattern = @"^[0-9A-F]{16}$";
 
         public const string PeselPattern = @"^\d{2}(?:0[1-9]|1[0-2]|2[1-9]|3[0-2]|4[1-9]|5[0-2]|6[1-9]|7[0-2]|8[1-9]|9[0-2])\d{7}$";
         public const string CertificateFingerPrintSha256Pattern = @"^[0-9A-F]{64}$";
@@ -52,6 +53,7 @@ namespace KSeF.Client.Validation
             Ip4Mask = Ip4MaskRegex();
             Sha256Base64 = Sha256Base64Regex();
             CertificateName = CertificateNameRegex();
+            CertificateSerialNumber = CertificateSerialNumberRegex();
             Fingerprint = CertificateFingerPrintSha256Regex();
             PeppolId = PeppolIdRegex();
         }
@@ -70,6 +72,7 @@ namespace KSeF.Client.Validation
         public static Regex Ip4Mask { get; }
         public static Regex Sha256Base64 { get; }
         public static Regex CertificateName { get; }
+        public static Regex CertificateSerialNumber { get; }
         public static Regex Fingerprint { get; }
         public static Regex PeppolId { get; }
 
@@ -90,6 +93,7 @@ namespace KSeF.Client.Validation
         private static Regex Sha256Base64Regex() => new Regex(Sha256Base64Pattern, RegexOptions.Compiled);
         private static Regex CertificateNameRegex() => new Regex(CertificateNamePattern, RegexOptions.Compiled);
         private static Regex CertificateFingerPrintSha256Regex() => new Regex(CertificateFingerPrintSha256Pattern, RegexOptions.Compiled);
+        private static Regex CertificateSerialNumberRegex() => new Regex(CertificateSerialNumberPattern, RegexOptions.Compiled);
         private static Regex PeppolIdRegex() => new Regex(PeppolIdPattern, RegexOptions.Compiled);
 #else
         [GeneratedRegex(ReferenceNumberPattern, RegexOptions.Compiled)]
@@ -136,6 +140,9 @@ namespace KSeF.Client.Validation
 
         [GeneratedRegex(CertificateFingerPrintSha256Pattern, RegexOptions.Compiled)]
         private static partial Regex CertificateFingerPrintSha256Regex();
+
+        [GeneratedRegex(CertificateSerialNumberPattern, RegexOptions.Compiled)]
+        private static partial Regex CertificateSerialNumberRegex();
 
         [GeneratedRegex(PeppolIdPattern, RegexOptions.Compiled)]
         private static partial Regex PeppolIdRegex();
