@@ -100,14 +100,19 @@ namespace KSeF.Client.Tests.Core.E2E.Invoice
                 SubjectType = InvoiceSubjectType.Subject1
             };
 
-            PagedInvoiceResponse responseDateTimeOffsetUtcNow = await KsefClient.QueryInvoiceMetadataAsync(
-                queryDateTimeOffsetUtcNow,
-                _accessToken,
+            PagedInvoiceResponse responseDateTimeOffsetUtcNow = await AsyncPollingUtils.PollAsync(
+                action: () => KsefClient.QueryInvoiceMetadataAsync(
+                    queryDateTimeOffsetUtcNow,
+                    _accessToken,
+                    cancellationToken: CancellationToken),
+                condition: response => response?.Invoices is not null && response.Invoices.Count >= InvoiceCount,
+                delay: TimeSpan.FromMilliseconds(SleepTime),
+                maxAttempts: 30,
                 cancellationToken: CancellationToken);
 
             Assert.NotNull(responseDateTimeOffsetUtcNow);
             Assert.NotEmpty(responseDateTimeOffsetUtcNow.Invoices);
-            Assert.True(responseDateTimeOffsetUtcNow.Invoices.Count >= 5);
+            Assert.True(responseDateTimeOffsetUtcNow.Invoices.Count >= InvoiceCount, $"Oczekiwano co najmniej {InvoiceCount} faktur, otrzymano {responseDateTimeOffsetUtcNow.Invoices.Count}.");
 
             VerifyReturnedInvoicesMatchSent(responseDateTimeOffsetUtcNow.Invoices, expectedKsefNumbers);
             VerifyInvoicesInDateRange(responseDateTimeOffsetUtcNow.Invoices, queryDateTimeOffsetUtcNow.DateRange);
@@ -130,14 +135,19 @@ namespace KSeF.Client.Tests.Core.E2E.Invoice
                 SubjectType = InvoiceSubjectType.Subject1
             };
 
-            PagedInvoiceResponse responseDateTimeOffsetNow = await KsefClient.QueryInvoiceMetadataAsync(
-                queryDateTimeOffsetNow,
-                _accessToken,
+            PagedInvoiceResponse responseDateTimeOffsetNow = await AsyncPollingUtils.PollAsync(
+                action: () => KsefClient.QueryInvoiceMetadataAsync(
+                    queryDateTimeOffsetNow,
+                    _accessToken,
+                    cancellationToken: CancellationToken),
+                condition: response => response?.Invoices is not null && response.Invoices.Count >= InvoiceCount,
+                delay: TimeSpan.FromMilliseconds(SleepTime),
+                maxAttempts: 30,
                 cancellationToken: CancellationToken);
 
             Assert.NotNull(responseDateTimeOffsetNow);
             Assert.NotEmpty(responseDateTimeOffsetNow.Invoices);
-            Assert.True(responseDateTimeOffsetNow.Invoices.Count >= 5);
+            Assert.True(responseDateTimeOffsetNow.Invoices.Count >= InvoiceCount, $"Oczekiwano co najmniej {InvoiceCount} faktur, otrzymano {responseDateTimeOffsetNow.Invoices.Count}.");
 
             VerifyReturnedInvoicesMatchSent(responseDateTimeOffsetNow.Invoices, expectedKsefNumbers);
             VerifyInvoicesInDateRange(responseDateTimeOffsetNow.Invoices, queryDateTimeOffsetNow.DateRange);
@@ -162,14 +172,19 @@ namespace KSeF.Client.Tests.Core.E2E.Invoice
                 SubjectType = InvoiceSubjectType.Subject1
             };
 
-            PagedInvoiceResponse responseDateTimeNowDateWithLocalOffset = await KsefClient.QueryInvoiceMetadataAsync(
-                queryDateTimeNowDateWithLocalOffset,
-                _accessToken,
+            PagedInvoiceResponse responseDateTimeNowDateWithLocalOffset = await AsyncPollingUtils.PollAsync(
+                action: () => KsefClient.QueryInvoiceMetadataAsync(
+                    queryDateTimeNowDateWithLocalOffset,
+                    _accessToken,
+                    cancellationToken: CancellationToken),
+                condition: response => response?.Invoices is not null && response.Invoices.Count >= InvoiceCount,
+                delay: TimeSpan.FromMilliseconds(SleepTime),
+                maxAttempts: 30,
                 cancellationToken: CancellationToken);
 
             Assert.NotNull(responseDateTimeNowDateWithLocalOffset);
             Assert.NotEmpty(responseDateTimeNowDateWithLocalOffset.Invoices);
-            Assert.True(responseDateTimeNowDateWithLocalOffset.Invoices.Count >= 5);
+            Assert.True(responseDateTimeNowDateWithLocalOffset.Invoices.Count >= InvoiceCount, $"Oczekiwano co najmniej {InvoiceCount} faktur, otrzymano {responseDateTimeNowDateWithLocalOffset.Invoices.Count}.");
 
             VerifyReturnedInvoicesMatchSent(responseDateTimeNowDateWithLocalOffset.Invoices, expectedKsefNumbers);
             VerifyInvoicesInDateRange(responseDateTimeNowDateWithLocalOffset.Invoices, queryDateTimeNowDateWithLocalOffset.DateRange);
@@ -269,8 +284,7 @@ namespace KSeF.Client.Tests.Core.E2E.Invoice
 
             // Krok 4: oczekiwanie na przetworzenie faktur w sesji
             SessionStatusResponse sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-                async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                    KsefClient,
+                async () => await KsefClient.GetSessionStatusAsync(
                     openSessionResponse.ReferenceNumber,
                     _accessToken).ConfigureAwait(false),
                 result => result is not null && result.InvoiceCount == InvoiceCount && result.SuccessfulInvoiceCount == InvoiceCount,
@@ -352,8 +366,7 @@ namespace KSeF.Client.Tests.Core.E2E.Invoice
             }
 
             SessionStatusResponse sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-                async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                    KsefClient,
+                async () => await KsefClient.GetSessionStatusAsync(
                     openSessionResponse.ReferenceNumber,
                     _accessToken).ConfigureAwait(false),
                 result => result is not null && result.InvoiceCount == InvoiceCount && result.SuccessfulInvoiceCount == InvoiceCount,

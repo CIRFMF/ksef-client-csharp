@@ -7,9 +7,15 @@ namespace KSeF.Client.Core.Models.TestData
     {
         public string Nip { get; set; }
         public string Pesel { get; set; }
-        /// <summary>Czy osoba jest komornikiem/bailiff.</summary>
+        /// <summary>
+        /// Czy osoba jest komornikiem/bailiff.
+        /// </summary>
         public bool IsBailiff { get; set; }
         public string Description { get; set; }
+        /// <summary>
+        /// Czy osoba jest zmarła. Uwierzytelnienie metodami takiej osoby kończy się statusem 470
+        /// </summary>
+        public bool? IsDeceased { get; set; }
         public DateTimeOffset? CreatedDate { get; set; }
     }
 }

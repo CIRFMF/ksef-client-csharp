@@ -56,11 +56,10 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
         Assert.NotNull(sendInvoiceResponse);
 
         SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollAsync(
-            async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                KsefClient,
+            async () => await KsefClient.GetSessionStatusAsync(
                 openSessionResponse.ReferenceNumber,
                 invoiceCreatorAuthToken).ConfigureAwait(false),
-            result => result is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
+            result => result?.SuccessfulInvoiceCount is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
             delay: TimeSpan.FromMilliseconds(2*SleepTime),
             maxAttempts: 60);
 
@@ -104,9 +103,11 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
             grantSubUnitRequest,
             municipalOfficeAuthToken);
 
-        bool grantOperationStatus = await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient,
-            grantOperation,
+        PermissionsOperationStatusResponse grantOperationStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient,
+            grantOperation.ReferenceNumber,
             municipalOfficeAuthToken);
+
+        Assert.Equal(OperationStatusCodeResponse.Success, grantOperationStatus.Status.Code);
 
         // --- Etap 3: dyrektor w kontekście przedszkola nadaje sobie prawo do odczytu faktur ---
         AuthenticationOperationStatusResponse kindergartenAuthResult = await AuthenticationUtils.AuthenticateAsync(
@@ -142,17 +143,8 @@ public class SubUnitPermissionsTests : KsefIntegrationTestBase
 			subjectDetails,
 			"GrantPermissionToDirector");
 
-        PermissionsOperationStatusResponse grantPersonStatus = await AsyncPollingUtils.PollAsync(
-                async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient,grantPersonResponse.ReferenceNumber, kindergartenAuthToken).ConfigureAwait(false),
-                status => status is not null &&
-                         status.Status is not null &&
-                         status.Status.Code == OperationStatusCodeResponse.Success,
-                delay: TimeSpan.FromSeconds(5),
-                maxAttempts: 60,
-                cancellationToken: CancellationToken.None);
-
-        Assert.NotNull(grantPersonStatus);
-        Assert.Equal((int)200, grantPersonStatus.Status.Code);
+        PermissionsOperationStatusResponse grantPersonStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantPersonResponse.ReferenceNumber, kindergartenAuthToken);
+        Assert.Equal(OperationStatusCodeResponse.Success, grantPersonStatus.Status.Code);
 
         // --- Etap 4: Dyrektor przedszkola wyszukuje faktury ---
         RefreshTokenResponse refreshedAccessTokenResponse = await AuthorizationClient.RefreshAccessTokenAsync(kindergartenAuthResult.RefreshToken.Token);

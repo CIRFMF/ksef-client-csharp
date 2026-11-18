@@ -17,9 +17,6 @@ namespace KSeF.Client.Tests.Utils;
 public static class OnlineSessionUtils
 {
     private const SystemCode DefaultSystemCode = SystemCode.FA3;
-    private const int ProcessingStatusCode = 150;
-    private const int DefaultSleepTimeMs = 1000;
-    private const int DefaultMaxAttempts = 60;
 
     /// <summary>
     /// Otwiera nową sesję online w systemie KSeF.
@@ -405,76 +402,6 @@ public static class OnlineSessionUtils
             .Build();
 
         return await ksefClient.SendOnlineSessionInvoiceAsync(sendOnlineInvoiceRequest, sessionReferenceNumber, accessToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Pobiera status sesji online, oczekując na jej gotowość.
-    /// </summary>
-    /// <param name="ksefClient">Klient KSeF.</param>
-    /// <param name="sessionReferenceNumber">Numer referencyjny sesji.</param>
-    /// <param name="accessToken">Token dostępu.</param>
-    /// <param name="sleepTime">Czas oczekiwania pomiędzy próbami (ms).</param>
-    /// <param name="maxAttempts">Maksymalna liczba prób.</param>
-    /// <returns>Odpowiedź ze statusem sesji.</returns>
-    public static async Task<SessionStatusResponse> GetOnlineSessionStatusAsync(
-        IKSeFClient ksefClient,
-        string sessionReferenceNumber,
-        string accessToken,
-        int sleepTime = DefaultSleepTimeMs,
-        int maxAttempts = DefaultMaxAttempts)
-    {
-        int attempt = 0;
-
-        SessionStatusResponse statusResponse;
-        do
-        {
-            statusResponse = await ksefClient.GetSessionStatusAsync(sessionReferenceNumber, accessToken).ConfigureAwait(false);
-
-            if (attempt >= maxAttempts)
-            {
-                break;
-            }
-
-            attempt++;
-            await Task.Delay(sleepTime).ConfigureAwait(false);
-        } while (statusResponse.SuccessfulInvoiceCount is null);
-
-        return statusResponse;
-    }
-
-    /// <summary>
-    /// Pobiera status faktury w ramach sesji, oczekując na zakończenie jej przetwarzania.
-    /// </summary>
-    /// <param name="kSeFClient">Klient KSeF.</param>
-    /// <param name="sessionReferenceNumber">Numer referencyjny sesji.</param>
-    /// <param name="invoiceReferenceNumber">Numer referencyjny faktury.</param>
-    /// <param name="accessToken">Token dostępu.</param>
-    /// <param name="sleepTime">Czas oczekiwania pomiędzy próbami (ms).</param>
-    /// <param name="maxAttempts">Maksymalna liczba prób.</param>
-    /// <returns>Odpowiedź ze statusem faktury w sesji.</returns>
-    public static async Task<SessionInvoice> GetSessionInvoiceStatusAsync(
-        IKSeFClient kSeFClient,
-        string sessionReferenceNumber,
-        string invoiceReferenceNumber,
-        string accessToken,
-        int sleepTime = DefaultSleepTimeMs,
-        int maxAttempts = DefaultMaxAttempts)
-    {
-        SessionInvoice sessionInvoiceStatus = null!;
-
-        for (int i = 0; i < maxAttempts; i++)
-        {
-            sessionInvoiceStatus = await kSeFClient.GetSessionInvoiceAsync(sessionReferenceNumber, invoiceReferenceNumber, accessToken).ConfigureAwait(false);
-
-            if (sessionInvoiceStatus.Status.Code != ProcessingStatusCode) // Trwa przetwarzanie
-            {
-                return sessionInvoiceStatus;
-            }
-
-            await Task.Delay(sleepTime).ConfigureAwait(false);
-        }
-
-        return sessionInvoiceStatus;
     }
 
     /// <summary>

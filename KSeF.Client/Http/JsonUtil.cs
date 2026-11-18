@@ -29,6 +29,8 @@ public static class JsonUtil
             PropertyNamingPolicy = useCamelCase ? JsonNamingPolicy.CamelCase : null
         };
 
+        // Musi być przed JsonStringEnumConverter - obsługuje enumy z wartością FutureValue (kontrakty rewizji operacji).
+        options.Converters.Add(new FutureValueEnumConverterFactory());
         options.Converters.Add(new JsonStringEnumConverter());
         return options;
     }

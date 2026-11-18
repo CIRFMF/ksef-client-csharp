@@ -93,6 +93,12 @@
             /// Wywołanie: PUT /testdata/certificates/{serialNumber}
             /// </summary>
             public static string UpdateCertificate(string serialNumber) => Prefix + "/certificates/" + serialNumber;
+
+            /// <summary>
+            /// Wygaszenie terminu zatwierdzenia tokena KSeF (tylko na środowiskach testowych).
+            /// Wywołanie: POST /testdata/tokens/{referenceNumber}/expire-approval
+            /// </summary>
+            public static string ExpireTokenApproval(string referenceNumber) => Prefix + "/tokens/" + referenceNumber + "/expire-approval";
         }
 
         /// <summary>
@@ -129,6 +135,10 @@
             /// Informacje o bieżącej sesji uwierzytelnienia.
             /// </summary>
             public const string CurrentSession = Session + "/current";
+            /// <summary>
+            /// Lista aktywnych sesji uwierzytelnienia (rewizja Rev2).
+            /// </summary>
+            public const string SessionRev2 = Session + "/rev2";
         }
 
         /// <summary>
@@ -153,6 +163,10 @@
             /// Sprawdzenie statusu operacji uwierzytelnienia.
             /// </summary>
             public static string Status(string reference) => Prefix + "/" + reference;
+            /// <summary>
+            /// Sprawdzenie statusu operacji uwierzytelnienia (rewizja Rev2).
+            /// </summary>
+            public static string StatusRev2(string reference) => Prefix + "/rev2/" + reference;
             public static class Token
             {
                 private const string TokenPrefix = Prefix + "/token";
@@ -461,6 +475,21 @@
             /// Token wg numeru referencyjnego (status/unieważnienie).
             /// </summary>
             public static string ByReference(string referenceNumber) => Prefix + "/" + referenceNumber;
+
+            /// <summary>
+            /// Korzeń operacji na tokenach w kontrakcie Rev2 (generowanie z okresem ważności i wyszukiwanie).
+            /// </summary>
+            public const string Rev2Root = Prefix + "/rev2";
+
+            /// <summary>
+            /// Token wg numeru referencyjnego w kontrakcie Rev2 (status).
+            /// </summary>
+            public static string Rev2ByReference(string referenceNumber) => Rev2Root + "/" + referenceNumber;
+
+            /// <summary>
+            /// Zatwierdzenie tokena wygenerowanego po uwierzytelnieniu tokenem KSeF.
+            /// </summary>
+            public static string Approve(string referenceNumber) => Prefix + "/" + referenceNumber + "/approve";
         }
 
         /// <summary>
@@ -475,6 +504,7 @@
             /// </summary>
             public const string Query = Prefix + "/query";
         }
+
 
         /// <summary>
         /// Endpointy dotyczące identyfikatorów zbiorczych.

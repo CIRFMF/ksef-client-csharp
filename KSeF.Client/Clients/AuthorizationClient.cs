@@ -1,8 +1,10 @@
+using System;
 using KSeF.Client.Core.Infrastructure.Rest;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Rest;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
+using KSeF.Client.Core.Models.Authorization.Rev2;
 using KSeF.Client.Http;
 
 namespace KSeF.Client.Clients;
@@ -44,6 +46,7 @@ public class AuthorizationClient(IRestClient restClient, IRouteBuilder routeBuil
     }
 
     /// <inheritdoc/>
+    [Obsolete("Operacja GET /auth/{referenceNumber} jest przestarzała i zostanie wyłączona 15.06.2027. Użyj GetAuthStatusRev2Async.")]
     public Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
@@ -54,6 +57,16 @@ public class AuthorizationClient(IRestClient restClient, IRouteBuilder routeBuil
             authenticationToken,
             RestClient.DefaultContentType,
             cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task<AuthStatusRev2> GetAuthStatusRev2Async(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(authOperationReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
+
+        string endpoint = Routes.Authorization.StatusRev2(Uri.EscapeDataString(authOperationReferenceNumber));
+        return ExecuteAsync<AuthStatusRev2>(endpoint, HttpMethod.Get, authenticationToken, cancellationToken);
     }
 
     /// <inheritdoc/>

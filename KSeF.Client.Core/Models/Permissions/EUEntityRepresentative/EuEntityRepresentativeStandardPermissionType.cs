@@ -4,5 +4,6 @@ namespace KSeF.Client.Core.Models.Permissions.EuEntityRepresentative
     {
         InvoiceRead,
         InvoiceWrite,
+        CollectiveIdentifierManage
     }
 }

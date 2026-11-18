@@ -3,6 +3,7 @@ using KSeF.Client.Api.Builders.IndirectEntityPermissions;
 using KSeF.Client.Api.Builders.PersonPermissions;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Core.Models.Permissions.IndirectEntity;
@@ -140,23 +141,35 @@ public static class PermissionsUtils
         => await SearchPersonPermissionsAsync(client, accessToken, PersonQueryType.PermissionsGrantedInCurrentContext, state).ConfigureAwait(false);
 
     /// <summary>
-    /// Sprawdza, czy operacja zakończyła się sukcesem, oczekując na wynik jej statusu.
+    /// Odpytuje status operacji na uprawnieniach, dopóki ma kod 100 (przyjęta do realizacji),
+    /// i zwraca pierwszy status końcowy (sukces lub błąd). Wynik weryfikuje wywołujący.
+    /// Gdy operacja nie zakończy się w ramach <paramref name="maxAttempts"/>, zgłasza <see cref="TimeoutException"/>.
     /// </summary>
     /// <param name="client">Klient KSeF.</param>
-    /// <param name="operationResponse">Odpowiedź operacji do sprawdzenia.</param>
+    /// <param name="operationReferenceNumber">Numer referencyjny operacji.</param>
     /// <param name="accessToken">Token dostępu.</param>
-    /// <returns>true, jeśli status operacji wskazuje powodzenie.</returns>
-    public static async Task<bool> ConfirmOperationSuccessAsync(
-        IKSeFClient client, OperationResponse operationResponse, string accessToken)
+    /// <param name="delay">Odstęp między próbami (domyślnie 1 s).</param>
+    /// <param name="maxAttempts">Maksymalna liczba prób.</param>
+    /// <param name="cancellationToken">Token anulowania.</param>
+    /// <returns>Końcowy status operacji.</returns>
+    public static Task<PermissionsOperationStatusResponse> WaitForOperationCompletionAsync(
+        IKSeFClient client,
+        string operationReferenceNumber,
+        string accessToken,
+        TimeSpan? delay = null,
+        int maxAttempts = 30,
+        CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(operationResponse?.ReferenceNumber))
-        {
-            return false;
-        }
+        Guard.ThrowIfNull(client);
+        Guard.ThrowIfNullOrWhiteSpace(operationReferenceNumber);
 
-        await Task.Delay(2000).ConfigureAwait(false);
-
-        PermissionsOperationStatusResponse status = await GetPermissionsOperationStatusAsync(client, operationResponse.ReferenceNumber!, accessToken).ConfigureAwait(false);
-        return status?.Status?.Code == 200;
+        return AsyncPollingUtils.PollAsync(
+            action: () => client.OperationsStatusAsync(operationReferenceNumber, accessToken, cancellationToken),
+            condition: status => status?.Status is not null
+                && status.Status.Code != OperationStatusCodeResponse.AcceptedForProcessing,
+            description: $"Oczekiwanie na zakończenie operacji na uprawnieniach {operationReferenceNumber}",
+            delay: delay ?? TimeSpan.FromSeconds(2),
+            maxAttempts: maxAttempts,
+            cancellationToken: cancellationToken);
     }
 }

@@ -124,11 +124,10 @@ public class InvoiceE2ETests : TestBase
 
         // Krok 3: oczekiwanie na przetworzenie faktur w sesji
         SessionStatusResponse sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-            async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                KsefClient,
+            async () => await KsefClient.GetSessionStatusAsync(
                 openSessionResponse.ReferenceNumber,
                 _accessToken).ConfigureAwait(false),
-            result => result is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
+            result => result?.SuccessfulInvoiceCount is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
             cancellationToken: CancellationToken);
         Assert.NotNull(sendInvoiceStatus);
         Assert.Equal(sendInvoiceStatus.InvoiceCount, sendInvoiceStatus.SuccessfulInvoiceCount);
@@ -236,11 +235,10 @@ public class InvoiceE2ETests : TestBase
 
         // Krok 3: oczekiwanie na przetworzenie
         SessionStatusResponse sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-            async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                KsefClient,
+            async () => await KsefClient.GetSessionStatusAsync(
                 openSessionResponse.ReferenceNumber,
                 _accessToken).ConfigureAwait(false),
-            result => result is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
+            result => result?.SuccessfulInvoiceCount is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
             delay: TimeSpan.FromSeconds(PollingIntervalSeconds),
             cancellationToken: CancellationToken);
         Assert.NotNull(sendInvoiceStatus);

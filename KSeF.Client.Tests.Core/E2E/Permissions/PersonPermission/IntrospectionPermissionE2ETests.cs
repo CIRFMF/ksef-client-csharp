@@ -4,6 +4,7 @@ using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
+using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Core.Models.Sessions;
@@ -58,7 +59,10 @@ public class IntrospectionPermissionE2ETests : TestBase
 			},
 			"E2E grant InvoiceWrite+InvoiceRead to employee");
 
-		Assert.True(await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, grantToEmployee, ownerAccessToken));
+		PermissionsOperationStatusResponse grantToEmployeeStatus = 
+			await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantToEmployee.ReferenceNumber, ownerAccessToken);
+
+		Assert.Equal(OperationStatusCodeResponse.Success, grantToEmployeeStatus.Status.Code);
 
 		// Pracownik uwierzytelnia się w kontekście właściciela i wysyła fakturę w sesji interaktywnej (sesja pozostaje otwarta)
 		AuthenticationOperationStatusResponse employeeAuth =
@@ -111,7 +115,8 @@ public class IntrospectionPermissionE2ETests : TestBase
 			},
 			"E2E grant InvoiceWrite+InvoiceRead to third person");
 
-		Assert.True(await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, grantToThirdPerson, ownerAccessToken));
+		PermissionsOperationStatusResponse grantToThirdPersonStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantToThirdPerson.ReferenceNumber, ownerAccessToken);
+		Assert.Equal(OperationStatusCodeResponse.Success, grantToThirdPersonStatus.Status.Code);
 
 		// Trzecia osoba uwierzytelnia się w kontekście właściciela
 		AuthenticationOperationStatusResponse thirdPersonAuth =
@@ -149,7 +154,8 @@ public class IntrospectionPermissionE2ETests : TestBase
 			},
 			"E2E grant Introspection to third person");
 
-		Assert.True(await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, grantIntrospectionToThirdPerson, ownerAccessToken));
+		PermissionsOperationStatusResponse grantIntrospectionToThirdPersonStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantIntrospectionToThirdPerson.ReferenceNumber, ownerAccessToken);
+		Assert.Equal(OperationStatusCodeResponse.Success, grantIntrospectionToThirdPersonStatus.Status.Code);
 
 		// Nowe uprawnienie wymaga ponownego uwierzytelnienia, żeby zostało uwzględnione w tokenie
 		AuthenticationOperationStatusResponse thirdPersonAuthWithIntrospection =

@@ -441,7 +441,7 @@ public class VerificationLinkServiceTests : KsefIntegrationTestBase
         Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse.ReferenceNumber));
 
         SessionStatusResponse statusAfterSend = await AsyncPollingUtils.PollAsync(
-            async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(KsefClient, openSessionResponse.ReferenceNumber, ownerAccessToken).ConfigureAwait(false),
+            async () => await KsefClient.GetSessionStatusAsync(openSessionResponse.ReferenceNumber, ownerAccessToken).ConfigureAwait(false),
             result => result is not null && result.SuccessfulInvoiceCount is not null);
 
         // Zamknięcie sesji

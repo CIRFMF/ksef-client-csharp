@@ -41,6 +41,12 @@
         public const int KeyDecryptionError = 415;
 
         /// <summary>
+        /// Kod 420 — Zakres filtrowania wykracza poza dostępny zakres danych.
+        /// Parametr dateRange.from jest późniejszy niż PermanentStorageHwmDate przy włączonym restrictToPermanentStorageHwmDate.
+        /// </summary>
+        public const int FilterRangeOutOfAvailableData = 420;
+
+        /// <summary>
         /// Kod 500 — Nieznany błąd ({statusCode}).
         /// </summary>
         public const int UnknownError = 500;

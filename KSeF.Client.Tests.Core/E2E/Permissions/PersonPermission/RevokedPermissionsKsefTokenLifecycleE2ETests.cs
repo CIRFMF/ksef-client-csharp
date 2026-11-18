@@ -1,6 +1,7 @@
 #nullable enable
 using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -60,7 +61,10 @@ public class RevokedPermissionsKsefTokenLifecycleE2ETests : TestBase
 			},
 			GrantDescription);
 
-		Assert.True(await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, grantToEmployee, ownerAccessToken));
+		PermissionsOperationStatusResponse grantToEmployeeStatus = 
+			await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantToEmployee.ReferenceNumber, ownerAccessToken);
+
+		Assert.Equal(OperationStatusCodeResponse.Success, grantToEmployeeStatus.Status.Code);
 
 		// Pracownik uwierzytelnia się (certyfikatem) w kontekście właściciela - pierwsze logowanie,
 		// potrzebne wyłącznie po to, by móc wygenerować sobie własny token KSeF

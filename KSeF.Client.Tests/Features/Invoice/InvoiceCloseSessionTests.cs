@@ -72,8 +72,7 @@ public class InvoiceCloseSessionTests : KsefIntegrationTestBase
 
 		// Krok 4: Weryfikacja statusu zamkniętej sesji
 		SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollAsync(
-			async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-				KsefClient,
+			async () => await KsefClient.GetSessionStatusAsync(
 				openSessionResponse.ReferenceNumber,
 				ownerAccessToken).ConfigureAwait(false),
 			result => result is not null && result.Status.Code == OnlineSessionCodeResponse.ProcessedSuccessfully,
@@ -114,8 +113,7 @@ public class InvoiceCloseSessionTests : KsefIntegrationTestBase
 
 		// Krok 4: Weryfikacja statusu zamkniętej sesji
 		SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollAsync(
-			async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-				KsefClient,
+			async () => await KsefClient.GetSessionStatusAsync(
 				openSessionResponse.ReferenceNumber,
 				refreshedOwnerAccessToken).ConfigureAwait(false),
 			result => result is not null && result.Status.Code == OnlineSessionCodeResponse.ProcessedSuccessfully,
@@ -252,8 +250,7 @@ public class InvoiceCloseSessionTests : KsefIntegrationTestBase
 
 		// Krok 5: Weryfikacja statusu zamkniętej sesji
 		SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollAsync(
-			async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-				KsefClient,
+			async () => await KsefClient.GetSessionStatusAsync(
 				openSessionResponse.ReferenceNumber,
 				_ownerAccessToken).ConfigureAwait(false),
 			result => result is not null && result.Status.Code == OnlineSessionCodeResponse.ProcessedSuccessfully,

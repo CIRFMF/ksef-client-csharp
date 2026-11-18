@@ -1,5 +1,6 @@
 ﻿using KSeF.Client.Api.Builders.Online;
 using KSeF.Client.Core.Interfaces.Services;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
 using KSeF.Client.Core.Models.Sessions;
@@ -328,7 +329,17 @@ public class SessionStatusE2ETests : TestBase
 		// 3) Zamknięcie sesji
 		await KsefClient.CloseOnlineSessionAsync(openOnlineSessionResponse.ReferenceNumber, _accessToken);
 
-		await Task.Delay(5 * SleepTime);
+		// Oczekiwanie na przetworzenie sesji - po nim UPO faktury jest dostępne
+		SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollWithBackoffAsync(
+			action: () => KsefClient.GetSessionStatusAsync(openOnlineSessionResponse.ReferenceNumber, _accessToken, CancellationToken),
+			result => result?.Status is not null
+				&& result.Status.Code != OnlineSessionCodeResponse.SessionOpened
+				&& result.Status.Code != OnlineSessionCodeResponse.SessionClosed,
+			initialDelay: TimeSpan.FromSeconds(1),
+			maxDelay: TimeSpan.FromSeconds(5),
+			maxAttempts: 30,
+			cancellationToken: CancellationToken);
+		Assert.Equal(OnlineSessionCodeResponse.ProcessedSuccessfully, sessionStatus.Status.Code);
 
 		// 4) Pobranie UPO używając numeru referencyjnego faktury
 		// Act - wykonanie testowanej operacji

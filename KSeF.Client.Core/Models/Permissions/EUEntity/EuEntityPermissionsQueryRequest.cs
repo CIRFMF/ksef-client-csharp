@@ -14,6 +14,7 @@ namespace KSeF.Client.Core.Models.Permissions.EUEntity
         VatUeManage,
         InvoiceWrite,
         InvoiceRead,
-        Introspection
+        Introspection,
+        CollectiveIdentifierManage
     }
 }

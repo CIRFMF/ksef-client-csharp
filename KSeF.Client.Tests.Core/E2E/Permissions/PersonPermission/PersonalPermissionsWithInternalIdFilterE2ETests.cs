@@ -145,16 +145,7 @@ public class PersonalPermissionsWithInternalIdFilterE2ETests : TestBase
         Assert.NotNull(grantPersonResponse);
         Assert.False(string.IsNullOrWhiteSpace(grantPersonResponse.ReferenceNumber));
 
-        PermissionsOperationStatusResponse grantPersonStatus = await AsyncPollingUtils.PollAsync(
-            action: () => PermissionsUtils.GetPermissionsOperationStatusAsync(
-                KsefClient,
-                grantPersonResponse.ReferenceNumber,
-                kindergartenAuthToken),
-            condition: status => status is not null
-                && status.Status is not null
-                && status.Status.Code == OperationStatusCodeResponse.Success,
-            cancellationToken: CancellationToken);
-
+        PermissionsOperationStatusResponse grantPersonStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantPersonResponse.ReferenceNumber, kindergartenAuthToken);
         Assert.Equal(OperationStatusCodeResponse.Success, grantPersonStatus.Status.Code);
 
         // 5) Nadanie uprawnień podmiotowych (entity) InvoiceRead/InvoiceWrite z canDelegate=false

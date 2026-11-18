@@ -19,6 +19,7 @@ namespace KSeF.Client.Validation
 
         public const string InternalIdPattern = "^[1-9]((\\d[1-9])|([1-9]\\d))\\d{7}-\\d{5}$";
         public const string PeppolIdPattern = @"^P[A-Z]{2}[0-9]{6}$";
+        public const string CollectiveIdentifierNumberPattern = @"\A[0-9]{10}-IZ[0-9]{6}-[0-9A-F]{12}-[0-9A-F]{2}\z";
 
         public const string ReferenceNumberPattern = "^(20[2-9][0-9]|2[1-9][0-9]{2}|[3-9][0-9]{3})(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])-([0-9A-Z]{2})-([0-9A-F]{10})-([0-9A-F]{10})-([0-9A-F]{2})$";
         public const string KsefNumberPattern = "^([1-9](\\d[1-9]|[1-9]\\d)\\d{7})-(20[2-9][0-9]|2[1-9]\\d{2}|[3-9]\\d{3})(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])-([0-9A-F]{6})-?([0-9A-F]{6})-([0-9A-F]{2})$";
@@ -43,6 +44,7 @@ namespace KSeF.Client.Validation
             KsefNumber = KsefNumberRegex();
             KsefNumberV35 = KsefNumberV35Regex();
             KsefNumberV36 = KsefNumberV36Regex();
+            CollectiveIdentifierNumber = CollectiveIdentifierNumberRegex();
             InternalId = InternalIdRegex();
             Nip = NipRegex();
             Pesel = PeselRegex();
@@ -62,6 +64,7 @@ namespace KSeF.Client.Validation
         public static Regex KsefNumber { get; }
         public static Regex KsefNumberV35 { get; }
         public static Regex KsefNumberV36 { get; }
+        public static Regex CollectiveIdentifierNumber { get; }
         public static Regex InternalId { get; }
         public static Regex Nip { get; }
         public static Regex Pesel { get; }
@@ -82,6 +85,7 @@ namespace KSeF.Client.Validation
         private static Regex KsefNumberRegex() => new Regex(KsefNumberPattern, RegexOptions.Compiled);
         private static Regex KsefNumberV36Regex() => new Regex(KsefNumberV36Pattern, RegexOptions.Compiled);
         private static Regex KsefNumberV35Regex() => new Regex(KsefNumberV35Pattern, RegexOptions.Compiled);
+        private static Regex CollectiveIdentifierNumberRegex() => new Regex(CollectiveIdentifierNumberPattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private static Regex InternalIdRegex() => new Regex(InternalIdPattern, RegexOptions.Compiled);
         private static Regex NipRegex() => new Regex(NipPattern, RegexOptions.Compiled);
         private static Regex PeselRegex() => new Regex(PeselPattern, RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -107,6 +111,9 @@ namespace KSeF.Client.Validation
 
         [GeneratedRegex(KsefNumberV35Pattern, RegexOptions.Compiled)]
         private static partial Regex KsefNumberV35Regex();
+
+        [GeneratedRegex(CollectiveIdentifierNumberPattern, RegexOptions.Compiled | RegexOptions.CultureInvariant)]
+        private static partial Regex CollectiveIdentifierNumberRegex();
 
         [GeneratedRegex(InternalIdPattern, RegexOptions.Compiled)]
         private static partial Regex InternalIdRegex();

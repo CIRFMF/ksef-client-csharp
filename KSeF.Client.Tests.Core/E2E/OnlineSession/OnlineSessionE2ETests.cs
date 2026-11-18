@@ -5,6 +5,7 @@ using KSeF.Client.Core.Interfaces.Services;
 using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Invoices;
+using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
 using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Core.Models.Sessions;
@@ -63,7 +64,8 @@ public class OnlineSessionE2ETests : TestBase
 			},
 			"Grant write invoices permission for testing.");
 
-		bool isSuccess = await PermissionsUtils.ConfirmOperationSuccessAsync(KsefClient, operationResponse, accessToken);
+		PermissionsOperationStatusResponse grantStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, operationResponse.ReferenceNumber, accessToken);
+		Assert.Equal(OperationStatusCodeResponse.Success, grantStatus.Status.Code);
 
 		// Arrange
 		EncryptionData encryptionData = CryptographyService.GetEncryptionData();
@@ -72,20 +74,15 @@ public class OnlineSessionE2ETests : TestBase
 		OpenOnlineSessionResponse openSessionResponse = await OpenOnlineSessionAsync(encryptionData, systemCode);
 		Assert.NotNull(openSessionResponse);
 		Assert.False(string.IsNullOrWhiteSpace(openSessionResponse.ReferenceNumber));
-		await Task.Delay(SleepTime);
 
 		// 2) Wysłanie faktury
 		SendInvoiceResponse sendInvoiceResponse = await SendEncryptedInvoiceAsync(openSessionResponse.ReferenceNumber, encryptionData, CryptographyService, invoiceTemplatePath, Nip);
 		Assert.NotNull(sendInvoiceResponse);
 		Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse.ReferenceNumber));
-		await Task.Delay(SleepTime);
 
 		SessionStatusResponse statusAfterSend = await AsyncPollingUtils.PollAsync(
-			async () => await KsefClient.GetSessionStatusAsync(
-				openSessionResponse.ReferenceNumber,
-				accessToken
-			).ConfigureAwait(false),
-			result => result is not null && result.SuccessfulInvoiceCount is not null,
+			action: () => KsefClient.GetSessionStatusAsync(openSessionResponse.ReferenceNumber, accessToken, CancellationToken),
+			condition: status => status?.SuccessfulInvoiceCount is not null,
 			delay: TimeSpan.FromMilliseconds(SleepTime),
 			maxAttempts: MaxRetries,
 			cancellationToken: CancellationToken);
@@ -139,23 +136,26 @@ public class OnlineSessionE2ETests : TestBase
 		OpenOnlineSessionResponse openSessionResponse = await OpenOnlineSessionAsync(encryptionData, systemCode);
 		Assert.NotNull(openSessionResponse);
 		Assert.False(string.IsNullOrWhiteSpace(openSessionResponse.ReferenceNumber));
-		await Task.Delay(SleepTime);
 
 		// 2) Wysłanie faktury
 		SendInvoiceResponse sendInvoiceResponse = await SendEncryptedInvoiceAsync(openSessionResponse.ReferenceNumber, encryptionData, CryptographyService, invoiceTemplatePath, Nip);
 		Assert.NotNull(sendInvoiceResponse);
 		Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse.ReferenceNumber));
-		await Task.Delay(SleepTime);
 
 		// 3) Status po wysłaniu faktury (oczekujemy 1 sukcesu, brak błędów, brak UPO, kod 100)
-		SessionStatusResponse statusAfterSend = await GetSessionStatusUntilInvoiceCountAvailableAsync(openSessionResponse.ReferenceNumber);
+		SessionStatusResponse statusAfterSend = await AsyncPollingUtils.PollAsync(
+			action: () => KsefClient.GetSessionStatusAsync(openSessionResponse.ReferenceNumber, accessToken, CancellationToken),
+			condition: status => status?.SuccessfulInvoiceCount is not null,
+			delay: TimeSpan.FromMilliseconds(SleepTime),
+			maxAttempts: MaxRetries,
+			cancellationToken: CancellationToken);
+
 		Assert.NotNull(statusAfterSend);
 		Assert.True(statusAfterSend.SuccessfulInvoiceCount is not null);
 		Assert.Equal(SuccessfulInvoiceCountExpected, statusAfterSend.SuccessfulInvoiceCount);
 		Assert.True(statusAfterSend.FailedInvoiceCount is null);
 		Assert.Null(statusAfterSend.Upo);
 		Assert.Equal(OnlineSessionCodeResponse.SessionOpened, statusAfterSend.Status.Code);
-		await Task.Delay(SleepTime);
 
 		// 4) Zamknięcie sesji
 		await KsefClient.CloseOnlineSessionAsync(
@@ -249,21 +249,5 @@ public class OnlineSessionE2ETests : TestBase
 
 		SendInvoiceResponse sendInvoiceResponse = await KsefClient.SendOnlineSessionInvoiceAsync(sendOnlineInvoiceRequest, sessionReferenceNumber, accessToken).ConfigureAwait(false);
 		return sendInvoiceResponse;
-	}
-
-	/// <summary>
-	/// Wykonuje pobieranie statusu sesji do momentu, aż licznik poprawnych faktur nie będzie null.
-	/// Zwraca aktualny status sesji.
-	/// </summary>
-	private async Task<SessionStatusResponse> GetSessionStatusUntilInvoiceCountAvailableAsync(string sessionReferenceNumber)
-	{
-		SessionStatusResponse? statusResponse;
-		do
-		{
-			statusResponse = await KsefClient.GetSessionStatusAsync(sessionReferenceNumber, accessToken).ConfigureAwait(false);
-			await Task.Delay(SleepTime).ConfigureAwait(false);
-		} while (statusResponse.SuccessfulInvoiceCount is null);
-
-		return statusResponse;
 	}
 }

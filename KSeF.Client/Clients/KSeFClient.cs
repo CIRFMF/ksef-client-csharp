@@ -1,8 +1,10 @@
+using System;
 using KSeF.Client.Core.Infrastructure.Rest;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Rest;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
+using KSeF.Client.Core.Models.Authorization.Rev2;
 using KSeF.Client.Core.Models.Certificates;
 using KSeF.Client.Core.Models.CollectiveIdentifiers;
 using KSeF.Client.Core.Models.Invoices;
@@ -17,6 +19,7 @@ using KSeF.Client.Core.Models.Permissions.Person;
 using KSeF.Client.Core.Models.Permissions.SubUnit;
 using KSeF.Client.Core.Models.Sessions;
 using KSeF.Client.Core.Models.Sessions.ActiveSessions;
+using KSeF.Client.Core.Models.Sessions.ActiveSessions.Rev2;
 using KSeF.Client.Core.Models.Sessions.BatchSession;
 using KSeF.Client.Core.Models.Sessions.OnlineSession;
 using KSeF.Client.Extensions;
@@ -34,6 +37,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
 {    
 
     /// <inheritdoc />
+    [Obsolete("Operacja GET /auth/sessions jest przestarzała i zostanie wyłączona 15.06.2027. Użyj GetActiveSessionsRev2Async.")]
     public async Task<AuthenticationListResponse> GetActiveSessions(string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNullOrWhiteSpace(accessToken);
@@ -50,6 +54,19 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                                                                           new Dictionary<string, string> { { "x-continuation-token", Regex.Unescape(continuationToken) } }
                                                                               : null, cancellationToken).ConfigureAwait(false);
 
+    }
+
+    /// <inheritdoc />
+    public async Task<AuthenticationListResponseRev2> GetActiveSessionsRev2Async(string accessToken, int? pageSize = null, string continuationToken = null, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        StringBuilder urlBuilder = new("/v2/auth/sessions/rev2");
+        PaginationHelper.AppendPagination(null, pageSize, urlBuilder);
+
+        return await restClient.SendAsync<AuthenticationListResponseRev2, object>(HttpMethod.Get, urlBuilder.ToString(), default, accessToken, RestClient.DefaultContentType, !string.IsNullOrEmpty(continuationToken) ?
+                                                                          new Dictionary<string, string> { { "x-continuation-token", Regex.Unescape(continuationToken) } }
+                                                                              : null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -119,6 +136,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
+    [Obsolete("Operacja GET /auth/{referenceNumber} jest przestarzała i zostanie wyłączona 15.06.2027. Użyj GetAuthStatusRev2Async.")]
     public async Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
@@ -129,6 +147,20 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                                                                    authenticationToken,
                                                                    RestClient.DefaultContentType,
                                                                    cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<AuthStatusRev2> GetAuthStatusRev2Async(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(authOperationReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(authenticationToken);
+
+        return await restClient.SendAsync<AuthStatusRev2, string>(HttpMethod.Get,
+                                                                  $"/v2/auth/rev2/{Uri.EscapeDataString(authOperationReferenceNumber)}",
+                                                                  default,
+                                                                  authenticationToken,
+                                                                  RestClient.DefaultContentType,
+                                                                  cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -784,6 +816,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                                                                                       cancellationToken).ConfigureAwait(false);
     }
 
+
     /// <inheritdoc />
     public async Task<CertificateEnrollmentResponse> SendCertificateEnrollmentAsync(SendCertificateEnrollmentRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
@@ -866,6 +899,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
+    [Obsolete("Operacja POST /tokens jest przestarzała i zostanie wyłączona 30.09.2027. Użyj GenerateKsefTokenRev2Async.")]
     public async Task<KsefTokenResponse> GenerateKsefTokenAsync(KsefTokenRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNull(requestPayload);
@@ -880,6 +914,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
     }
 
     /// <inheritdoc />
+    [Obsolete("Operacja GET /tokens jest przestarzała i zostanie wyłączona 30.09.2027. Użyj QueryKsefTokensRev2Async.")]
     public async Task<QueryKsefTokensResponse> QueryKsefTokensAsync(
     string accessToken,
     ICollection<AuthenticationKsefTokenStatus> statuses = null,
@@ -949,6 +984,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
 
 
     /// <inheritdoc />
+    [Obsolete("Operacja GET /tokens/{referenceNumber} jest przestarzała i zostanie wyłączona 30.09.2027. Użyj GetKsefTokenRev2Async.")]
     public async Task<AuthenticationKsefToken> GetKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
@@ -970,6 +1006,85 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
 
         await restClient.SendAsync(HttpMethod.Delete,
                                    $"/v2/tokens/{Uri.EscapeDataString(tokenReferenceNumber)}",
+                                   accessToken,
+                                   RestClient.DefaultContentType,
+                                   cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<KsefTokenResponseRev2> GenerateKsefTokenRev2Async(KsefTokenRequestRev2 requestPayload, string accessToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        return await restClient.SendAsync<KsefTokenResponseRev2, KsefTokenRequestRev2>(HttpMethod.Post,
+                                                                                       "/v2/tokens/rev2",
+                                                                                       requestPayload,
+                                                                                       accessToken,
+                                                                                       RestClient.DefaultContentType,
+                                                                                       cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<QueryKsefTokensResponseRev2> QueryKsefTokensRev2Async(
+        string accessToken,
+        ICollection<KsefTokenStatusFilterRev2> statuses = null,
+        string authorIdentifier = null,
+        Core.Models.Token.TokenContextIdentifierType? authorIdentifierType = null,
+        string description = null,
+        DateTimeOffset? validFrom = null,
+        DateTimeOffset? validTo = null,
+        string continuationToken = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        string url = KsefTokenRev2QueryHelper.BuildUrl(
+            "/v2/tokens/rev2",
+            statuses,
+            authorIdentifier,
+            authorIdentifierType,
+            description,
+            validFrom,
+            validTo,
+            pageSize);
+
+        return await restClient.SendAsync<QueryKsefTokensResponseRev2, string>(
+            HttpMethod.Get,
+            url,
+            default,
+            accessToken,
+            RestClient.DefaultContentType,
+            !string.IsNullOrWhiteSpace(continuationToken)
+                    ? new Dictionary<string, string> { { "x-continuation-token", Regex.Unescape(continuationToken) } }
+                    : null,
+            cancellationToken
+            ).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task<AuthenticationKsefTokenRev2> GetKsefTokenRev2Async(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        return await restClient.SendAsync<AuthenticationKsefTokenRev2, string>(HttpMethod.Get,
+                                                                               $"/v2/tokens/rev2/{Uri.EscapeDataString(tokenReferenceNumber)}",
+                                                                               default,
+                                                                               accessToken,
+                                                                               RestClient.DefaultContentType,
+                                                                               cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public async Task ApproveKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        await restClient.SendAsync(HttpMethod.Post,
+                                   $"/v2/tokens/{Uri.EscapeDataString(tokenReferenceNumber)}/approve",
                                    accessToken,
                                    RestClient.DefaultContentType,
                                    cancellationToken).ConfigureAwait(false);
@@ -1215,4 +1330,7 @@ public class KSeFClient(IRestClient restClient) : IKSeFClient
                 : null,
             cancellationToken).ConfigureAwait(false);
     }
+
+
+
 }

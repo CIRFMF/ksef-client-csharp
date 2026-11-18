@@ -327,8 +327,8 @@ public class CollectiveIdentifierPermissionsE2ETests : TestBase
         await OnlineSessionUtils.CloseOnlineSessionAsync(KsefClient, session.ReferenceNumber, sellerToken).ConfigureAwait(false);
 
         SessionInvoice processedInvoice = await AsyncPollingUtils.PollAsync(
-            action: () => OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-                KsefClient, session.ReferenceNumber, invoiceResponse.ReferenceNumber, sellerToken),
+            action: () => KsefClient.GetSessionInvoiceAsync(
+                session.ReferenceNumber, invoiceResponse.ReferenceNumber, sellerToken),
             condition: inv => inv?.PermanentStorageDate is not null,
             delay: TimeSpan.FromMilliseconds(SleepTime),
             maxAttempts: MaxPollingAttempts,

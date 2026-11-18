@@ -1,5 +1,7 @@
+using System;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Authorization;
+using KSeF.Client.Core.Models.Authorization.Rev2;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,7 +47,17 @@ namespace KSeF.Client.Core.Interfaces.Clients
         /// <param name="authenticationToken">Tymczasowy token otrzymany po inicjalizacji.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns><see cref="AuthStatus"/></returns>
+        [Obsolete("Operacja GET /auth/{referenceNumber} jest przestarzała i zostanie wyłączona 15.06.2027. Użyj GetAuthStatusRev2Async.")]
         Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Sprawdza bieżący status operacji uwierzytelniania podanego tokena (rewizja Rev2, <c>GET /auth/rev2/{referenceNumber}</c>).
+        /// </summary>
+        /// <param name="authOperationReferenceNumber">Numer referencyjny operacji.</param>
+        /// <param name="authenticationToken">Tymczasowy token otrzymany po inicjalizacji.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns><see cref="AuthStatusRev2"/></returns>
+        Task<AuthStatusRev2> GetAuthStatusRev2Async(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Pobranie tokenów dostępowych po udanym uwierzytelnieniu.

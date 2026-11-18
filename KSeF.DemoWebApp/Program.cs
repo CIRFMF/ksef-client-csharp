@@ -87,13 +87,20 @@ builder.Services.AddSwaggerGen(c =>
     });
 
     c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "KSeF.DemoWebApp.xml"));
-    c.CustomSchemaIds(t =>
-   (t.Namespace + "_" + t.Name)
-     .Replace(".", "_")
-     .Replace("+", "_")
-     .Replace("`", "_")
- );
+    // Dla typów generycznych dołączamy argumenty typu np. ExtensibleEnumValue<A> i ExtensibleEnumValue<B>
+    // nie dostały tego samego schemaId.
+    c.CustomSchemaIds(SwaggerSchemaId);
 });
+
+static string SwaggerSchemaId(Type type)
+{
+    string name = type.IsGenericType ? type.Name[..type.Name.IndexOf('`')] : type.Name;
+    string id = (type.Namespace + "_" + name).Replace(".", "_").Replace("+", "_");
+
+    return type.IsGenericType
+        ? id + "_" + string.Join("_", type.GetGenericArguments().Select(SwaggerSchemaId))
+        : id;
+}
 
 builder.Services.Configure<JsonOptions>(options =>
 {

@@ -127,19 +127,17 @@ public class TestDataController(ITestDataClient testDataClient) : ControllerBase
     [HttpPost("context/block")]
     [ProducesResponseType(typeof(Status), StatusCodes.Status200OK)]
     public async Task<ActionResult<Status>> BlockContext(
-        string accessToken,
-        [FromBody] ContextIdentifier request,
+        [FromBody] ContextBlockingIdentifier request,
         CancellationToken cancellationToken)
-        => Ok(await testDataClient.BlockContextAsync(request, accessToken, cancellationToken).ConfigureAwait(false));
+        => Ok(await testDataClient.BlockContextAsync(request, cancellationToken).ConfigureAwait(false));
 
     /// <summary>Odblokowanie możliwości uwierzytelniania dla bieżącego kontekstu.</summary>
     [HttpPost("context/unblock")]
     [ProducesResponseType(typeof(Status), StatusCodes.Status200OK)]
     public async Task<ActionResult<Status>> UnblockContext(
-        string accessToken,
-        [FromBody] ContextIdentifier request,
+        [FromBody] ContextBlockingIdentifier request,
         CancellationToken cancellationToken)
-        => Ok(await testDataClient.UnblockContextAsync(request, accessToken, cancellationToken).ConfigureAwait(false));
+        => Ok(await testDataClient.UnblockContextAsync(request, cancellationToken).ConfigureAwait(false));
 
     /// <summary>Aktualizacja danych wskazanego certyfikatu testowego (np. daty ważności).</summary>
     [HttpPut("certificates/{serialNumber}")]

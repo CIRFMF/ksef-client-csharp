@@ -1,5 +1,36 @@
 # Rejestr zmian
 
+## Wersja 2.10.0
+### Nowe
+- Obsługa rewizji `rev2` operacji uwierzytelniania:
+  - `IAuthorizationClient.GetAuthStatusRev2Async` (`GET /auth/rev2/{referenceNumber}`) zwracający `AuthStatusRev2`,
+  - `IActiveSessionsClient.GetActiveSessionsRev2Async` (`GET /auth/sessions/rev2`) zwracający `AuthenticationListResponseRev2`,
+  - `AuthenticationMethodInfoRev2`: kategoria metody uwierzytelnienia zwracana jako wartość słownikowa (`Code`, `RawCode`, `DisplayName`).
+- Obsługa rewizji `rev2` tokenów KSeF (`IKsefTokenClient`):
+  - `GenerateKsefTokenRev2Async` (`POST /tokens/rev2`) z określeniem okresu ważności (`ValidFrom`, `ValidTo`),
+  - `QueryKsefTokensRev2Async` (`GET /tokens/rev2`) z filtrami statusów rev2 (`NotYetActive`, `AwaitingApproval`, `ApprovalExpired`, `Expired`) oraz dat ważności (`validFrom`, `validTo`),
+  - `GetKsefTokenRev2Async` (`GET /tokens/rev2/{referenceNumber}`) zwracający `AuthenticationKsefTokenRev2` (okres ważności, status, informacje o niepowodzeniu `Failure`),
+  - `ApproveKsefTokenAsync` (`POST /tokens/{referenceNumber}/approve`): zatwierdzenie tokena wygenerowanego w sesji uwierzytelnionej tokenem KSeF.
+- `ExtensibleEnumValue<TEnum>`, `ExtensibleIdentifier<TEnum>` oraz konwerter `FutureValueEnumConverterFactory`: wartości słownikowe nieznane w bieżącej wersji klienta są mapowane na `FutureValue`, a rzeczywisty kod jest dostępny w `RawCode`.
+- `ITestDataClient.ExpireTokenApprovalAsync` (`POST /testdata/tokens/{referenceNumber}/expire-approval`): symulacja upływu terminu zatwierdzenia tokena (tylko na środowiskach testowych).
+- `SessionLimitsInCurrentContextResponse.Tokens` (`TokensContextLimits.MaxTokens`): maksymalna liczba tokenów KSeF w kontekście, zwracana przez `GET /limits/context`.
+- `KSeF.DemoWebApp`: dodano `KsefTokenController` z obsługą operacji na tokenach rev2.
+- `RegexPatterns.CollectiveIdentifierNumberPattern` / `RegexPatterns.CollectiveIdentifierNumber` oraz `CollectiveIdentifierNumberValidator`: dodano wzorzec formatu i walidację CRC-8 numerów identyfikatorów zbiorczych.
+- `KSeF.Client.Validation.KsefNumberValidator`: dodano walidację numerów 35-znakowych (format i CRC-8) oraz 36-znakowych (format i poprawna data wcześniejsza niż `2024-02-01`, bez sprawdzania sumy kontrolnej).
+- `KSeF.Client.Core.Crc8.CalculateChecksum`: dodano wspólną metodę obliczania sumy CRC-8 tekstu UTF-8, zwracającą dwuznakowy zapis HEX wielkimi literami.
+- `PersonCreateRequest.IsDeceased` (`POST /testdata/person`): możliwość utworzenia testowej osoby zmarłej (uwierzytelnienie jej metodami kończy się statusem 470).
+
+### Zmodyfikowane
+- Oznaczono jako `[Obsolete]` metody korzystające z operacji wycofywanych przez API:
+  - `GetAuthStatusAsync` (`GET /auth/{referenceNumber}`) i `GetActiveSessions` (`GET /auth/sessions`) – wyłączenie 15.06.2027, zastępowane przez odpowiedniki `rev2`,
+  - `GenerateKsefTokenAsync` (`POST /tokens`), `QueryKsefTokensAsync` (`GET /tokens`) i `GetKsefTokenAsync` (`GET /tokens/{referenceNumber}`) – wyłączenie 30.09.2027, zastępowane przez odpowiedniki `rev2`.
+- `AuthStatus.AuthenticationMethod` / `AuthenticationListItem.AuthenticationMethod`: zaktualizowano komunikat `[Obsolete]` – pole jest zwracane wyłącznie przez operacje wycofywane 15.06.2027; należy korzystać z `AuthenticationMethodInfo` lub operacji `rev2`.
+- `KSeF.Client.Core.KsefNumberValidator`: wydzielono obliczanie sumy kontrolnej do `Crc8.CalculateChecksum`, zachowując dotychczasowe reguły walidacji i komunikaty błędów.
+- `ITestDataClient.BlockContextAsync` / `UnblockContextAsync`: poprawiono strukturę body żądań, dostosowując je do aktualnego kontraktu API. 
+	Metody przyjmują teraz `ContextBlockingIdentifier` zamiast `ContextIdentifier` oraz nie przyjmują już parametru `accessToken` - istniejące wywołania wymagają zmiany.
+- `InvoiceQueryFilters.FormType`: poprawiono wartość `FormType.RR` na `FormType.FA_RR`.
+- `PersonalPermissionAuthorizedIdentifierType`: dodano brakujące wartości `Pesel` i `Fingerprint`.
+
 ## Wersja 2.9.0.1
 ### Zmodyfikowane
 - Zaktualizowano wszystkie zależności NuGet do najnowszych stabilnych wersji.

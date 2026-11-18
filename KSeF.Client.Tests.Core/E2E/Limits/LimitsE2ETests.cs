@@ -38,6 +38,9 @@ public class LimitsE2ETests : TestBase
 
         Assert.True(limitsForContext.CollectiveIdentifier.MaxInvoices > 0);
 
+        Assert.NotNull(limitsForContext.Tokens);
+        Assert.True(limitsForContext.Tokens.MaxTokens > 0);
+
         // 4. Zmiana limitów bieżącego kontekstu sesji
         Client.Core.Models.TestData.ChangeSessionLimitsInCurrentContextRequest newLimits =
             new()

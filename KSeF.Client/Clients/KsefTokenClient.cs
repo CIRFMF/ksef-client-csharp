@@ -1,7 +1,9 @@
+using System;
 using KSeF.Client.Core.Infrastructure.Rest;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Rest;
 using KSeF.Client.Core.Models.Authorization;
+using KSeF.Client.Core.Models.Authorization.Rev2;
 using System.Text;
 using System.Text.RegularExpressions;
 using KSeF.Client.Http.Helpers;
@@ -12,6 +14,7 @@ namespace KSeF.Client.Clients;
 public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder) : ClientBase(restClient, routeBuilder), IKsefTokenClient
 {
     /// <inheritdoc />
+    [Obsolete("Operacja POST /tokens jest przestarzała i zostanie wyłączona 30.09.2027. Użyj GenerateKsefTokenRev2Async.")]
     public Task<KsefTokenResponse> GenerateKsefTokenAsync(KsefTokenRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNull(requestPayload);
@@ -21,6 +24,7 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
     }
 
     /// <inheritdoc />
+    [Obsolete("Operacja GET /tokens jest przestarzała i zostanie wyłączona 30.09.2027. Użyj QueryKsefTokensRev2Async.")]
     public Task<QueryKsefTokensResponse> QueryKsefTokensAsync(
         string accessToken,
         ICollection<AuthenticationKsefTokenStatus> statuses = null,
@@ -85,6 +89,7 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
     }
 
     /// <inheritdoc />
+    [Obsolete("Operacja GET /tokens/{referenceNumber} jest przestarzała i zostanie wyłączona 30.09.2027. Użyj GetKsefTokenRev2Async.")]
     public Task<AuthenticationKsefToken> GetKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
     {
         Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
@@ -102,5 +107,69 @@ public class KsefTokenClient(IRestClient restClient, IRouteBuilder routeBuilder)
 
         string endpoint = Routes.Tokens.ByReference(Uri.EscapeDataString(tokenReferenceNumber));
         return ExecuteAsync(endpoint, HttpMethod.Delete, accessToken, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task ApproveKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        string endpoint = Routes.Tokens.Approve(Uri.EscapeDataString(tokenReferenceNumber));
+        return ExecuteAsync(endpoint, HttpMethod.Post, accessToken, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<KsefTokenResponseRev2> GenerateKsefTokenRev2Async(KsefTokenRequestRev2 requestPayload, string accessToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNull(requestPayload);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        return ExecuteAsync<KsefTokenResponseRev2, KsefTokenRequestRev2>(Routes.Tokens.Rev2Root, requestPayload, accessToken, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<QueryKsefTokensResponseRev2> QueryKsefTokensRev2Async(
+        string accessToken,
+        ICollection<KsefTokenStatusFilterRev2> statuses = null,
+        string authorIdentifier = null,
+        Core.Models.Token.TokenContextIdentifierType? authorIdentifierType = null,
+        string description = null,
+        DateTimeOffset? validFrom = null,
+        DateTimeOffset? validTo = null,
+        string continuationToken = null,
+        int? pageSize = null,
+        CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        string url = KsefTokenRev2QueryHelper.BuildUrl(
+            Routes.Tokens.Rev2Root,
+            statuses,
+            authorIdentifier,
+            authorIdentifierType,
+            description,
+            validFrom,
+            validTo,
+            pageSize);
+
+        return ExecuteAsync<QueryKsefTokensResponseRev2>(
+            url,
+            HttpMethod.Get,
+            accessToken,
+            !string.IsNullOrWhiteSpace(continuationToken)
+                ? new Dictionary<string, string> { { "x-continuation-token", Regex.Unescape(continuationToken) } }
+                : null,
+            cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<AuthenticationKsefTokenRev2> GetKsefTokenRev2Async(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
+    {
+        Guard.ThrowIfNullOrWhiteSpace(tokenReferenceNumber);
+        Guard.ThrowIfNullOrWhiteSpace(accessToken);
+
+        string endpoint = Routes.Tokens.Rev2ByReference(Uri.EscapeDataString(tokenReferenceNumber));
+        return ExecuteAsync<AuthenticationKsefTokenRev2>(endpoint, HttpMethod.Get, accessToken, cancellationToken);
     }
 }

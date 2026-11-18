@@ -30,6 +30,6 @@ namespace KSeF.Client.Core.Models.Invoices
     {
         FA,
         PEF,
-        RR
+        FA_RR
     }
 }

@@ -201,7 +201,8 @@ namespace KSeF.Client.Tests.Core.E2E.Permissions.EuEntityPermission
                 EuEntityPermissionType.VatUeManage.ToString(),
                 EuEntityPermissionType.InvoiceWrite.ToString(),
                 EuEntityPermissionType.InvoiceRead.ToString(),
-                EuEntityPermissionType.Introspection.ToString()
+                EuEntityPermissionType.Introspection.ToString(),
+                EuEntityPermissionType.CollectiveIdentifierManage.ToString()
             };
 
             HashSet<string> actualAdminPermissions = [.. adminTokenInfo.Permissions];

@@ -1,4 +1,5 @@
 using KSeF.Client.Api.Builders.Auth;
+using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Interfaces;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Core.Interfaces.Services;
@@ -131,6 +132,8 @@ public class AuthCoordinator(
     /// <summary>
     /// Odpytuje status operacji uwierzytelnienia aż do uzyskania kodu 200
     /// (<see cref="AuthenticationStatusCodeResponse.AuthenticationSuccess"/>).
+    /// Dla każdego statusu innego niż 100 (w toku) i 200 (sukces), np. 4xx,
+    /// zgłasza <see cref="KsefAuthenticationException"/>.
     /// Po przekroczeniu <paramref name="timeout"/> zgłasza <see cref="TimeoutException"/> z ostatnim znanym statusem.
     /// </summary>
     private async Task WaitForAuthCompletionAsync(
@@ -147,14 +150,28 @@ public class AuthCoordinator(
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            // TODO: przejście na GetAuthStatusRev2Async przed wyłączeniem GET /auth/{referenceNumber} (15.06.2027)
+#pragma warning disable CS0618
             authStatus = await authorizationClient.GetAuthStatusAsync(
                 authOperationInfo.ReferenceNumber,
                 authOperationInfo.AuthenticationToken.Token,
                 cancellationToken).ConfigureAwait(false);
+#pragma warning restore CS0618
 
             if (authStatus.Status.Code == AuthenticationStatusCodeResponse.AuthenticationSuccess)
             {
                 return;
+            }
+
+            if (authStatus.Status.Code != AuthenticationStatusCodeResponse.AuthenticationInProgress)
+            {
+                throw new KsefAuthenticationException(
+                    authStatus.Status.Code,
+                    $"Uwierzytelnianie zakończyło się niepowodzeniem. " +
+                    $"Status: {authStatus.Status.Code}, " +
+                    $"Opis: {authStatus.Status.Description}, " +
+                    $"Szczegóły: {FormatDetails(authStatus)}",
+                    authStatus.Status.Details);
             }
 
             await Task.Delay(pollInterval, cancellationToken).ConfigureAwait(false);

@@ -18,7 +18,7 @@ public class CredentialsRevokeTests : KsefIntegrationTestBase
     [Trait("Scenario", "Właściciel nadaje CredentialsManage delegatowi, delegat nadaje 'InvoiceWrite' PESEL-owi i następnie odbiera.")]
     public async Task DelegateGrantAndRevokeInvoiceWriteForPeselAsManagerLeavesNoActivePermission()
     {
-        // Arrange
+        // Przygotowanie: właściciel, delegat (oba NIP) oraz osoba fizyczna (PESEL)
         string nipOwner = MiscellaneousUtils.GetRandomNip();
         string nipDelegate = MiscellaneousUtils.GetRandomNip();
         string pesel = MiscellaneousUtils.GetRandomPesel();
@@ -26,28 +26,31 @@ public class CredentialsRevokeTests : KsefIntegrationTestBase
         string ownerToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, nipOwner)).AccessToken.Token;
         string delegateToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, nipDelegate)).AccessToken.Token;
 
-        // Act
-        // ========== Act: GRANT AS OWNER CredentialManage FOR DELEGATE ==========
+        // 1) Właściciel nadaje delegatowi uprawnienie CredentialsManage
         bool manageGranted = await GrantCredentialsManageToDelegateAsync(KsefClient, ownerToken, nipDelegate);
         Assert.True(manageGranted);
 
-        // ========== Act: SEARCH CredentialManage FOR DELEGATE ==========
-        IReadOnlyList<PersonPermission> delegatePermissions = await SearchPersonPermissionsAsync(KsefClient, ownerToken, PersonPermissionState.Active);
-        PersonPermission delegatePermission = Assert.Single(delegatePermissions);
+        // 2) Uprawnienie delegata jest widoczne jako aktywne u właściciela
+        IReadOnlyList<PersonPermission> delegatePermissions =
+            await SearchPersonPermissionsAsync(KsefClient, ownerToken, PersonPermissionState.Active);
+        Assert.Single(delegatePermissions);
 
-        // ========== Act: GRANT AS DELEGATE InvoiceWrite FOR PESEL ==========
+        // 3) Delegat nadaje osobie z PESEL-em uprawnienie InvoiceWrite w kontekście właściciela
         bool invoiceWriteGranted = await GrantInvoiceWriteToPeselAsManagerAsync(KsefClient, delegateToken, nipOwner, pesel);
         Assert.True(invoiceWriteGranted);
 
-        IReadOnlyList<PersonPermission> peselPermissionsAfterGrant = await SearchPersonPermissionsAsync(KsefClient, delegateToken, PersonPermissionState.Inactive);
+        // Świeżo nadane uprawnienie widoczne jest u delegata w stanie Inactive
+        IReadOnlyList<PersonPermission> peselPermissionsAfterGrant =
+            await SearchPersonPermissionsAsync(KsefClient, delegateToken, PersonPermissionState.Inactive);
         PersonPermission grantedPermission = Assert.Single(peselPermissionsAfterGrant);
 
-        // ========== Act: REVOKE AS DELEGATE InvoiceWrite FOR PESEL ==========
+        // 4) Delegat odbiera nadane uprawnienie
         bool revokeSuccessful = await RevokePersonPermissionAsync(KsefClient, delegateToken, grantedPermission.Id);
         Assert.True(revokeSuccessful);
 
-        // Assert
-        IReadOnlyList<PersonPermission> activePermissionsAfterRevoke = await SearchPersonPermissionsAsync(KsefClient, delegateToken, PersonPermissionState.Active);
+        // 5) Po odebraniu nie zostaje żadne aktywne uprawnienie
+        IReadOnlyList<PersonPermission> activePermissionsAfterRevoke =
+            await SearchPersonPermissionsAsync(KsefClient, delegateToken, PersonPermissionState.Active);
         Assert.Empty(activePermissionsAfterRevoke);
     }
 
@@ -90,9 +93,15 @@ public class CredentialsRevokeTests : KsefIntegrationTestBase
 		GrantPermissionsPersonSubjectIdentifier subjectIdentifier = new() { Type = GrantPermissionsPersonSubjectIdentifierType.Nip, Value = delegateNip };
 		PersonPermissionType[] permissions = [PersonPermissionType.CredentialsManage];
 
-		OperationResponse operationResponse = await PermissionsUtils.GrantPersonPermissionsAsync(client, ownerToken, subjectIdentifier, permissions, subjectDetails).ConfigureAwait(false);
+		OperationResponse operationResponse = 
+			await PermissionsUtils.GrantPersonPermissionsAsync(client, ownerToken, subjectIdentifier, permissions, subjectDetails)
+			.ConfigureAwait(false);
 
-		return await ConfirmOperationSuccessAsync(client, operationResponse, ownerToken).ConfigureAwait(false);
+		PermissionsOperationStatusResponse status = 
+			await PermissionsUtils.WaitForOperationCompletionAsync(client, operationResponse.ReferenceNumber, ownerToken)
+			.ConfigureAwait(false);
+
+		return status.Status.Code == OperationStatusCodeResponse.Success;
 	}
 
 	/// <summary>
@@ -107,7 +116,8 @@ public class CredentialsRevokeTests : KsefIntegrationTestBase
 	{
 		OperationResponse operationResponse = await PermissionsUtils.RevokePersonPermissionAsync(client, token, permissionId).ConfigureAwait(false);
 
-		return await ConfirmOperationSuccessAsync(client, operationResponse, token).ConfigureAwait(false);
+		PermissionsOperationStatusResponse status = await PermissionsUtils.WaitForOperationCompletionAsync(client, operationResponse.ReferenceNumber, token).ConfigureAwait(false);
+		return status.Status.Code == OperationStatusCodeResponse.Success;
 	}
 
 	/// <summary>
@@ -138,29 +148,7 @@ public class CredentialsRevokeTests : KsefIntegrationTestBase
 
 		OperationResponse operationResponse = await PermissionsUtils.GrantIndirectPermissionsAsync(client, delegateToken, subjectIdentifier, targetIdentifier, permissions).ConfigureAwait(false);
 
-		return await ConfirmOperationSuccessAsync(client, operationResponse, delegateToken).ConfigureAwait(false);
-	}
-
-	/// <summary>
-	/// Pomocnicza metoda potwierdzająca powodzenie operacji nadawania/odbierania uprawnień.
-	/// Czeka krótką chwilę, a następnie sprawdza status operacji po numerze referencyjnym.
-	/// </summary>
-	/// <param name="client">Klient KSeF używany do wywołań API.</param>
-	/// <param name="operationResponse">Odpowiedź inicjująca operację (z numerem referencyjnym).</param>
-	/// <param name="token">Token dostępu używany do autoryzacji odczytu statusu operacji.</param>
-	/// <returns>Prawda, jeżeli status operacji zwróci kod 200.</returns>
-	private async Task<bool> ConfirmOperationSuccessAsync(
-		IKSeFClient client, OperationResponse operationResponse, string token)
-	{
-		if (string.IsNullOrWhiteSpace(operationResponse?.ReferenceNumber))
-		{
-			return false;
-		}
-
-		// Krótkie odczekanie, aby backend zdążył przetworzyć operację
-		await Task.Delay(1000).ConfigureAwait(false);
-
-		PermissionsOperationStatusResponse status = await PermissionsUtils.GetPermissionsOperationStatusAsync(client, operationResponse.ReferenceNumber!, token).ConfigureAwait(false);
-		return status?.Status?.Code == OperationStatusCodeResponse.Success;
+		PermissionsOperationStatusResponse status = await PermissionsUtils.WaitForOperationCompletionAsync(client, operationResponse.ReferenceNumber, delegateToken).ConfigureAwait(false);
+		return status.Status.Code == OperationStatusCodeResponse.Success;
 	}
 }

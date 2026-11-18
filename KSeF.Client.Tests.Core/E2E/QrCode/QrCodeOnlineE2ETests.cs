@@ -70,10 +70,14 @@ public class QrCodeOnlineE2ETests : TestBase
         Assert.NotNull(sendInvoiceResponse);
         Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse.ReferenceNumber));
 
-        SessionStatusResponse sessionStatus = await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-            KsefClient,
-            openSessionResponse.ReferenceNumber,
-            _fixture.AccessToken);
+        SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollAsync(
+            action: () => KsefClient.GetSessionStatusAsync(
+                openSessionResponse.ReferenceNumber,
+                _fixture.AccessToken),
+            condition: s => s?.SuccessfulInvoiceCount is not null,
+            description: "Oczekiwanie na licznik faktur w sesji",
+            delay: TimeSpan.FromMilliseconds(SleepTime),
+            maxAttempts: 60);
 
         Assert.NotNull(sessionStatus);
         Assert.True(sessionStatus.Status.Code > 0);
@@ -86,8 +90,7 @@ public class QrCodeOnlineE2ETests : TestBase
 
         const int MaxSessionStatusAttempts = 120;
         sessionStatus = await AsyncPollingUtils.PollAsync(
-            action: async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                KsefClient,
+            action: async () => await KsefClient.GetSessionStatusAsync(
                 openSessionResponse.ReferenceNumber,
                 _fixture.AccessToken).ConfigureAwait(false),
             condition: s => s.Status.Code != OnlineSessionCodeResponse.SessionClosed,

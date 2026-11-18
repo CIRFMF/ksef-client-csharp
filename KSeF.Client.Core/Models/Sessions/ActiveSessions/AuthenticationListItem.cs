@@ -7,7 +7,7 @@ namespace KSeF.Client.Core.Models.Sessions.ActiveSessions
     {
         public DateTimeOffset StartDate { get; set; }
 
-		[Obsolete("Planowane wycofanie: 2026-11-16. Zaleca się korzystanie z AuthenticationMethodInfo.")]
+		[Obsolete("Pole jest zwracane tylko przez operacje wycofywane 15.06.2027. Użyj AuthenticationMethodInfo albo operacji rev2.")]
 		public AuthenticationMethodEnum AuthenticationMethod { get; set; }
 		public AuthenticationMethodInfo AuthenticationMethodInfo { get; set; }
 

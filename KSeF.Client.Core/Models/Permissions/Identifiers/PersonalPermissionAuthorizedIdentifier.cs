@@ -1,4 +1,4 @@
-namespace KSeF.Client.Core.Models.Permissions.Identifiers
+﻿namespace KSeF.Client.Core.Models.Permissions.Identifiers
 {
     public class PersonalPermissionAuthorizedIdentifier
     {
@@ -7,6 +7,8 @@ namespace KSeF.Client.Core.Models.Permissions.Identifiers
     }
     public enum PersonalPermissionAuthorizedIdentifierType
     {
-        Nip
+        Nip,
+        Pesel,
+        Fingerprint
     }
 }

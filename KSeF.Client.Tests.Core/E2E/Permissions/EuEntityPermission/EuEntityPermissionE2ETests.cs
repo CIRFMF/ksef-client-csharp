@@ -82,6 +82,8 @@ public class EuEntityPermissionE2ETests : TestBase
 	        x => x.PermissionScope == EuEntityPermissionType.Introspection);
 		Assert.Contains(grantedPermissionsPaged.Permissions,
 			x => x.PermissionScope == EuEntityPermissionType.VatUeManage);
+		Assert.Contains(grantedPermissionsPaged.Permissions,
+			x => x.PermissionScope == EuEntityPermissionType.CollectiveIdentifierManage);
 
 		Assert.All(grantedPermissionsPaged.Permissions, permission =>
 		{

@@ -56,12 +56,18 @@ namespace KSeF.Client.Tests.Features
 
             try
             {
-                Core.Models.Sessions.SessionInvoice sendInvoiceStatus = await OnlineSessionUtils.GetSessionInvoiceStatusAsync(KsefClient,
-                    openSessionRequest.ReferenceNumber,
-                    sendInvoiceResponse.ReferenceNumber,
-                    authToken);
-                Assert.NotNull(sendInvoiceStatus);
-                Assert.Equal(200, sendInvoiceStatus.Status.Code);
+                Core.Models.Sessions.SessionInvoice sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
+                    () => KsefClient.GetSessionInvoiceAsync(
+                        openSessionRequest.ReferenceNumber,
+                        sendInvoiceResponse.ReferenceNumber,
+                        authToken),
+                    result => result?.Status is not null
+                        && result.Status.Code != InvoiceInSessionStatusCodeResponse.AcceptedForProcessing
+                        && result.Status.Code != InvoiceInSessionStatusCodeResponse.Processing,
+                    description: "Oczekiwanie na końcowy status faktury",
+                    delay: TimeSpan.FromMilliseconds(SleepTime),
+                    maxAttempts: 120);
+                Assert.Equal(InvoiceInSessionStatusCodeResponse.Success, sendInvoiceStatus.Status.Code);
 
                 Core.Models.Sessions.SessionInvoicesResponse sessionInvoices = await OnlineSessionUtils.GetSessionInvoicesMetadataAsync(KsefClient,
                 openSessionRequest.ReferenceNumber,
@@ -130,8 +136,7 @@ namespace KSeF.Client.Tests.Features
             try
             {
                 Core.Models.Sessions.SessionInvoice sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-                    async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-                        KsefClient,
+                    async () => await KsefClient.GetSessionInvoiceAsync(
                         openSessionRequest.ReferenceNumber,
                         sendInvoiceResponse.ReferenceNumber,
                         authToken).ConfigureAwait(false),
@@ -180,8 +185,7 @@ namespace KSeF.Client.Tests.Features
                 Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse?.ReferenceNumber));
 
                 Core.Models.Sessions.SessionInvoice sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-                    async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-                        KsefClient,
+                    async () => await KsefClient.GetSessionInvoiceAsync(
                         openSessionRequest.ReferenceNumber,
                         sendInvoiceResponse.ReferenceNumber,
                         authToken).ConfigureAwait(false),
@@ -231,8 +235,7 @@ namespace KSeF.Client.Tests.Features
                 Assert.False(string.IsNullOrWhiteSpace(sendInvoiceResponse?.ReferenceNumber));
 
                 Core.Models.Sessions.SessionInvoice sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-                    async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-                        KsefClient,
+                    async () => await KsefClient.GetSessionInvoiceAsync(
                         openSessionRequest.ReferenceNumber,
                         sendInvoiceResponse.ReferenceNumber,
                         authToken).ConfigureAwait(false),
@@ -319,11 +322,10 @@ namespace KSeF.Client.Tests.Features
             Assert.NotNull(sendInvoiceResponse);
 
             SessionStatusResponse sessionStatus = await AsyncPollingUtils.PollAsync(
-                async () => await OnlineSessionUtils.GetOnlineSessionStatusAsync(
-                    KsefClient,
+                async () => await KsefClient.GetSessionStatusAsync(
                     openSessionResponse.ReferenceNumber,
                     invoiceCreatorAuthToken).ConfigureAwait(false),
-                result => result is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
+                result => result?.SuccessfulInvoiceCount is not null && result.InvoiceCount == result.SuccessfulInvoiceCount,
                 delay: TimeSpan.FromMilliseconds(2 * SleepTime));
 
             Assert.NotNull(sessionStatus);
@@ -401,8 +403,7 @@ namespace KSeF.Client.Tests.Features
 
 			// Act: pobranie statusu wysłanej faktury
 			SessionInvoice sendInvoiceStatus = await AsyncPollingUtils.PollAsync(
-				async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-					KsefClient,
+				async () => await KsefClient.GetSessionInvoiceAsync(
 					openSessionRequest.ReferenceNumber,
 					sendInvoiceResponse.ReferenceNumber,
 					authToken).ConfigureAwait(false),

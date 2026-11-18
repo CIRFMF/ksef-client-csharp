@@ -1,4 +1,5 @@
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Core.Models.Permissions;
 using KSeF.Client.Core.Models.Permissions.Identifiers;
@@ -69,12 +70,8 @@ namespace KSeF.Client.Tests.Features.Credentials
                     "CredentialsGrantTests"
             );
 
-			PermissionsOperationStatusResponse grantStatus = await AsyncPollingUtils.PollAsync(
-				async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient, grantPermissionsResponse.ReferenceNumber, ownerAuthToken).ConfigureAwait(false),
-				status => status?.Status?.Code == 200,
-				delay: TimeSpan.FromSeconds(2),
-				maxAttempts: 30,
-				cancellationToken: CancellationToken.None);
+			PermissionsOperationStatusResponse grantStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, grantPermissionsResponse.ReferenceNumber, ownerAuthToken);
+			Assert.Equal(OperationStatusCodeResponse.Success, grantStatus.Status.Code);
 
 			// Liczba aktywnych uprawnień odpowiada liczbie nadanych
 			IReadOnlyList <PersonPermission> activePermissions = await PermissionsUtils.SearchPersonPermissionsAsync(KsefClient, ownerAuthToken, PersonPermissionState.Active);
@@ -94,14 +91,8 @@ namespace KSeF.Client.Tests.Features.Credentials
                 OperationResponse revokeSuccessful = await PermissionsUtils.RevokePersonPermissionAsync(KsefClient, ownerAuthToken, item.Id);
                 Assert.NotNull(revokeSuccessful);
 
-                PermissionsOperationStatusResponse revokePermissionsActionStatus = await AsyncPollingUtils.PollAsync(
-                    async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient, revokeSuccessful.ReferenceNumber, ownerAuthToken).ConfigureAwait(false),
-                    status => status is not null &&
-                             status.Status is not null &&
-                             status.Status.Code == 200,
-                    delay: TimeSpan.FromSeconds(2),
-                    maxAttempts: 30,
-                    cancellationToken: CancellationToken.None);
+                PermissionsOperationStatusResponse revokePermissionsActionStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, revokeSuccessful.ReferenceNumber, ownerAuthToken);
+                Assert.Equal(OperationStatusCodeResponse.Success, revokePermissionsActionStatus.Status.Code);
             }
 
 			// Po cofnięciu nie ma żadnych aktywnych uprawnień
@@ -167,12 +158,8 @@ namespace KSeF.Client.Tests.Features.Credentials
 				new[] { PersonPermissionType.CredentialsManage },
 				delegateDetails);
 
-			await AsyncPollingUtils.PollAsync(
-				async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient, delegateGrantResponse.ReferenceNumber, ownerAuthToken).ConfigureAwait(false),
-				status => status?.Status?.Code == 200,
-				delay: TimeSpan.FromMilliseconds(SleepTime),
-				maxAttempts: 60,
-				cancellationToken: CancellationToken.None);
+			PermissionsOperationStatusResponse delegateGrantStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, delegateGrantResponse.ReferenceNumber, ownerAuthToken);
+			Assert.Equal(OperationStatusCodeResponse.Success, delegateGrantStatus.Status.Code);
 
 			// Delegat uwierzytelnia się w kontekście właściciela i nadaje uprawnienia docelowemu podmiotowi
 			string delegateAuthToken = (await AuthenticationUtils.AuthenticateAsync(AuthorizationClient, delegateNip, ownerNip)).AccessToken.Token;
@@ -196,12 +183,8 @@ namespace KSeF.Client.Tests.Features.Credentials
 			OperationResponse targetGrantResponse = await PermissionsUtils.GrantPersonPermissionsAsync(
 				KsefClient, delegateAuthToken, targetIdentifier, permissions, targetDetails, "CredentialsGrantTests");
 
-			await AsyncPollingUtils.PollAsync(
-				async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient, targetGrantResponse.ReferenceNumber, delegateAuthToken).ConfigureAwait(false),
-				status => status?.Status?.Code == 200,
-				delay: TimeSpan.FromSeconds(5),
-				maxAttempts: 60,
-				cancellationToken: CancellationToken.None);
+			PermissionsOperationStatusResponse targetGrantStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, targetGrantResponse.ReferenceNumber, delegateAuthToken);
+			Assert.Equal(OperationStatusCodeResponse.Success, targetGrantStatus.Status.Code);
 
 			// Aktywne uprawnienia docelowego podmiotu odpowiadają nadanym
 			IReadOnlyList<PersonPermission> activePermissions = await PermissionsUtils.SearchPersonPermissionsAsync(
@@ -230,12 +213,8 @@ namespace KSeF.Client.Tests.Features.Credentials
 
 				Assert.NotNull(revokeResponse);
 
-				await AsyncPollingUtils.PollAsync(
-					async () => await PermissionsUtils.GetPermissionsOperationStatusAsync(KsefClient, revokeResponse.ReferenceNumber, ownerAuthToken).ConfigureAwait(false),
-					status => status?.Status?.Code == 200,
-					delay: TimeSpan.FromMilliseconds(SleepTime),
-					maxAttempts: 60,
-					cancellationToken: CancellationToken.None);
+				PermissionsOperationStatusResponse revokeStatus = await PermissionsUtils.WaitForOperationCompletionAsync(KsefClient, revokeResponse.ReferenceNumber, ownerAuthToken);
+				Assert.Equal(OperationStatusCodeResponse.Success, revokeStatus.Status.Code);
 			}
 
 			// Po cofnięciu delegat nie widzi żadnych aktywnych uprawnień w kontekście właściciela

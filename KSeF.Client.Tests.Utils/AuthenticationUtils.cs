@@ -2,6 +2,7 @@
 using KSeF.Client.Core.Models.Authorization;
 using KSeF.Client.Api.Builders.Auth;
 using KSeF.Client.Core.Models;
+using KSeF.Client.Core.Exceptions;
 using System.Security.Cryptography.X509Certificates;
 using KSeF.Client.Core.Interfaces.Clients;
 using KSeF.Client.Api.Builders.X509Certificates;
@@ -239,8 +240,8 @@ public static class AuthenticationUtils
     {
         if (status.Status.Code != AuthSuccessCode)
         {
-            string msg = $"Uwierzytelnienie nie powiodło się. Kod statusu: {status?.Status.Code}, opis: {status?.Status.Description}.";
-            throw new InvalidOperationException(msg);
+            string msg = $"Uwierzytelnienie nie powiodło się. Kod statusu: {status.Status.Code}, opis: {status.Status.Description}.";
+            throw new KsefAuthenticationException(status.Status.Code, msg, status.Status.Details);
         }
     }
 }

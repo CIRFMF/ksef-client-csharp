@@ -1,5 +1,6 @@
 ﻿using KSeF.Client.Api.Builders.EntityPermissions;
 using KSeF.Client.Api.Builders.IndirectEntityPermissions;
+using KSeF.Client.Core.Exceptions;
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.ApiResponses;
 using KSeF.Client.Core.Models.Authorization;
@@ -155,7 +156,7 @@ public class IndirectSelectivePermissionGrantTests : KsefIntegrationTestBase
             "Token powinien zawierać uprawnienie InvoiceWrite");
 
         // Act & Assert: próba uwierzytelnienia PESEL w kontekście secondOwner - oczekiwany błąd
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<KsefAuthenticationException>(async () =>
         {
             await AuthenticationUtils.AuthenticateAsync(
                 AuthorizationClient,
@@ -183,7 +184,7 @@ public class IndirectSelectivePermissionGrantTests : KsefIntegrationTestBase
             "Token powinien zawierać uprawnienie InvoiceWrite");
 
         // Act & Assert: próba uwierzytelnienia NIP w kontekście firstOwner - oczekiwany błąd
-        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+        await Assert.ThrowsAsync<KsefAuthenticationException>(async () =>
         {
             await AuthenticationUtils.AuthenticateAsync(
                 AuthorizationClient,

@@ -1,6 +1,8 @@
 using KSeF.Client.Core.Models;
 using KSeF.Client.Core.Models.Sessions.ActiveSessions;
+using KSeF.Client.Core.Models.Sessions.ActiveSessions.Rev2;
 using KSeF.Client.Core.Models.Authorization;
+using KSeF.Client.Core.Models.Authorization.Rev2;
 using KSeF.Client.Core.Models.Certificates;
 using KSeF.Client.Core.Models.CollectiveIdentifiers;
 using KSeF.Client.Core.Models.Invoices;
@@ -30,6 +32,9 @@ internal sealed partial class FakeOnlineSessionKsefClient
     public Task<AuthenticationListResponse> GetActiveSessions(string accessToken, int? pageSize, string continuationToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
+    public Task<AuthenticationListResponseRev2> GetActiveSessionsRev2Async(string accessToken, int? pageSize = null, string continuationToken = null, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
     public Task RevokeCurrentSessionAsync(string token, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
@@ -46,6 +51,9 @@ internal sealed partial class FakeOnlineSessionKsefClient
         => throw new NotSupportedException();
 
     public Task<AuthStatus> GetAuthStatusAsync(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<AuthStatusRev2> GetAuthStatusRev2Async(string authOperationReferenceNumber, string authenticationToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
     public Task<AuthenticationOperationStatusResponse> GetAccessTokenAsync(string authenticationToken, CancellationToken cancellationToken = default)
@@ -71,6 +79,7 @@ internal sealed partial class FakeOnlineSessionKsefClient
 
     public Task<CertificateEnrollmentsInfoResponse> GetCertificateEnrollmentDataAsync(string accessToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+
 
     public Task<CertificateEnrollmentResponse> SendCertificateEnrollmentAsync(SendCertificateEnrollmentRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
@@ -98,6 +107,9 @@ internal sealed partial class FakeOnlineSessionKsefClient
 
     public Task<CollectiveIdentifierInvoicesQueryResponse> GetCollectiveIdentifierInvoicesAsync(CollectiveIdentifierInvoicesQueryRequest request, string accessToken, string continuationToken = null, int? pageSize = null, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+
+
+
 
     public Task<OperationResponse> GrantsPermissionPersonAsync(GrantPermissionsPersonRequest requestPayload, string accessToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
@@ -145,6 +157,18 @@ internal sealed partial class FakeOnlineSessionKsefClient
         => throw new NotSupportedException();
 
     public Task RevokeKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<KsefTokenResponseRev2> GenerateKsefTokenRev2Async(KsefTokenRequestRev2 requestPayload, string accessToken, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<QueryKsefTokensResponseRev2> QueryKsefTokensRev2Async(string accessToken, ICollection<KsefTokenStatusFilterRev2> statuses = null, string authorIdentifier = null, TokenContextIdentifierType? authorIdentifierType = null, string description = null, DateTimeOffset? validFrom = null, DateTimeOffset? validTo = null, string continuationToken = null, int? pageSize = null, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task<AuthenticationKsefTokenRev2> GetKsefTokenRev2Async(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
+        => throw new NotSupportedException();
+
+    public Task ApproveKsefTokenAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 
     public Task<QueryPeppolProvidersResponse> QueryPeppolProvidersAsync(string accessToken, int? pageOffset = null, int? pageSize = null, CancellationToken cancellationToken = default)

@@ -11,7 +11,7 @@ public class SessionE2ETests : TestBase
 {
     private readonly string _accessToken;
     private readonly string _refreshToken;
-    private readonly AuthenticationMethodEnum _authenticationMethod;
+    private readonly AuthenticationMethodInfoCategory _authenticationMethodCategory;
     private readonly string _nip;
 
     private const string ExpectedErrorMessage = "21301: Brak autoryzacji. - Status uwierzytelnienia (425) nie pozwala na odświeżenie tokenu dostępowego.";
@@ -24,7 +24,7 @@ public class SessionE2ETests : TestBase
             .GetAwaiter()
             .GetResult();
 
-        _authenticationMethod = AuthenticationMethodEnum.QualifiedSignature;
+        _authenticationMethodCategory = AuthenticationMethodInfoCategory.XadesSignature;
         _accessToken = auth.AccessToken.Token;
         _refreshToken = auth.RefreshToken.Token;
     }
@@ -62,9 +62,8 @@ public class SessionE2ETests : TestBase
         {
             Assert.NotNull(item);
             Assert.True(!string.IsNullOrWhiteSpace(item.ReferenceNumber));
-            Assert.NotNull(item.Status.Code);
-            Assert.NotNull(item.StartDate);
-            Assert.Equal(item.AuthenticationMethod, _authenticationMethod);
+            Assert.NotNull(item.AuthenticationMethodInfo);
+            Assert.Equal(_authenticationMethodCategory, item.AuthenticationMethodInfo.Category);
             Assert.True(item.IsTokenRedeemed);
             Assert.True(item.IsCurrent);
             Assert.NotNull(item.RefreshTokenValidUntil);

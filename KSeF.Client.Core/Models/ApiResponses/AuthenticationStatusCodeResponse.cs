@@ -57,6 +57,27 @@
         public const int InactiveToken = 450;
 
         /// <summary>
+        /// Kod 450 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędnego tokenu. Nieprawidłowe wyzwanie autoryzacyjne.
+        /// </summary>
+        public const int InvalidChallenge = 450;
+
+        /// <summary>
+        /// Kod 450 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędnego tokenu. Nieprawidłowe szyfrowanie tokena.
+        /// </summary>
+        public const int InvalidTokenEncryption = 450;
+
+        /// <summary>
+        /// Kod 450 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędnego tokenu. Nieprawidłowe kodowanie tokena.
+        /// </summary>
+        public const int InvalidTokenEncoding = 450;
+
+        /// <summary>
+        /// Kod 450 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędnego tokenu.
+        /// Token nie może być użyty w kontekście {contextIdentifier}.
+        /// </summary>
+        public const int TokenNotAllowedInContext = 450;
+
+        /// <summary>
         /// Kod 460 — Uwierzytelnienie zakończone niepowodzeniem z powodu błędu certyfikatu. Nieważny certyfikat.
         /// </summary>
         public const int InvalidCertificate = 460;
@@ -96,6 +117,13 @@
 		/// Próba wykorzystania metod autoryzacyjnych osoby zmarłej.
 		/// </summary>
 		public const int DeceasedUserAuthAttempt = 470;
+
+        /// <summary>
+        /// Kod 480 — Uwierzytelnienie zablokowane.
+        /// Podejrzenie incydentu bezpieczeństwa. Skontaktuj się z Ministerstwem Finansów przez formularz zgłoszeniowy.
+        /// Na środowisku testowym można go wywołać blokadą kontekstu (POST /testdata/context/block).
+        /// </summary>
+        public const int AuthenticationBlocked = 480;
 
         /// <summary>
         /// Kod 500 — Nieznany błąd.

@@ -89,16 +89,22 @@ namespace KSeF.Client.Core.Interfaces.Clients
         /// <summary>
         /// POST /api/v2/testdata/context/block — Blokuje możliwość uwierzytelniania dla bieżącego kontekstu. Tylko na środowiskach testowych.
         /// </summary>
-        Task<Status> BlockContextAsync(ContextIdentifier requestPayload, string accessToken, CancellationToken cancellationToken = default);
+        Task<Status> BlockContextAsync(ContextBlockingIdentifier requestPayload, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// POST /api/v2/testdata/context/unblock — Odblokowuje możliwość uwierzytelniania dla bieżącego kontekstu. Tylko na środowiskach testowych.
         /// </summary>
-        Task<Status> UnblockContextAsync(ContextIdentifier requestPayload, string accessToken, CancellationToken cancellationToken = default);
+        Task<Status> UnblockContextAsync(ContextBlockingIdentifier requestPayload, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// PUT /api/v2/testdata/certificates/{serialNumber} — aktualizuje dane wskazanego certyfikatu (np. datę ważności). Tylko na środowiskach testowych.
         /// </summary>
         Task<Status> UpdateCertificateAsync(string serialNumber, TestDataUpdateCertificateRequest request, string accessToken, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// POST /api/v2/testdata/tokens/{referenceNumber}/expire-approval — przenosi token KSeF ze statusu AwaitingApproval do ApprovalExpired,
+        /// symulując upływ czasu na jego zatwierdzenie. Tylko na środowiskach testowych.
+        /// </summary>
+        Task ExpireTokenApprovalAsync(string tokenReferenceNumber, string accessToken, CancellationToken cancellationToken = default);
     }
 }

@@ -63,7 +63,7 @@ namespace KSeF.Client.Core.Models.Sessions
         /// <summary>
         /// Tryb fakturowania.
         /// </summary>
-        public InvoicingMode InvoicingMode { get; set; }
+        public InvoicingMode? InvoicingMode { get; set; }
 
         /// <summary>
         /// Data wygaśnięcia adresu do pobrania UPO.

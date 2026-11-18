@@ -76,8 +76,7 @@ public class InvoiceTechnicalCorrectionE2ETests : TestBase
 		Assert.False(string.IsNullOrWhiteSpace(invalidInvoiceResponse?.ReferenceNumber));
 
 		SessionInvoice rejectedInvoiceStatus = await AsyncPollingUtils.PollAsync(
-			action: async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-				KsefClient,
+			action: async () => await KsefClient.GetSessionInvoiceAsync(
 				openSessionResponse.ReferenceNumber,
 				invalidInvoiceResponse.ReferenceNumber,
 				_accessToken)
@@ -102,8 +101,7 @@ public class InvoiceTechnicalCorrectionE2ETests : TestBase
 		Assert.False(string.IsNullOrWhiteSpace(technicalCorrectionResponse?.ReferenceNumber));
 
 		SessionInvoice correctedInvoiceStatus = await AsyncPollingUtils.PollAsync(
-			action: async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-				KsefClient,
+			action: async () => await KsefClient.GetSessionInvoiceAsync(
 				openSessionResponse.ReferenceNumber,
 				technicalCorrectionResponse.ReferenceNumber,
 				_accessToken)
@@ -168,8 +166,7 @@ public class InvoiceTechnicalCorrectionE2ETests : TestBase
 		Assert.False(string.IsNullOrWhiteSpace(invalidInvoiceResponse?.ReferenceNumber));
 
 		SessionInvoice rejectedInvoiceStatus = await AsyncPollingUtils.PollAsync(
-			action: async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-				KsefClient,
+			action: async () => await KsefClient.GetSessionInvoiceAsync(
 				firstSessionResponse.ReferenceNumber,
 				invalidInvoiceResponse.ReferenceNumber,
 				_accessToken)
@@ -205,8 +202,7 @@ public class InvoiceTechnicalCorrectionE2ETests : TestBase
 		Assert.False(string.IsNullOrWhiteSpace(technicalCorrectionResponse?.ReferenceNumber));
 
 		SessionInvoice correctedInvoiceStatus = await AsyncPollingUtils.PollAsync(
-			action: async () => await OnlineSessionUtils.GetSessionInvoiceStatusAsync(
-				KsefClient,
+			action: async () => await KsefClient.GetSessionInvoiceAsync(
 				secondSessionResponse.ReferenceNumber,
 				technicalCorrectionResponse.ReferenceNumber,
 				_accessToken)

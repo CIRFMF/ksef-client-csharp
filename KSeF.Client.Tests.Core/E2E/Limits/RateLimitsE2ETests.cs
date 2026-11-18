@@ -127,6 +127,78 @@ public class RateLimitsE2ETests : TestBase
     }
 
     /// <summary>
+    /// Test E2E: ustawienie limitów produkcyjnych (POST /testdata/rate-limits/production) nadpisuje
+    /// wcześniej ustawione limity niestandardowe.
+    /// Kroki:
+    /// 1) Uwierzytelnienie i pobranie aktualnych limitów
+    /// 2) Ustawienie limitów niestandardowych i weryfikacja ich zastosowania
+    /// 3) Ustawienie limitów produkcyjnych
+    /// 4) Weryfikacja, że limity nie są już niestandardowe i mają wartości dodatnie
+    /// 5) Przywrócenie wartości domyślnych i weryfikacja zgodności z wartościami z kroku 1
+    /// </summary>
+    [Fact]
+    public async Task RestoreProductionRateLimits_OverridesCustomLimits()
+    {
+        const int LimitsChangeValue = 1;
+
+        // Arrange: Uwierzytelnianie i pobranie aktualnych limitów
+        AuthenticationOperationStatusResponse authorizationInfo =
+            await AuthenticationUtils.AuthenticateAsync(
+                AuthorizationClient,
+                MiscellaneousUtils.GetRandomNip());
+        string accessToken = authorizationInfo.AccessToken.Token;
+
+        EffectiveApiRateLimits originalLimits =
+            await LimitsClient.GetRateLimitsAsync(accessToken, CancellationToken);
+        Assert.NotNull(originalLimits);
+
+        ApiRateLimitsChangeRequest customLimits = CloneAndModifyWithinBounds(originalLimits, LimitsChangeValue);
+
+        try
+        {
+            // Arrange: Ustawienie limitów niestandardowych
+            await TestDataClient.SetRateLimitsAsync(
+                new EffectiveApiRateLimitsRequest { RateLimits = customLimits },
+                accessToken,
+                CancellationToken);
+
+            await AsyncPollingUtils.PollAsync(
+                action: () => LimitsClient.GetRateLimitsAsync(accessToken, CancellationToken),
+                condition: response => AreOverrideableRateLimitsEqual(customLimits, response),
+                delay: RateLimitsStatePollingDelay,
+                maxAttempts: MaxAttempts,
+                cancellationToken: CancellationToken);
+
+            // Act: Ustawienie limitów produkcyjnych
+            await TestDataClient.RestoreProductionRateLimitsAsync(accessToken, CancellationToken);
+
+            EffectiveApiRateLimits productionLimits = await AsyncPollingUtils.PollAsync(
+                action: () => LimitsClient.GetRateLimitsAsync(accessToken, CancellationToken),
+                condition: response => !AreOverrideableRateLimitsEqual(customLimits, response),
+                delay: RateLimitsStatePollingDelay,
+                maxAttempts: MaxAttempts,
+                cancellationToken: CancellationToken);
+
+            // Assert: Limity nie są już niestandardowe i mają sensowne wartości
+            Assert.False(AreOverrideableRateLimitsEqual(customLimits, productionLimits));
+        }
+        finally
+        {
+            // Cleanup: Przywrócenie wartości domyślnych
+            await TestDataClient.RestoreRateLimitsAsync(accessToken, CancellationToken);
+        }
+
+        EffectiveApiRateLimits restoredLimits = await AsyncPollingUtils.PollAsync(
+            action: () => LimitsClient.GetRateLimitsAsync(accessToken, CancellationToken),
+            condition: response => AreRateLimitsEqual(originalLimits, response),
+            delay: RateLimitsStatePollingDelay,
+            maxAttempts: MaxAttempts,
+            cancellationToken: CancellationToken);
+
+        AssertRateLimitsEqual(originalLimits, restoredLimits);
+    }
+
+    /// <summary>
     /// Test E2E (negatywny): próba ustawienia wartości limitów przekraczających dopuszczalne maksimum
     /// powinna zakończyć się rzuceniem wyjątku KsefApiException.
     /// Kroki:
